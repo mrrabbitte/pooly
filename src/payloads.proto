@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package payloads.proto;
+
+message ValueWrapper {
+  oneof value {
+    string string = 1;
+    int64 int8 = 2;
+    bytes bytes = 3;
+  }
+}
+
+message RowResponse {
+
+  repeated ValueWrapper values = 1;
+
+}
+
+message QueryResponse {
+
+  repeated string column_names = 1;
+  repeated RowResponse rows = 2;
+
+}
+
+message QueryRequest {
+
+  string db_id = 1;
+  string body = 2;
+  repeated ValueWrapper values = 3;
+
+}
