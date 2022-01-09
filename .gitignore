@@ -11,3 +11,5 @@ Cargo.lock
 
 .idea/
 .idea
+__pycache__/
+/__pycache__/

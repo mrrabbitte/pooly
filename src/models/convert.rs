@@ -1,12 +1,33 @@
 use std::any::Any;
 
 use postgres_types::{FromSql, Oid};
-use tokio_postgres::{Error, Row};
+use tokio_postgres::{Column, Error, Row};
 
-use crate::values::payloads::ValueWrapper;
-use crate::values::payloads::value_wrapper::Value;
+use crate::models::payloads::{QueryResponse, RowResponse, ValueWrapper};
+use crate::models::payloads::value_wrapper::Value;
 
-pub fn convert(row: &Row) -> Result<Vec<ValueWrapper>, ConversionError> {
+pub fn convert(rows: Vec<Row>) -> Result<QueryResponse, ConversionError> {
+    let column_names = match rows.first() {
+        None => Vec::default(),
+        Some(row) =>
+            row.columns().iter().map(|column| column.name().to_owned()).collect()
+    };
+
+    let mut row_responses = vec![];
+
+    for row in &rows {
+        row_responses.push(RowResponse{ values: convert_row(row)?});
+    }
+
+    Ok(
+        QueryResponse {
+            column_names,
+            rows: row_responses
+        }
+    )
+}
+
+fn convert_row(row: &Row) -> Result<Vec<ValueWrapper>, ConversionError> {
     let columns = row.columns();
 
     let mut values = vec![];

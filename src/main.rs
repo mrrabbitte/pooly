@@ -13,12 +13,12 @@ use actix_web::web::Data;
 
 use crate::connections::ConnectionService;
 use crate::queries::QueryService;
-use crate::values::payloads::QueryRequest;
+use crate::models::payloads::QueryRequest;
 
 pub mod connections;
 pub mod queries;
 pub mod resources;
-pub mod values;
+pub mod models;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

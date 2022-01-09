@@ -3,11 +3,20 @@ syntax = "proto3";
 package payloads.proto;
 
 message ValueWrapper {
+
   oneof value {
     string string = 1;
     int64 int8 = 2;
     bytes bytes = 3;
+    //JsonWrapper json = 4;
   }
+
+}
+
+message JsonWrapper {
+
+  map<string, ValueWrapper> body = 1;
+
 }
 
 message RowResponse {
@@ -26,7 +35,7 @@ message QueryResponse {
 message QueryRequest {
 
   string db_id = 1;
-  string body = 2;
-  repeated ValueWrapper values = 3;
+  string query = 2;
+  repeated ValueWrapper params = 3;
 
 }

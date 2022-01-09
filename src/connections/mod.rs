@@ -16,7 +16,7 @@ pub type Connection = Object<Manager>;
 
 impl ConnectionService {
 
-    pub fn new() -> ConnectionService {
+    pub fn new() -> Self {
         let mut mock_connections = DashMap::new();
 
         mock_connections.insert("pooly_test".to_owned(), get_config()
