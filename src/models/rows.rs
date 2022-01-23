@@ -3,10 +3,11 @@ use std::any::Any;
 use postgres_types::{FromSql, Oid};
 use tokio_postgres::{Column, Error, Row};
 
-use crate::models::payloads::{QueryResponse, RowResponse, ValueWrapper};
+use crate::models::payloads::{QuerySuccessResponse, RowResponse, ValueWrapper};
 use crate::models::payloads::value_wrapper::Value;
+use crate::queries::QueryError;
 
-pub fn convert(rows: Vec<Row>) -> Result<QueryResponse, ConversionError> {
+pub fn convert_rows(rows: Vec<Row>) -> Result<QuerySuccessResponse, QueryError> {
     let column_names = match rows.first() {
         None => Vec::default(),
         Some(row) =>
@@ -20,14 +21,14 @@ pub fn convert(rows: Vec<Row>) -> Result<QueryResponse, ConversionError> {
     }
 
     Ok(
-        QueryResponse {
+        QuerySuccessResponse {
             column_names,
             rows: row_responses
         }
     )
 }
 
-fn convert_row(row: &Row) -> Result<Vec<ValueWrapper>, ConversionError> {
+fn convert_row(row: &Row) -> Result<Vec<ValueWrapper>, QueryError> {
     let columns = row.columns();
 
     let mut values = vec![];
@@ -48,7 +49,7 @@ fn convert_row(row: &Row) -> Result<Vec<ValueWrapper>, ConversionError> {
 
 fn get_or_empty<'a, T, F>(row: &'a Row,
                           constructor: F,
-                          i: usize) -> Result<Option<Value>, ConversionError>
+                          i: usize) -> Result<Option<Value>, QueryError>
     where
         T: FromSql<'a>,
         F: Fn(T) -> Value {
@@ -60,17 +61,3 @@ fn get_or_empty<'a, T, F>(row: &'a Row,
 fn proto_string(val: String) -> Value {
     Value::String(val.into())
 }
-
-#[derive(PartialEq, Eq, Clone, Debug, Hash)]
-pub enum ConversionError {
-    PostgresError
-}
-
-impl From<Error> for ConversionError {
-    fn from(_: Error) -> Self {
-        ConversionError::PostgresError
-    }
-}
-
-
-

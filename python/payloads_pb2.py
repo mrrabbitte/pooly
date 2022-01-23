@@ -19,11 +19,41 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='payloads.proto',
   package='payloads.proto',
   syntax='proto3',
-  serialized_pb=_b('\n\x0epayloads.proto\x12\x0epayloads.proto\"J\n\x0cValueWrapper\x12\x10\n\x06string\x18\x01 \x01(\tH\x00\x12\x0e\n\x04int8\x18\x02 \x01(\x03H\x00\x12\x0f\n\x05\x62ytes\x18\x03 \x01(\x0cH\x00\x42\x07\n\x05value\"\x8d\x01\n\x0bJsonWrapper\x12\x33\n\x04\x62ody\x18\x01 \x03(\x0b\x32%.payloads.proto.JsonWrapper.BodyEntry\x1aI\n\tBodyEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12+\n\x05value\x18\x02 \x01(\x0b\x32\x1c.payloads.proto.ValueWrapper:\x02\x38\x01\";\n\x0bRowResponse\x12,\n\x06values\x18\x01 \x03(\x0b\x32\x1c.payloads.proto.ValueWrapper\"P\n\rQueryResponse\x12\x14\n\x0c\x63olumn_names\x18\x01 \x03(\t\x12)\n\x04rows\x18\x02 \x03(\x0b\x32\x1b.payloads.proto.RowResponse\"Z\n\x0cQueryRequest\x12\r\n\x05\x64\x62_id\x18\x01 \x01(\t\x12\r\n\x05query\x18\x02 \x01(\t\x12,\n\x06params\x18\x03 \x03(\x0b\x32\x1c.payloads.proto.ValueWrapperb\x06proto3')
+  serialized_pb=_b('\n\x0epayloads.proto\x12\x0epayloads.proto\"J\n\x0cValueWrapper\x12\x10\n\x06string\x18\x01 \x01(\tH\x00\x12\x0e\n\x04int8\x18\x02 \x01(\x03H\x00\x12\x0f\n\x05\x62ytes\x18\x03 \x01(\x0cH\x00\x42\x07\n\x05value\"\x8d\x01\n\x0bJsonWrapper\x12\x33\n\x04\x62ody\x18\x01 \x03(\x0b\x32%.payloads.proto.JsonWrapper.BodyEntry\x1aI\n\tBodyEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12+\n\x05value\x18\x02 \x01(\x0b\x32\x1c.payloads.proto.ValueWrapper:\x02\x38\x01\";\n\x0bRowResponse\x12,\n\x06values\x18\x01 \x03(\x0b\x32\x1c.payloads.proto.ValueWrapper\"W\n\x14QuerySuccessResponse\x12\x14\n\x0c\x63olumn_names\x18\x01 \x03(\t\x12)\n\x04rows\x18\x02 \x03(\x0b\x32\x1b.payloads.proto.RowResponse\"\xd7\x01\n\rErrorResponse\x12\x0f\n\x07message\x18\x01 \x01(\t\x12\x16\n\x0e\x63orrelation_id\x18\x02 \x01(\t\x12;\n\nerror_type\x18\x03 \x01(\x0e\x32\'.payloads.proto.ErrorResponse.ErrorType\"`\n\tErrorType\x12\x16\n\x12MISSING_CONNECTION\x10\x00\x12\x0e\n\nPOOL_ERROR\x10\x01\x12\x12\n\x0ePOSTGRES_ERROR\x10\x02\x12\x17\n\x13WRONG_NUM_OF_PARAMS\x10\x03\"\x83\x01\n\rQueryResponse\x12\x37\n\x07success\x18\x01 \x01(\x0b\x32$.payloads.proto.QuerySuccessResponseH\x00\x12.\n\x05\x65rror\x18\x03 \x01(\x0b\x32\x1d.payloads.proto.ErrorResponseH\x00\x42\t\n\x07payload\"Z\n\x0cQueryRequest\x12\r\n\x05\x64\x62_id\x18\x01 \x01(\t\x12\r\n\x05query\x18\x02 \x01(\t\x12,\n\x06params\x18\x03 \x03(\x0b\x32\x1c.payloads.proto.ValueWrapperb\x06proto3')
 )
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 
+
+_ERRORRESPONSE_ERRORTYPE = _descriptor.EnumDescriptor(
+  name='ErrorType',
+  full_name='payloads.proto.ErrorResponse.ErrorType',
+  filename=None,
+  file=DESCRIPTOR,
+  values=[
+    _descriptor.EnumValueDescriptor(
+      name='MISSING_CONNECTION', index=0, number=0,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='POOL_ERROR', index=1, number=1,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='POSTGRES_ERROR', index=2, number=2,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='WRONG_NUM_OF_PARAMS', index=3, number=3,
+      options=None,
+      type=None),
+  ],
+  containing_type=None,
+  options=None,
+  serialized_start=524,
+  serialized_end=620,
+)
+_sym_db.RegisterEnumDescriptor(_ERRORRESPONSE_ERRORTYPE)
 
 
 _VALUEWRAPPER = _descriptor.Descriptor(
@@ -173,22 +203,22 @@ _ROWRESPONSE = _descriptor.Descriptor(
 )
 
 
-_QUERYRESPONSE = _descriptor.Descriptor(
-  name='QueryResponse',
-  full_name='payloads.proto.QueryResponse',
+_QUERYSUCCESSRESPONSE = _descriptor.Descriptor(
+  name='QuerySuccessResponse',
+  full_name='payloads.proto.QuerySuccessResponse',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='column_names', full_name='payloads.proto.QueryResponse.column_names', index=0,
+      name='column_names', full_name='payloads.proto.QuerySuccessResponse.column_names', index=0,
       number=1, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='rows', full_name='payloads.proto.QueryResponse.rows', index=1,
+      name='rows', full_name='payloads.proto.QuerySuccessResponse.rows', index=1,
       number=2, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -207,7 +237,94 @@ _QUERYRESPONSE = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=315,
-  serialized_end=395,
+  serialized_end=402,
+)
+
+
+_ERRORRESPONSE = _descriptor.Descriptor(
+  name='ErrorResponse',
+  full_name='payloads.proto.ErrorResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='message', full_name='payloads.proto.ErrorResponse.message', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='correlation_id', full_name='payloads.proto.ErrorResponse.correlation_id', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='error_type', full_name='payloads.proto.ErrorResponse.error_type', index=2,
+      number=3, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+    _ERRORRESPONSE_ERRORTYPE,
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=405,
+  serialized_end=620,
+)
+
+
+_QUERYRESPONSE = _descriptor.Descriptor(
+  name='QueryResponse',
+  full_name='payloads.proto.QueryResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='success', full_name='payloads.proto.QueryResponse.success', index=0,
+      number=1, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='error', full_name='payloads.proto.QueryResponse.error', index=1,
+      number=3, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+    _descriptor.OneofDescriptor(
+      name='payload', full_name='payloads.proto.QueryResponse.payload',
+      index=0, containing_type=None, fields=[]),
+  ],
+  serialized_start=623,
+  serialized_end=754,
 )
 
 
@@ -251,8 +368,8 @@ _QUERYREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=397,
-  serialized_end=487,
+  serialized_start=756,
+  serialized_end=846,
 )
 
 _VALUEWRAPPER.oneofs_by_name['value'].fields.append(
@@ -268,11 +385,23 @@ _JSONWRAPPER_BODYENTRY.fields_by_name['value'].message_type = _VALUEWRAPPER
 _JSONWRAPPER_BODYENTRY.containing_type = _JSONWRAPPER
 _JSONWRAPPER.fields_by_name['body'].message_type = _JSONWRAPPER_BODYENTRY
 _ROWRESPONSE.fields_by_name['values'].message_type = _VALUEWRAPPER
-_QUERYRESPONSE.fields_by_name['rows'].message_type = _ROWRESPONSE
+_QUERYSUCCESSRESPONSE.fields_by_name['rows'].message_type = _ROWRESPONSE
+_ERRORRESPONSE.fields_by_name['error_type'].enum_type = _ERRORRESPONSE_ERRORTYPE
+_ERRORRESPONSE_ERRORTYPE.containing_type = _ERRORRESPONSE
+_QUERYRESPONSE.fields_by_name['success'].message_type = _QUERYSUCCESSRESPONSE
+_QUERYRESPONSE.fields_by_name['error'].message_type = _ERRORRESPONSE
+_QUERYRESPONSE.oneofs_by_name['payload'].fields.append(
+  _QUERYRESPONSE.fields_by_name['success'])
+_QUERYRESPONSE.fields_by_name['success'].containing_oneof = _QUERYRESPONSE.oneofs_by_name['payload']
+_QUERYRESPONSE.oneofs_by_name['payload'].fields.append(
+  _QUERYRESPONSE.fields_by_name['error'])
+_QUERYRESPONSE.fields_by_name['error'].containing_oneof = _QUERYRESPONSE.oneofs_by_name['payload']
 _QUERYREQUEST.fields_by_name['params'].message_type = _VALUEWRAPPER
 DESCRIPTOR.message_types_by_name['ValueWrapper'] = _VALUEWRAPPER
 DESCRIPTOR.message_types_by_name['JsonWrapper'] = _JSONWRAPPER
 DESCRIPTOR.message_types_by_name['RowResponse'] = _ROWRESPONSE
+DESCRIPTOR.message_types_by_name['QuerySuccessResponse'] = _QUERYSUCCESSRESPONSE
+DESCRIPTOR.message_types_by_name['ErrorResponse'] = _ERRORRESPONSE
 DESCRIPTOR.message_types_by_name['QueryResponse'] = _QUERYRESPONSE
 DESCRIPTOR.message_types_by_name['QueryRequest'] = _QUERYREQUEST
 
@@ -304,6 +433,20 @@ RowResponse = _reflection.GeneratedProtocolMessageType('RowResponse', (_message.
   # @@protoc_insertion_point(class_scope:payloads.proto.RowResponse)
   ))
 _sym_db.RegisterMessage(RowResponse)
+
+QuerySuccessResponse = _reflection.GeneratedProtocolMessageType('QuerySuccessResponse', (_message.Message,), dict(
+  DESCRIPTOR = _QUERYSUCCESSRESPONSE,
+  __module__ = 'payloads_pb2'
+  # @@protoc_insertion_point(class_scope:payloads.proto.QuerySuccessResponse)
+  ))
+_sym_db.RegisterMessage(QuerySuccessResponse)
+
+ErrorResponse = _reflection.GeneratedProtocolMessageType('ErrorResponse', (_message.Message,), dict(
+  DESCRIPTOR = _ERRORRESPONSE,
+  __module__ = 'payloads_pb2'
+  # @@protoc_insertion_point(class_scope:payloads.proto.ErrorResponse)
+  ))
+_sym_db.RegisterMessage(ErrorResponse)
 
 QueryResponse = _reflection.GeneratedProtocolMessageType('QueryResponse', (_message.Message,), dict(
   DESCRIPTOR = _QUERYRESPONSE,

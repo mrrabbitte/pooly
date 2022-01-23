@@ -5,10 +5,13 @@ use postgres_types::{IsNull, ToSql, Type};
 use tokio_postgres::Error;
 
 use crate::connections::{Connection, ConnectionService};
-use crate::models::convert::convert;
-use crate::models::payloads::{QueryRequest, ValueWrapper};
-use crate::models::payloads::QueryResponse;
+use crate::models::parameters::convert_params;
+use crate::models::payloads::{ErrorResponse, QueryRequest, QueryResponse, ValueWrapper};
+use crate::models::payloads::error_response::ErrorType;
+use crate::models::payloads::query_response::Payload;
+use crate::models::payloads::QuerySuccessResponse;
 use crate::models::payloads::value_wrapper::Value;
+use crate::models::rows::convert_rows;
 
 pub struct QueryService {
 
@@ -16,7 +19,10 @@ pub struct QueryService {
 
 }
 
+
 impl QueryService {
+
+
 
     pub fn new(connection_service: ConnectionService) -> Self {
         QueryService {
@@ -24,31 +30,35 @@ impl QueryService {
         }
     }
 
-    pub async fn query(&self, request: &QueryRequest) -> Result<QueryResponse, QueryError> {
+    pub async fn query(&self,
+                       request: &QueryRequest,
+                       correlation_id: &str) -> QueryResponse {
+        match self.do_query(request).await {
+            Ok(ok) => ok.into(),
+            Err(err) =>
+                err.to_error_response(correlation_id.to_string()).into()
+        }
+    }
+
+    async fn do_query(&self, request: &QueryRequest)
+        -> Result<QuerySuccessResponse, QueryError> {
         let db_id: &str = &request.db_id;
 
         match self.connection_service.get(db_id).await {
             Some(connection_result) => {
                 let connection = connection_result?;
 
-                let mut params: Vec<&(dyn ToSql + Sync)> = vec![];
+                let stmt = connection.prepare_cached(&request.query).await?;
 
-                for value_wrapper in &request.params {
-                    match &value_wrapper.value {
-                        None => {},
-                        Some(val) => match val {
-                            Value::String(v) => params.push(v),
-                            Value::Int8(v) => params.push(v),
-                            Value::Bytes(v) => params.push(v)
-                        }
-                    };
-                }
+                let params: Vec<&(dyn ToSql + Sync)> =
+                    convert_params(stmt.params(),&request.params)?;
 
-                let results = connection.query(&request.query, &params).await?;
+                let results =
+                    connection.query(&stmt, params.as_slice()).await?;
 
-                convert(results).map_err(|err| QueryError::ConversionError)
+                convert_rows(results)
             }
-            None => Err(QueryError::MissingDatabaseConnection(db_id.to_owned()))
+            None => Err(QueryError::UnknownDatabaseConnection(db_id.to_owned()))
         }
     }
 
@@ -56,20 +66,74 @@ impl QueryService {
 
 #[derive(Debug)]
 pub enum QueryError {
-    ConversionError,
-    MissingDatabaseConnection(String),
-    PoolError,
-    PostgresError
+    UnknownDatabaseConnection(String),
+    PoolError(String),
+    PostgresError(String),
+    WrongNumParams(usize, usize),
+    UnknownPostgresValueType(String)
+}
+
+impl QueryError {
+
+    pub fn to_error_response(self, correlation_id: String) -> ErrorResponse {
+        let error_type = self.get_error_type();
+
+        ErrorResponse {
+            message: self.get_message(),
+            error_type: error_type.into(),
+            correlation_id
+        }
+    }
+
+    pub fn get_error_type(&self) -> ErrorType {
+        match self {
+            QueryError::UnknownDatabaseConnection(_) => ErrorType::MissingConnection,
+            QueryError::PoolError(_) => ErrorType::PoolError,
+            QueryError::PostgresError(_) => ErrorType::PostgresError,
+            QueryError::WrongNumParams(_, _) => ErrorType::WrongNumOfParams,
+            QueryError::UnknownPostgresValueType(_) => ErrorType::UnknownPgValueType
+        }
+    }
+
+    pub fn get_message(self) -> String {
+        match self {
+            QueryError::UnknownDatabaseConnection(missing_name) =>
+               format!("Not found database: {}", missing_name),
+            QueryError::PoolError(message) => message,
+            QueryError::PostgresError(message) => message,
+            QueryError::WrongNumParams(actual, expected) =>
+                format!("Expected: {} argument(s), got: {}", expected, actual),
+            QueryError::UnknownPostgresValueType(pg_type) =>
+                format!("Unknown pg type: {}", pg_type)
+        }
+    }
+
 }
 
 impl From<PoolError<Error>> for QueryError {
-    fn from(_: PoolError<Error>) -> Self {
-        QueryError::PoolError
+    fn from(err: PoolError<Error>) -> Self {
+        QueryError::PoolError(err.to_string())
     }
 }
 
 impl From<Error> for QueryError {
-    fn from(_: Error) -> Self {
-        QueryError::PostgresError
+    fn from(err: Error) -> Self {
+        QueryError::PostgresError(err.to_string())
+    }
+}
+
+impl From<QuerySuccessResponse> for QueryResponse {
+    fn from(success: QuerySuccessResponse) -> Self {
+        QueryResponse {
+            payload: Some(Payload::Success(success))
+        }
+    }
+}
+
+impl From<ErrorResponse> for QueryResponse {
+    fn from(err: ErrorResponse) -> Self {
+        QueryResponse {
+            payload: Some(Payload::Error(err))
+        }
     }
 }

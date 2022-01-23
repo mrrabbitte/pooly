@@ -25,10 +25,35 @@ message RowResponse {
 
 }
 
-message QueryResponse {
+message QuerySuccessResponse {
 
   repeated string column_names = 1;
   repeated RowResponse rows = 2;
+
+}
+
+message ErrorResponse {
+
+  string message = 1;
+  string correlation_id = 2;
+
+  enum ErrorType {
+    MISSING_CONNECTION = 0;
+    POOL_ERROR = 1;
+    POSTGRES_ERROR = 2;
+    WRONG_NUM_OF_PARAMS = 3;
+    UNKNOWN_PG_VALUE_TYPE = 4;
+  }
+
+  ErrorType error_type = 3;
+}
+
+message QueryResponse {
+
+  oneof payload {
+    QuerySuccessResponse success = 1;
+    ErrorResponse error = 3;
+  }
 
 }
 
