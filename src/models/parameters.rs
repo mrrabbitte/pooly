@@ -35,8 +35,8 @@ pub fn convert_params<'a>(expected_param_types: &[Type],
     Ok(params)
 }
 
-static NULL_STRING_VALUE: Option<String> = Option::None;
-static NULL_INT8_VALUE: Option<i64> = Option::None;
+const NULL_STRING_VALUE: Option<String> = Option::None;
+const NULL_INT8_VALUE: Option<i64> = Option::None;
 
 #[inline]
 fn get_null_for_type(c_type: &Type) -> Result<&'static (dyn ToSql + Sync), QueryError> {
