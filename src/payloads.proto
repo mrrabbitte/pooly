@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+package payloads.proto;
+
+message ValueWrapper {
+
+  oneof value {
+    string string = 1;
+    int64 int8 = 2;
+    bytes bytes = 3;
+    //JsonObjectWrapper json_object = 4;
+  }
+
+}
+
+message JsonObjectWrapper {
+
+  map<string, ValueWrapper> body = 1;
+
+}
+
+message RowResponse {
+
+  repeated ValueWrapper values = 1;
+
+}
+
+message QuerySuccessResponse {
+
+  repeated string column_names = 1;
+  repeated RowResponse rows = 2;
+
+}
+
+message ErrorResponse {
+
+  string message = 1;
+  string correlation_id = 2;
+
+  enum ErrorType {
+    MISSING_CONNECTION = 0;
+    POOL_ERROR = 1;
+    POSTGRES_ERROR = 2;
+    WRONG_NUM_OF_PARAMS = 3;
+    UNKNOWN_PG_VALUE_TYPE = 4;
+  }
+
+  ErrorType error_type = 3;
+}
+
+message QueryResponse {
+
+  oneof payload {
+    QuerySuccessResponse success = 1;
+    ErrorResponse error = 3;
+  }
+
+}
+
+message QueryRequest {
+
+  string db_id = 1;
+  string query = 2;
+  repeated ValueWrapper params = 3;
+
+}
