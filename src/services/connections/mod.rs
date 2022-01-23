@@ -6,6 +6,8 @@ use rustls::ClientConfig;
 use tokio_postgres::{Client, NoTls};
 use tokio_postgres_rustls::MakeRustlsConnect;
 
+mod stored;
+
 pub struct ConnectionService {
 
     connections: DashMap<String, Pool>
