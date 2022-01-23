@@ -8,12 +8,12 @@ message ValueWrapper {
     string string = 1;
     int64 int8 = 2;
     bytes bytes = 3;
-    //JsonWrapper json = 4;
+    //JsonObjectWrapper json_object = 4;
   }
 
 }
 
-message JsonWrapper {
+message JsonObjectWrapper {
 
   map<string, ValueWrapper> body = 1;
 

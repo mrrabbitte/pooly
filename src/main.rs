@@ -11,14 +11,13 @@ use std::sync::Arc;
 use actix_web::{App, HttpServer, middleware, web};
 use actix_web::web::Data;
 
-use crate::connections::ConnectionService;
-use crate::queries::QueryService;
 use crate::models::payloads::QueryRequest;
+use crate::services::connections::ConnectionService;
+use crate::services::queries::QueryService;
 
-pub mod connections;
-pub mod queries;
 pub mod resources;
 pub mod models;
+pub mod services;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

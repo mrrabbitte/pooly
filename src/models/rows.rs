@@ -3,9 +3,9 @@ use std::any::Any;
 use postgres_types::{FromSql, Oid};
 use tokio_postgres::{Column, Error, Row};
 
+use crate::models::errors::QueryError;
 use crate::models::payloads::{QuerySuccessResponse, RowResponse, ValueWrapper};
 use crate::models::payloads::value_wrapper::Value;
-use crate::queries::QueryError;
 
 pub fn convert_rows(rows: Vec<Row>) -> Result<QuerySuccessResponse, QueryError> {
     let column_names = match rows.first() {

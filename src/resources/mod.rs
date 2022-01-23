@@ -8,7 +8,7 @@ use actix_web::web::Data;
 use uuid::Uuid;
 
 use crate::models::payloads::QueryRequest;
-use crate::queries::QueryService;
+use crate::services::queries::QueryService;
 
 #[post("/v1/query")]
 pub async fn query(service: Data<Arc<QueryService>>,

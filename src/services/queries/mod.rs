@@ -4,7 +4,7 @@ use deadpool::managed::PoolError;
 use postgres_types::{IsNull, ToSql, Type};
 use tokio_postgres::Error;
 
-use crate::connections::{Connection, ConnectionService};
+use crate::models::errors::QueryError;
 use crate::models::parameters::convert_params;
 use crate::models::payloads::{ErrorResponse, QueryRequest, QueryResponse, ValueWrapper};
 use crate::models::payloads::error_response::ErrorType;
@@ -12,6 +12,7 @@ use crate::models::payloads::query_response::Payload;
 use crate::models::payloads::QuerySuccessResponse;
 use crate::models::payloads::value_wrapper::Value;
 use crate::models::rows::convert_rows;
+use crate::services::connections::{Connection, ConnectionService};
 
 pub struct QueryService {
 
@@ -21,8 +22,6 @@ pub struct QueryService {
 
 
 impl QueryService {
-
-
 
     pub fn new(connection_service: ConnectionService) -> Self {
         QueryService {
@@ -40,8 +39,7 @@ impl QueryService {
         }
     }
 
-    async fn do_query(&self, request: &QueryRequest)
-        -> Result<QuerySuccessResponse, QueryError> {
+    async fn do_query(&self, request: &QueryRequest) -> Result<QuerySuccessResponse, QueryError> {
         let db_id: &str = &request.db_id;
 
         match self.connection_service.get(db_id).await {
@@ -60,65 +58,6 @@ impl QueryService {
             }
             None => Err(QueryError::UnknownDatabaseConnection(db_id.to_owned()))
         }
-    }
-
-}
-
-#[derive(Debug)]
-pub enum QueryError {
-    UnknownDatabaseConnection(String),
-    PoolError(String),
-    PostgresError(String),
-    WrongNumParams(usize, usize),
-    UnknownPostgresValueType(String)
-}
-
-impl QueryError {
-
-    pub fn to_error_response(self, correlation_id: String) -> ErrorResponse {
-        let error_type = self.get_error_type();
-
-        ErrorResponse {
-            message: self.get_message(),
-            error_type: error_type.into(),
-            correlation_id
-        }
-    }
-
-    pub fn get_error_type(&self) -> ErrorType {
-        match self {
-            QueryError::UnknownDatabaseConnection(_) => ErrorType::MissingConnection,
-            QueryError::PoolError(_) => ErrorType::PoolError,
-            QueryError::PostgresError(_) => ErrorType::PostgresError,
-            QueryError::WrongNumParams(_, _) => ErrorType::WrongNumOfParams,
-            QueryError::UnknownPostgresValueType(_) => ErrorType::UnknownPgValueType
-        }
-    }
-
-    pub fn get_message(self) -> String {
-        match self {
-            QueryError::UnknownDatabaseConnection(missing_name) =>
-               format!("Not found database: {}", missing_name),
-            QueryError::PoolError(message) => message,
-            QueryError::PostgresError(message) => message,
-            QueryError::WrongNumParams(actual, expected) =>
-                format!("Expected: {} argument(s), got: {}", expected, actual),
-            QueryError::UnknownPostgresValueType(pg_type) =>
-                format!("Unknown pg type: {}", pg_type)
-        }
-    }
-
-}
-
-impl From<PoolError<Error>> for QueryError {
-    fn from(err: PoolError<Error>) -> Self {
-        QueryError::PoolError(err.to_string())
-    }
-}
-
-impl From<Error> for QueryError {
-    fn from(err: Error) -> Self {
-        QueryError::PostgresError(err.to_string())
     }
 }
 

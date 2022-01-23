@@ -7,7 +7,7 @@ qr.db_id = "pooly_test"
 qr.query = "select column1, column2 from newtable where column1 = $1 and column2 = $2;"
 
 vw1 = p.ValueWrapper()
-#vw1.string = "something"
+vw1.string = "something"
 
 vw2 = p.ValueWrapper()
 vw2.int8 = 1

@@ -1,11 +1,10 @@
 use postgres_types::{ToSql, Type};
 
+use crate::models::errors::QueryError;
 use crate::models::payloads::value_wrapper::Value;
 use crate::models::payloads::ValueWrapper;
-use crate::queries::QueryError;
 
-static NULL_INT8: Option<i64> = Option::None;
-
+#[inline]
 pub fn convert_params<'a>(expected_param_types: &[Type],
                           received_params: &'a Vec<ValueWrapper>)
     -> Result<Vec<&'a (dyn ToSql + Sync)>, QueryError> {
@@ -39,6 +38,7 @@ pub fn convert_params<'a>(expected_param_types: &[Type],
 static NULL_STRING_VALUE: Option<String> = Option::None;
 static NULL_INT8_VALUE: Option<i64> = Option::None;
 
+#[inline]
 fn get_null_for_type(c_type: &Type) -> Result<&'static (dyn ToSql + Sync), QueryError> {
     match c_type.oid() {
         25 => Ok(&NULL_STRING_VALUE),
