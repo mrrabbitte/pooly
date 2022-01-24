@@ -1,16 +1,21 @@
 use dashmap::DashMap;
 use dashmap::mapref::one::Ref;
-use deadpool::managed::Object;
-use deadpool_postgres::{Config, Manager, ManagerConfig, Pool, PoolError, RecyclingMethod, Runtime, SslMode};
+use deadpool::managed::{Object, PoolConfig};
+use deadpool_postgres::{Config, CreatePoolError, Manager, ManagerConfig, Pool, PoolError, RecyclingMethod, Runtime, SslMode};
 use rustls::ClientConfig;
 use tokio_postgres::{Client, NoTls};
 use tokio_postgres_rustls::MakeRustlsConnect;
 
-mod stored;
+use crate::models::connections::ConnectionConfig;
+use crate::models::errors::ConnectionError;
+use crate::services::connections::config::ConnectionConfigService;
+
+mod config;
 
 pub struct ConnectionService {
 
-    connections: DashMap<String, Pool>
+    pools: DashMap<String, Pool>,
+    config_service: ConnectionConfigService
 
 }
 
@@ -19,38 +24,57 @@ pub type Connection = Object<Manager>;
 impl ConnectionService {
 
     pub fn new() -> Self {
-        let mut mock_connections = DashMap::new();
-
-        mock_connections.insert("pooly_test".to_owned(), get_config()
-            .create_pool(
-                Some(Runtime::Tokio1),
-                NoTls
-            ).unwrap()
-        );
-
         ConnectionService {
-            connections: mock_connections
+            pools: DashMap::new(),
+            config_service: ConnectionConfigService::new()
         }
     }
 
-    pub async fn get(&self, db_id: &str) -> Option<Result<Connection, PoolError>> {
-        match self.connections.get(db_id) {
-            Some(pool) => Some(pool.get().await),
-            None => None
+    pub async fn get(&self, db_id: &str) -> Option<Result<Connection, ConnectionError>> {
+        match self.pools.get(db_id) {
+            Some(pool) =>
+                Some(pool.get().await.map_err(ConnectionError::PoolError)),
+            None => self.create_or_empty(db_id).await
         }
     }
 
-}
+    async fn create_or_empty(&self,
+                             db_id: &str) -> Option<Result<Connection, ConnectionError>> {
+        match self.config_service.get(db_id) {
+            None => Option::None,
+            Some(config) =>
+                self.add_connection_pool(config.value()).await
+        }
+    }
 
-fn get_config() -> Config {
+    async fn add_connection_pool(&self,
+                                 connection_config: &ConnectionConfig)
+                                 -> Option<Result<Connection, ConnectionError>> {
+        let mut config = Config::new();
 
-    let mut cfg = Config::new();
+        config.dbname = Some(connection_config.db_name.clone());
+        config.hosts = Some(connection_config.hosts.clone());
+        config.user = Some(connection_config.user_enc.clone());
+        config.password = Some(connection_config.pass_enc.clone());
+        config.manager = Some(ManagerConfig { recycling_method: RecyclingMethod::Fast });
+        config.pool = Some(PoolConfig::new(connection_config.max_connections as usize));
 
-    cfg.host = Some("localhost".to_owned());
-    cfg.dbname = Some("pooly_test".to_owned());
-    cfg.user = Some("pooly".to_owned());
-    cfg.password = Some("pooly_pooly_123".to_owned());
-    cfg.manager = Some(ManagerConfig { recycling_method: RecyclingMethod::Fast });
+        Some(match config.create_pool(
+            Some(Runtime::Tokio1),
+            NoTls
+        ) {
+            Ok(pool) => {
+                let result =
+                    pool.get().await.map_err(ConnectionError::PoolError);
 
-    cfg
+                if result.is_ok() {
+                    self.pools.insert(connection_config.db_name.clone(), pool);
+                }
+
+                result
+            },
+            Err(err) => Err(ConnectionError::CreatePoolError(err))
+        })
+    }
+
 }
