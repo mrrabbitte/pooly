@@ -1,38 +1,47 @@
+use std::error::Error;
 use std::sync::Arc;
+
 use dashmap::DashMap;
 use dashmap::mapref::one::Ref;
+use sled;
+use sled::{Db, IVec};
 
 use crate::models::connections::ConnectionConfig;
+use crate::models::errors::ConnectionConfigError;
 
 pub struct ConnectionConfigService {
 
-    configs: DashMap<String, ConnectionConfig>
+    configs: Db
 
 }
 
 impl ConnectionConfigService {
 
     pub fn new() -> Self {
-        let cfg = ConnectionConfig {
-            hosts: vec!["localhost".to_string()],
-            db_name: "pooly_test".to_string(),
-            user_enc: "pooly".to_string(),
-            pass_enc: "pooly_pooly_123".to_string(),
-            max_connections: 10
-        };
-
-        let configs: DashMap<String, ConnectionConfig> = DashMap::new();
-
-        configs.insert(cfg.db_name.clone(), cfg);
+        let configs = sled::open("./pooly_configs").unwrap();
 
         ConnectionConfigService {
             configs
         }
     }
 
-    pub fn get(&self, db_name: &str) -> Option<Ref<String, ConnectionConfig>> {
-        self.configs
-            .get(db_name)
+    pub fn get(&self, db_name: &str) -> Result<Option<ConnectionConfig>, ConnectionConfigError> {
+        match self.configs.get(db_name) {
+            Ok(None) => Ok(None),
+            Ok(Some(config_bytes)) =>
+                Ok(Some(bincode::deserialize(config_bytes.as_ref())?)),
+            Err(err) => Err(ConnectionConfigError::ConfigStorageError(err.to_string()))
+        }
+    }
+
+    pub fn put(&self, config: ConnectionConfig) -> Result<(), ConnectionConfigError> {
+        self.configs.insert(
+            config.db_name.clone(),
+            bincode::serialize(&config)?)?;
+
+        self.configs.flush()?;
+
+        Ok(())
     }
 
 }

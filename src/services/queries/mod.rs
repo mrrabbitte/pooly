@@ -49,7 +49,7 @@ impl QueryService {
                 let stmt = connection.prepare_cached(&request.query).await?;
 
                 let params: Vec<&(dyn ToSql + Sync)> =
-                    convert_params(stmt.params(),&request.params)?;
+                    convert_params(stmt.params(), &request.params)?;
 
                 let results =
                     connection.query(&stmt, params.as_slice()).await?;

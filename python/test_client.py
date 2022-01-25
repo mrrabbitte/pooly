@@ -1,6 +1,18 @@
 import payloads_pb2 as p
 import requests
 
+config = {
+  "hosts": ["localhost"],
+  "db_name": "pooly_test",
+  "user_enc": "pooly",
+  "pass_enc": "pooly_pooly_123",
+  "max_connections": 10
+}
+
+response = requests.post("http://127.0.0.1:59090/v1/configs", headers = {"content-type": "application/json"}, json=config)
+
+print(response)
+
 qr = p.QueryRequest()
 
 qr.db_id = "pooly_test"

@@ -10,6 +10,8 @@ use uuid::Uuid;
 use crate::models::payloads::QueryRequest;
 use crate::services::queries::QueryService;
 
+pub mod configs;
+
 #[post("/v1/query")]
 pub async fn query(service: Data<Arc<QueryService>>,
                    request: ProtoBuf<QueryRequest>) -> Result<HttpResponse> {
@@ -19,3 +21,4 @@ pub async fn query(service: Data<Arc<QueryService>>,
 
     HttpResponse::Ok().protobuf(response)
 }
+

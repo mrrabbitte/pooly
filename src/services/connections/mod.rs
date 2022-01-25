@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use dashmap::DashMap;
 use dashmap::mapref::one::Ref;
 use deadpool::managed::{Object, PoolConfig};
@@ -10,12 +12,12 @@ use crate::models::connections::ConnectionConfig;
 use crate::models::errors::ConnectionError;
 use crate::services::connections::config::ConnectionConfigService;
 
-mod config;
+pub mod config;
 
 pub struct ConnectionService {
 
     pools: DashMap<String, Pool>,
-    config_service: ConnectionConfigService
+    config_service: Arc<ConnectionConfigService>
 
 }
 
@@ -23,10 +25,10 @@ pub type Connection = Object<Manager>;
 
 impl ConnectionService {
 
-    pub fn new() -> Self {
+    pub fn new(connection_config_service: Arc<ConnectionConfigService>) -> Self {
         ConnectionService {
             pools: DashMap::new(),
-            config_service: ConnectionConfigService::new()
+            config_service: connection_config_service
         }
     }
 
@@ -41,9 +43,10 @@ impl ConnectionService {
     async fn create_or_empty(&self,
                              db_id: &str) -> Option<Result<Connection, ConnectionError>> {
         match self.config_service.get(db_id) {
-            None => Option::None,
-            Some(config) =>
-                self.add_connection_pool(config.value()).await
+            Ok(None) => Option::None,
+            Ok(Some(config)) =>
+                self.add_connection_pool(&config).await,
+            Err(err) => Some(Err(ConnectionError::ConnectionConfigError(err)))
         }
     }
 
