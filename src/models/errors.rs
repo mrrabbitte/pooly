@@ -37,6 +37,15 @@ pub enum ConnectionConfigError {
 
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub enum SecretsError {
+    AlreadyInitialized,
+    MasterKeyShareError(String),
+    Unspecified,
+    LockError,
+    FileReadError
+}
+
 impl ConnectionConfigError {
 
     fn get_message(&self) -> &str {

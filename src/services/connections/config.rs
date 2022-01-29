@@ -18,7 +18,7 @@ pub struct ConnectionConfigService {
 impl ConnectionConfigService {
 
     pub fn new() -> Self {
-        let configs = sled::open("./pooly_configs").unwrap();
+        let configs = sled::open("./stored/pooly_configs").unwrap();
 
         ConnectionConfigService {
             configs

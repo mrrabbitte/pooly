@@ -57,8 +57,8 @@ impl ConnectionService {
 
         config.dbname = Some(connection_config.db_name.clone());
         config.hosts = Some(connection_config.hosts.clone());
-        config.user = Some(connection_config.user_enc.clone());
-        config.password = Some(connection_config.pass_enc.clone());
+        config.user = Some(connection_config.user.clone());
+        config.password = Some(connection_config.password.clone());
         config.manager = Some(ManagerConfig { recycling_method: RecyclingMethod::Fast });
         config.pool = Some(PoolConfig::new(connection_config.max_connections as usize));
 
