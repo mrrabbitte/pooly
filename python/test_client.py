@@ -4,8 +4,8 @@ import requests
 config = {
   "hosts": ["localhost"],
   "db_name": "pooly_test",
-  "user_enc": "pooly",
-  "pass_enc": "pooly_pooly_123",
+  "user": "pooly",
+  "password": "pooly_pooly_123",
   "max_connections": 10
 }
 

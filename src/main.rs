@@ -30,7 +30,8 @@ async fn main() -> std::io::Result<()> {
     let shares_service = Arc::new(MasterKeySharesService::new());
 
     let secrets_service =
-        Arc::new(SecretsService::new(shares_service, system_random));
+        Arc::new(
+            SecretsService::new(shares_service.clone(), system_random));
 
     let connection_config_service =
         Arc::new(ConnectionConfigService::new(secrets_service.clone()));
@@ -47,8 +48,12 @@ async fn main() -> std::io::Result<()> {
                 .app_data(Data::new(query_service.clone()))
                 .app_data(Data::new(connection_config_service.clone()))
                 .app_data(Data::new(secrets_service.clone()))
+                .app_data(Data::new(shares_service.clone()))
                 .service(resources::query::query)
                 .service(resources::configs::create)
+                .service(resources::secrets::initialize)
+                .service(resources::secrets::unseal)
+                .service(resources::shares::add_share)
         })
         .bind("127.0.0.1:59090")?
         .run();

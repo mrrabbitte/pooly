@@ -14,6 +14,29 @@ pub struct ConnectionConfig {
 
 }
 
+#[derive(Zeroize)]
+#[zeroize(drop)]
+pub struct ZeroizeWrapper {
+
+    value: Vec<u8>
+
+}
+
+impl ZeroizeWrapper {
+
+    pub fn new(value: Vec<u8>) -> ZeroizeWrapper {
+        ZeroizeWrapper {
+            value
+        }
+    }
+
+    pub fn get_value(&self) -> &Vec<u8> {
+        &self.value
+    }
+
+}
+
+
 #[derive(PartialEq, Hash, Serialize, Deserialize, Debug)]
 pub enum Versioned<T> {
 

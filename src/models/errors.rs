@@ -1,6 +1,7 @@
 use bincode::ErrorKind;
 use deadpool::managed::PoolError;
 use deadpool_postgres::CreatePoolError;
+use ring::error::Unspecified;
 use serde::{Deserialize, Serialize};
 use tokio_postgres::Error;
 
@@ -40,10 +41,12 @@ pub enum ConnectionConfigError {
 #[derive(Debug, Serialize, Deserialize)]
 pub enum SecretsError {
     AlreadyInitialized,
+    AlreadyUnsealed,
     MasterKeyShareError(String),
     Unspecified,
     LockError,
-    FileReadError
+    FileReadError,
+    Sealed
 }
 
 impl ConnectionConfigError {
@@ -136,5 +139,23 @@ impl From<Box<ErrorKind>> for ConnectionConfigError {
 impl From<sled::Error> for ConnectionConfigError {
     fn from(err: sled::Error) -> Self {
         ConnectionConfigError::ConfigStorageError(err.to_string())
+    }
+}
+
+impl From<Unspecified> for SecretsError {
+    fn from(_: Unspecified) -> Self {
+        SecretsError::Unspecified
+    }
+}
+
+impl From<chacha20poly1305::aead::Error> for SecretsError {
+    fn from(_: chacha20poly1305::aead::Error) -> Self {
+        SecretsError::Unspecified
+    }
+}
+
+impl From<SecretsError> for ConnectionConfigError {
+    fn from(_: SecretsError) -> Self {
+        ConnectionConfigError::ConfigSerdeError("Secrets error.".to_string())
     }
 }

@@ -3,15 +3,15 @@ use std::fs::File;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicPtr, Ordering};
 
-use chacha20poly1305::aead::{Aead, AeadInPlace, NewAead, Payload};
+use chacha20poly1305::aead::{Aead, AeadInPlace, Error, NewAead, Payload};
 use chacha20poly1305::aead::generic_array::GenericArray;
+use chacha20poly1305::aead::generic_array::typenum::Or;
 use chacha20poly1305::XChaCha20Poly1305;
-use ring::error::Unspecified;
 use ring::rand::{SecureRandom, SystemRandom};
 use sharks::{Share, Sharks};
 
 use crate::models::errors::SecretsError;
-use crate::models::secrets::{EncryptionKey, KEY_LENGTH, MasterKey, MasterKeyShare};
+use crate::models::secrets::{EncryptionKey, KEY_LENGTH, MasterKey, MasterKeyShare, MasterKeySharePayload};
 use crate::services::secrets::files::SecretFilesService;
 use crate::services::secrets::shares::MasterKeySharesService;
 
@@ -50,7 +50,27 @@ impl SecretsService {
         }
     }
 
-    pub fn initialize(&self) -> Result<Vec<MasterKeyShare>, SecretsError> {
+    pub fn encrypt(&self, target: &Vec<u8>) -> Result<Vec<u8>, SecretsError> {
+        self.apply(
+            |algo| algo.encrypt(
+                &GenericArray::default(),
+                Payload {
+                    msg: target,
+                    aad: &Vec::new()
+                }))
+    }
+
+    pub fn decrypt(&self, target: &[u8]) -> Result<Vec<u8>, SecretsError> {
+        self.apply(
+            |algo| algo.decrypt(
+                &GenericArray::default(),
+                Payload {
+                    msg: target,
+                    aad: &Vec::new()
+                }))
+    }
+
+    pub fn initialize(&self) -> Result<Vec<MasterKeySharePayload>, SecretsError> {
         if !self.is_sealed() || self.files_service.exists()? {
             return Err(SecretsError::AlreadyInitialized);
         }
@@ -60,7 +80,8 @@ impl SecretsService {
         let master_key = self.generate_master_key()?;
 
         let encrypted_enc_key =
-            XChaCha20Poly1305::new(GenericArray::from_slice(master_key.get_value()))
+            XChaCha20Poly1305::new(
+                GenericArray::from_slice(master_key.get_value()))
                 .encrypt(&GenericArray::default(),
                          Payload {
                              msg: enc_key.get_value(),
@@ -75,12 +96,17 @@ impl SecretsService {
             sharks
                 .dealer(master_key.get_value())
                 .take(MINIMUM_SHARES_THRESHOLD as usize)
-                .map(|share| MasterKeyShare::new((&share).into()))
+                .map(|share|
+                    MasterKeyShare::new((&share).into()).into())
                 .collect()
         )
     }
 
     pub fn unseal(&self) -> Result<(), SecretsError> {
+        if !self.is_sealed() {
+            return Err(SecretsError::AlreadyUnsealed);
+        }
+
         let master_key_shares = self.shares_service.get();
 
         let sharks = Sharks(MINIMUM_SHARES_THRESHOLD);
@@ -119,6 +145,21 @@ impl SecretsService {
         self.is_sealed.load(Ordering::Relaxed)
     }
 
+    fn apply<T>(&self, operation: T) -> Result<Vec<u8>, SecretsError>
+        where T: FnOnce(&XChaCha20Poly1305) -> Result<Vec<u8>, Error> {
+        if self.is_sealed() {
+            return Err(SecretsError::Sealed)
+        }
+
+        unsafe {
+            match self.encryption_key.load(Ordering::Relaxed).as_ref() {
+                Some(algo) =>
+                    Ok( operation(algo)?),
+                None => Err(SecretsError::Unspecified)
+            }
+        }
+    }
+
     fn generate_encryption_key(&self) -> Result<EncryptionKey, SecretsError> {
         Ok(EncryptionKey::new(self.generate_key()?))
     }
@@ -128,23 +169,11 @@ impl SecretsService {
     }
 
     fn generate_key(&self) -> Result<Vec<u8>, SecretsError> {
-        let mut value = Vec::new();
+        let mut value = vec![0; KEY_LENGTH];
 
         self.sys_random.fill(&mut value)?;
 
         Ok(value)
     }
 
-}
-
-impl From<Unspecified> for SecretsError {
-    fn from(_: Unspecified) -> Self {
-        SecretsError::Unspecified
-    }
-}
-
-impl From<chacha20poly1305::aead::Error> for SecretsError {
-    fn from(_: chacha20poly1305::aead::Error) -> Self {
-        SecretsError::Unspecified
-    }
 }

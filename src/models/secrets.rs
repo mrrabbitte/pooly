@@ -1,3 +1,5 @@
+use base64::DecodeError;
+use serde::{Deserialize, Serialize};
 use zeroize::Zeroize;
 
 pub const KEY_LENGTH: usize = 32;
@@ -19,6 +21,13 @@ pub struct MasterKey {
 #[derive(PartialEq, Eq, Clone, Hash)]
 pub struct MasterKeyShare {
     value: Vec<u8>
+}
+
+#[derive(Zeroize)]
+#[zeroize(drop)]
+#[derive(PartialEq, Eq, Clone, Hash, Serialize, Deserialize)]
+pub struct MasterKeySharePayload {
+    value: String
 }
 
 impl EncryptionKey {
@@ -67,4 +76,24 @@ impl MasterKeyShare {
         &self.value
     }
 
+}
+
+impl From<MasterKeyShare> for MasterKeySharePayload {
+    fn from(key_share: MasterKeyShare) -> Self {
+        MasterKeySharePayload {
+            value: base64::encode(&key_share.value)
+        }
+    }
+}
+
+impl TryFrom<MasterKeySharePayload> for MasterKeyShare {
+    type Error = DecodeError;
+
+    fn try_from(payload: MasterKeySharePayload) -> Result<Self, Self::Error> {
+        Ok(
+            MasterKeyShare {
+                value: base64::decode(&payload.value)?
+            }
+        )
+    }
 }
