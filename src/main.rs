@@ -10,10 +10,14 @@ use std::sync::Arc;
 
 use actix_web::{App, HttpServer, middleware, web};
 use actix_web::web::Data;
+use ring::rand::SystemRandom;
 
 use crate::models::payloads::QueryRequest;
+use crate::services::connections::config::ConnectionConfigService;
 use crate::services::connections::ConnectionService;
 use crate::services::queries::QueryService;
+use crate::services::secrets::SecretsService;
+use crate::services::secrets::shares::MasterKeySharesService;
 
 pub mod resources;
 pub mod models;
@@ -21,15 +25,35 @@ pub mod services;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    let system_random = Arc::new(SystemRandom::new());
+
+    let shares_service = Arc::new(MasterKeySharesService::new());
+
+    let secrets_service =
+        Arc::new(
+            SecretsService::new(shares_service.clone(), system_random));
+
+    let connection_config_service =
+        Arc::new(ConnectionConfigService::new(secrets_service.clone()));
+
     let query_service =
-        Arc::new(QueryService::new(ConnectionService::new()));
+        Arc::new(QueryService::new(
+            ConnectionService::new(
+                connection_config_service.clone())));
 
     let server = HttpServer::new(
         move || {
             App::new()
                 .wrap(middleware::Logger::default())
                 .app_data(Data::new(query_service.clone()))
-                .service(resources::query)
+                .app_data(Data::new(connection_config_service.clone()))
+                .app_data(Data::new(secrets_service.clone()))
+                .app_data(Data::new(shares_service.clone()))
+                .service(resources::query::query)
+                .service(resources::configs::create)
+                .service(resources::secrets::initialize)
+                .service(resources::secrets::unseal)
+                .service(resources::shares::add_share)
         })
         .bind("127.0.0.1:59090")?
         .run();

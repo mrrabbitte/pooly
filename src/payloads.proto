@@ -38,11 +38,13 @@ message ErrorResponse {
   string correlation_id = 2;
 
   enum ErrorType {
-    MISSING_CONNECTION = 0;
-    POOL_ERROR = 1;
-    POSTGRES_ERROR = 2;
-    WRONG_NUM_OF_PARAMS = 3;
-    UNKNOWN_PG_VALUE_TYPE = 4;
+    CONNECTION_CONFIG_ERROR = 0;
+    CREATE_POOL_ERROR = 1;
+    MISSING_CONNECTION = 2;
+    POOL_ERROR = 3;
+    POSTGRES_ERROR = 4;
+    WRONG_NUM_OF_PARAMS = 5;
+    UNKNOWN_PG_VALUE_TYPE = 6;
   }
 
   ErrorType error_type = 3;

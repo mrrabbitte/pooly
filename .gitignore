@@ -13,3 +13,8 @@ Cargo.lock
 .idea
 __pycache__/
 /__pycache__/
+
+/pooly_configs/
+pooly_configs
+/stored/
+stored/
