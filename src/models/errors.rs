@@ -1,3 +1,4 @@
+use std::fmt::format;
 use bincode::ErrorKind;
 use deadpool::managed::PoolError;
 use deadpool_postgres::CreatePoolError;
@@ -155,7 +156,7 @@ impl From<chacha20poly1305::aead::Error> for SecretsError {
 }
 
 impl From<SecretsError> for ConnectionConfigError {
-    fn from(_: SecretsError) -> Self {
-        ConnectionConfigError::ConfigSerdeError("Secrets error.".to_string())
+    fn from(err: SecretsError) -> Self {
+        ConnectionConfigError::ConfigSerdeError(format!("Secrets error: {:?}", err))
     }
 }
