@@ -16,3 +16,5 @@ __pycache__/
 
 /pooly_configs/
 pooly_configs
+/stored/
+stored/

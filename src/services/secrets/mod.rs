@@ -13,6 +13,7 @@ use sharks::{Share, Sharks};
 use crate::models::errors::SecretsError;
 use crate::models::secrets::{EncryptionKey, KEY_LENGTH, MasterKey, MasterKeyShare};
 use crate::services::secrets::files::SecretFilesService;
+use crate::services::secrets::shares::MasterKeySharesService;
 
 const MINIMUM_SHARES_THRESHOLD: u8 = 8;
 
@@ -21,21 +22,30 @@ mod files;
 
 pub struct SecretsService {
 
-    encryption_key: AtomicPtr<EncryptionKey>,
-    is_sealed: AtomicBool,
+    encryption_key: AtomicPtr<XChaCha20Poly1305>,
     files_service: SecretFilesService,
+    is_sealed: AtomicBool,
+    shares_service: Arc<MasterKeySharesService>,
     sys_random: Arc<SystemRandom>,
 
 }
 
 impl SecretsService {
 
-    pub fn new(files_service: SecretFilesService,
+    pub fn new(shares_service: Arc<MasterKeySharesService>,
                sys_random: Arc<SystemRandom>) -> SecretsService {
+        SecretsService::from(SecretFilesService::new(), shares_service, sys_random)
+    }
+
+    pub fn from(files_service: SecretFilesService,
+                shares_service: Arc<MasterKeySharesService>,
+                sys_random: Arc<SystemRandom>) -> SecretsService {
         SecretsService {
-            encryption_key: AtomicPtr::new(&mut EncryptionKey::empty()),
-            is_sealed: AtomicBool::new(true),
+            encryption_key: AtomicPtr::new(
+                &mut XChaCha20Poly1305::new(&GenericArray::default())),
             files_service,
+            is_sealed: AtomicBool::new(true),
+            shares_service,
             sys_random
         }
     }
@@ -70,13 +80,14 @@ impl SecretsService {
         )
     }
 
-    pub fn unseal(&self,
-                  master_key_shares: &Vec<MasterKeyShare>) -> Result<(), SecretsError> {
+    pub fn unseal(&self) -> Result<(), SecretsError> {
+        let master_key_shares = self.shares_service.get();
+
         let sharks = Sharks(MINIMUM_SHARES_THRESHOLD);
 
         let mut shares = vec![];
 
-        for master_key_share in master_key_shares {
+        for master_key_share in master_key_shares.iter() {
             shares.push(
                 Share::try_from(master_key_share.get_value())
                     .map_err(|err| SecretsError::MasterKeyShareError(err.to_string()))?);
@@ -93,8 +104,11 @@ impl SecretsService {
                               &Vec::new(),
                               &mut enc_key)?;
 
-        self.encryption_key.store(&mut EncryptionKey::new(enc_key),
-                                  Ordering::Relaxed);
+        self.encryption_key.store(
+            &mut XChaCha20Poly1305::new(
+                GenericArray::from_slice(
+                    EncryptionKey::new(enc_key).get_value())),
+            Ordering::Relaxed);
 
         self.is_sealed.store(false, Ordering::Relaxed);
 

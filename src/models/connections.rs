@@ -13,3 +13,20 @@ pub struct ConnectionConfig {
     pub max_connections: i32
 
 }
+
+#[derive(PartialEq, Hash, Serialize, Deserialize, Debug)]
+pub enum Versioned<T> {
+
+    V1(T)
+
+}
+
+impl<T> Versioned<T> {
+
+    pub fn unwrap(self) -> T {
+        match self {
+            Versioned::V1(val) => val
+        }
+    }
+
+}

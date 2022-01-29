@@ -26,8 +26,8 @@ impl MasterKeySharesService {
         self.shares.remove(&share);
     }
 
-    pub fn get_copy(&self) -> HashSet<MasterKeyShare> {
-        self.shares.iter().map(|key_share| key_share.clone()).collect()
+    pub fn get(&self) -> &DashSet<MasterKeyShare> {
+        &self.shares
     }
 
     pub fn clear(&self) {
