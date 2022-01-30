@@ -15,9 +15,7 @@ const NONCE_SIZE: usize = 24;
 
 pub struct EncryptionService {
 
-    aad: ZeroizeWrapper,
-    encryption_key: RwLock<XChaCha20Poly1305>,
-    is_sealed: AtomicBool,
+    key_with_aad: RwLock<KeyWithAad>,
     vec_generator: Arc<VecGenerator>
 
 }
@@ -28,11 +26,13 @@ impl EncryptionService {
                    payload: &Vec<u8>) -> Result<EncryptedPayload, SecretsError> {
         let nonce = self.generate_nonce()?;
 
-        let encrypted = self.encryption_key.read()?
+        let key_with_aad = self.key_with_aad.read()?;
+
+        let encrypted = key_with_aad.key
             .encrypt(&GenericArray::from_slice(&nonce),
                      Payload {
                          msg: payload,
-                         aad: &Vec::new()
+                         aad: key_with_aad.aad.get_value()
                      })?;
 
         Ok(EncryptedPayload::new(nonce, encrypted))
@@ -40,31 +40,41 @@ impl EncryptionService {
 
     pub fn decrypt(&self,
                    target: &EncryptedPayload) -> Result<ZeroizeWrapper, SecretsError> {
-        let decrypted = self.encryption_key.read()?
-            .decrypt(&GenericArray::from_slice(target.get_nonce()),
+        let key_with_aad = self.key_with_aad.read()?;
+
+        let decrypted = key_with_aad.key
+                .decrypt(&GenericArray::from_slice(target.get_nonce()),
                      Payload {
                          msg: target.get_payload(),
-                         aad: &Vec::new()
+                         aad: key_with_aad.aad.get_value()
                      })?;
 
         Ok(ZeroizeWrapper::new(decrypted))
     }
 
-    pub fn unseal(&self, enc_key: EncryptionKey) -> Result<(), SecretsError> {
-        *self.encryption_key.write()? =
-            XChaCha20Poly1305::new(
-                GenericArray::from_slice(enc_key.get_value()));
+    pub fn set_key(&self,
+                   aad: ZeroizeWrapper,
+                   enc_key: EncryptionKey) -> Result<(), SecretsError> {
+        *self.key_with_aad.write()? =
+            KeyWithAad {
+                aad,
+                key: XChaCha20Poly1305::new(
+                    GenericArray::from_slice(enc_key.get_value()))
+            };
 
         Ok(())
-    }
-
-    pub fn is_sealed(&self) -> bool {
-        self.is_sealed.load(Ordering::Relaxed)
     }
 
     fn generate_nonce(&self) -> Result<Vec<u8>, SecretsError> {
         self.vec_generator.generate_random(NONCE_SIZE)
     }
+
+}
+
+struct KeyWithAad {
+
+    aad: ZeroizeWrapper,
+    key: XChaCha20Poly1305
 
 }
 
@@ -81,7 +91,7 @@ mod tests {
 
     use crate::models::connections::ZeroizeWrapper;
     use crate::models::secrets::{EncryptionKey, KEY_LENGTH};
-    use crate::services::secrets::encryption::EncryptionService;
+    use crate::services::secrets::encryption::{EncryptionService, KeyWithAad};
     use crate::services::secrets::generate::VecGenerator;
 
     #[test]
@@ -103,11 +113,12 @@ mod tests {
         let key: Vec<u8> = vec![2; KEY_LENGTH];
 
         EncryptionService {
-            aad: ZeroizeWrapper::new(vec![1; 10]),
-            encryption_key:
-            RwLock::new(XChaCha20Poly1305::new(
-                GenericArray::from_slice(&key))),
-            is_sealed: AtomicBool::new(false),
+            key_with_aad:
+            RwLock::new(KeyWithAad {
+                aad: ZeroizeWrapper::new(vec![1; 10]),
+                key: XChaCha20Poly1305::new(
+                GenericArray::from_slice(&key))
+            }),
             vec_generator:
             Arc::new(
                 VecGenerator::new(
