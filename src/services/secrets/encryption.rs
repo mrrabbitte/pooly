@@ -30,10 +30,10 @@ impl EncryptionService {
 
         let encrypted = self.encryption_key.read()?
             .encrypt(&GenericArray::from_slice(&nonce),
-                                 Payload {
-                                     msg: payload,
-                                     aad: &Vec::new()
-                                 })?;
+                     Payload {
+                         msg: payload,
+                         aad: &Vec::new()
+                     })?;
 
         Ok(EncryptedPayload::new(nonce, encrypted))
     }
@@ -42,10 +42,10 @@ impl EncryptionService {
                    target: &EncryptedPayload) -> Result<ZeroizeWrapper, SecretsError> {
         let decrypted = self.encryption_key.read()?
             .decrypt(&GenericArray::from_slice(target.get_nonce()),
-                                 Payload {
-                                     msg: target.get_payload(),
-                                     aad: &Vec::new()
-                                 })?;
+                     Payload {
+                         msg: target.get_payload(),
+                         aad: &Vec::new()
+                     })?;
 
         Ok(ZeroizeWrapper::new(decrypted))
     }
@@ -90,11 +90,11 @@ mod tests {
 
         let payload = vec![5; 256];
 
-         let encrypted = encryption_service.encrypt(&payload).unwrap();
+        let encrypted = encryption_service.encrypt(&payload).unwrap();
 
-         let decrypted = encryption_service
-             .decrypt(&encrypted)
-             .unwrap();
+        let decrypted = encryption_service
+            .decrypt(&encrypted)
+            .unwrap();
 
         assert_eq!(&payload, decrypted.get_value());
     }
@@ -105,8 +105,8 @@ mod tests {
         EncryptionService {
             aad: ZeroizeWrapper::new(vec![1; 10]),
             encryption_key:
-                RwLock::new(XChaCha20Poly1305::new(
-                    GenericArray::from_slice(&key))),
+            RwLock::new(XChaCha20Poly1305::new(
+                GenericArray::from_slice(&key))),
             is_sealed: AtomicBool::new(false),
             vec_generator:
             Arc::new(
