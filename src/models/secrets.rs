@@ -6,6 +6,7 @@ pub const KEY_LENGTH: usize = 32;
 
 #[derive(Zeroize)]
 #[zeroize(drop)]
+#[derive(PartialEq, Eq, Clone, Hash, Debug)]
 pub struct EncryptionKey {
     value: Vec<u8>
 }
@@ -28,6 +29,15 @@ pub struct MasterKeyShare {
 #[derive(PartialEq, Eq, Clone, Hash, Serialize, Deserialize)]
 pub struct MasterKeySharePayload {
     value: String
+}
+
+#[derive(Zeroize)]
+#[zeroize(drop)]
+pub struct EncryptedPayload {
+
+    nonce: Vec<u8>,
+    payload: Vec<u8>
+
 }
 
 impl EncryptionKey {
@@ -74,6 +84,26 @@ impl MasterKeyShare {
 
     pub fn get_value(&self) -> &[u8] {
         &self.value
+    }
+
+}
+
+impl EncryptedPayload {
+
+    pub fn new(nonce: Vec<u8>,
+               payload: Vec<u8>) -> EncryptedPayload {
+        EncryptedPayload {
+            nonce,
+            payload
+        }
+    }
+
+    pub fn get_nonce(&self) -> &Vec<u8> {
+        &self.nonce
+    }
+
+    pub fn get_payload(&self) -> &Vec<u8> {
+        &self.payload
     }
 
 }

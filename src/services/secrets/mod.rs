@@ -10,15 +10,20 @@ use chacha20poly1305::XChaCha20Poly1305;
 use ring::rand::{SecureRandom, SystemRandom};
 use sharks::{Share, Sharks};
 
+use crate::models::connections::ZeroizeWrapper;
 use crate::models::errors::SecretsError;
 use crate::models::secrets::{EncryptionKey, KEY_LENGTH, MasterKey, MasterKeyShare, MasterKeySharePayload};
 use crate::services::secrets::files::SecretFilesService;
 use crate::services::secrets::shares::MasterKeySharesService;
 
 const MINIMUM_SHARES_THRESHOLD: u8 = 8;
+const NONCE_SIZE: usize = 24;
 
 pub mod shares;
+
 mod files;
+mod generate;
+mod encryption;
 
 pub struct SecretsService {
 
@@ -51,9 +56,11 @@ impl SecretsService {
     }
 
     pub fn encrypt(&self, target: &Vec<u8>) -> Result<Vec<u8>, SecretsError> {
+        let nonce = self.generate_nonce()?;
+
         self.apply(
             |algo| algo.encrypt(
-                &GenericArray::default(),
+                &GenericArray::from_slice(nonce.get_value()),
                 Payload {
                     msg: target,
                     aad: &Vec::new()
@@ -61,9 +68,11 @@ impl SecretsService {
     }
 
     pub fn decrypt(&self, target: &[u8]) -> Result<Vec<u8>, SecretsError> {
+        let nonce = self.generate_nonce()?;
+
         self.apply(
             |algo| algo.decrypt(
-                &GenericArray::default(),
+                &GenericArray::from_slice(nonce.get_value()),
                 Payload {
                     msg: target,
                     aad: &Vec::new()
@@ -82,7 +91,7 @@ impl SecretsService {
         let encrypted_enc_key =
             XChaCha20Poly1305::new(
                 GenericArray::from_slice(master_key.get_value()))
-                .encrypt(&GenericArray::default(),
+                .encrypt(&GenericArray::from_slice(self.generate_nonce()?.get_value()),
                          Payload {
                              msg: enc_key.get_value(),
                              aad: &Vec::new()
@@ -126,9 +135,10 @@ impl SecretsService {
         let mut enc_key = self.files_service.read()?;
 
         XChaCha20Poly1305::new(GenericArray::from_slice(master_key.get_value()))
-            .decrypt_in_place(&GenericArray::default(),
-                              &Vec::new(),
-                              &mut enc_key)?;
+            .decrypt_in_place(
+                GenericArray::from_slice(self.generate_nonce()?.get_value()),
+                &Vec::new(),
+                &mut enc_key)?;
 
         self.encryption_key.store(
             &mut XChaCha20Poly1305::new(
@@ -160,6 +170,10 @@ impl SecretsService {
         }
     }
 
+    fn generate_nonce(&self) -> Result<ZeroizeWrapper, SecretsError> {
+        Ok(ZeroizeWrapper::new(self.generate_random(NONCE_SIZE)?))
+    }
+
     fn generate_encryption_key(&self) -> Result<EncryptionKey, SecretsError> {
         Ok(EncryptionKey::new(self.generate_key()?))
     }
@@ -169,7 +183,12 @@ impl SecretsService {
     }
 
     fn generate_key(&self) -> Result<Vec<u8>, SecretsError> {
-        let mut value = vec![0; KEY_LENGTH];
+        self.generate_random(KEY_LENGTH)
+    }
+
+    fn generate_random(&self,
+                       size: usize) -> Result<Vec<u8>, SecretsError> {
+        let mut value = vec![0; size];
 
         self.sys_random.fill(&mut value)?;
 

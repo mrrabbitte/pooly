@@ -1,4 +1,6 @@
 use std::fmt::format;
+use std::sync::PoisonError;
+
 use bincode::ErrorKind;
 use deadpool::managed::PoolError;
 use deadpool_postgres::CreatePoolError;
@@ -41,13 +43,14 @@ pub enum ConnectionConfigError {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum SecretsError {
+    AeadError(String),
     AlreadyInitialized,
     AlreadyUnsealed,
-    MasterKeyShareError(String),
-    Unspecified,
-    LockError,
     FileReadError,
-    Sealed
+    LockError,
+    MasterKeyShareError(String),
+    Sealed,
+    Unspecified
 }
 
 impl ConnectionConfigError {
@@ -150,13 +153,19 @@ impl From<Unspecified> for SecretsError {
 }
 
 impl From<chacha20poly1305::aead::Error> for SecretsError {
-    fn from(_: chacha20poly1305::aead::Error) -> Self {
-        SecretsError::Unspecified
+    fn from(err: chacha20poly1305::aead::Error) -> Self {
+        SecretsError::AeadError(format!("{:?}", err))
     }
 }
 
 impl From<SecretsError> for ConnectionConfigError {
     fn from(err: SecretsError) -> Self {
         ConnectionConfigError::ConfigSerdeError(format!("Secrets error: {:?}", err))
+    }
+}
+
+impl<T> From<PoisonError<T>> for SecretsError {
+    fn from(_: PoisonError<T>) -> Self {
+        SecretsError::LockError
     }
 }
