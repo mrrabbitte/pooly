@@ -12,92 +12,95 @@ use sharks::{Share, Sharks};
 
 use crate::models::connections::ZeroizeWrapper;
 use crate::models::errors::SecretsError;
-use crate::models::secrets::{EncryptionKey, KEY_LENGTH, MasterKey, MasterKeyShare, MasterKeySharePayload};
+use crate::models::secrets::{EncryptedPayload, EncryptionKey, KEY_LENGTH, MasterKey, MasterKeyShare, MasterKeySharePayload};
+use crate::services::secrets::encryption::EncryptionService;
 use crate::services::secrets::files::SecretFilesService;
+use crate::services::secrets::generate::VecGenerator;
 use crate::services::secrets::shares::MasterKeySharesService;
 
 const MINIMUM_SHARES_THRESHOLD: u8 = 8;
 const NONCE_SIZE: usize = 24;
 
+pub mod generate;
 pub mod shares;
 
 mod files;
-mod generate;
 mod encryption;
 
 pub struct SecretsService {
 
-    encryption_key: AtomicPtr<XChaCha20Poly1305>,
+    encryption_service: EncryptionService,
     files_service: SecretFilesService,
     is_sealed: AtomicBool,
     shares_service: Arc<MasterKeySharesService>,
-    sys_random: Arc<SystemRandom>,
+    vec_generator: Arc<VecGenerator>,
 
 }
 
 impl SecretsService {
 
     pub fn new(shares_service: Arc<MasterKeySharesService>,
-               sys_random: Arc<SystemRandom>) -> SecretsService {
-        SecretsService::from(SecretFilesService::new(), shares_service, sys_random)
+               vec_generator: Arc<VecGenerator>) -> SecretsService {
+        SecretsService::from(SecretFilesService::new(), shares_service, vec_generator)
     }
 
     pub fn from(files_service: SecretFilesService,
                 shares_service: Arc<MasterKeySharesService>,
-                sys_random: Arc<SystemRandom>) -> SecretsService {
+                vec_generator: Arc<VecGenerator>) -> SecretsService {
         SecretsService {
-            encryption_key: AtomicPtr::new(
-                &mut XChaCha20Poly1305::new(&GenericArray::default())),
+            encryption_service: EncryptionService::new(vec_generator.clone()),
             files_service,
             is_sealed: AtomicBool::new(true),
             shares_service,
-            sys_random
+            vec_generator
         }
     }
 
-    pub fn encrypt(&self, target: &Vec<u8>) -> Result<Vec<u8>, SecretsError> {
-        let nonce = self.generate_nonce()?;
+    pub fn encrypt(&self, target: &Vec<u8>) -> Result<EncryptedPayload, SecretsError> {
+        if self.is_sealed() {
+            return Err(SecretsError::Sealed);
+        }
 
-        self.apply(
-            |algo| algo.encrypt(
-                &GenericArray::from_slice(nonce.get_value()),
-                Payload {
-                    msg: target,
-                    aad: &Vec::new()
-                }))
+        self.encryption_service.encrypt(target)
     }
 
-    pub fn decrypt(&self, target: &[u8]) -> Result<Vec<u8>, SecretsError> {
-        let nonce = self.generate_nonce()?;
+    pub fn decrypt(&self, target: &EncryptedPayload) -> Result<ZeroizeWrapper, SecretsError> {
+        if self.is_sealed() {
+            return Err(SecretsError::Sealed);
+        }
 
-        self.apply(
-            |algo| algo.decrypt(
-                &GenericArray::from_slice(nonce.get_value()),
-                Payload {
-                    msg: target,
-                    aad: &Vec::new()
-                }))
+        self.encryption_service.decrypt(target)
     }
 
     pub fn initialize(&self) -> Result<Vec<MasterKeySharePayload>, SecretsError> {
-        if !self.is_sealed() || self.files_service.exists()? {
+        if !self.is_sealed()
+            || self.files_service.exists_key()?
+            || self.files_service.exists_aad()? {
             return Err(SecretsError::AlreadyInitialized);
         }
 
-        let enc_key = self.generate_encryption_key()?;
+        let enc_key = EncryptionKey::new(
+            self.vec_generator.generate_random(KEY_LENGTH)?);
 
-        let master_key = self.generate_master_key()?;
+        let master_key = MasterKey::new(
+            self.vec_generator.generate_random(KEY_LENGTH)?);
+
+        let aad = self.vec_generator.generate_random(KEY_LENGTH)?;
+
+        let nonce = self.vec_generator.generate_random(NONCE_SIZE)?;
 
         let encrypted_enc_key =
             XChaCha20Poly1305::new(
                 GenericArray::from_slice(master_key.get_value()))
-                .encrypt(&GenericArray::from_slice(self.generate_nonce()?.get_value()),
+                .encrypt(&GenericArray::from_slice(&nonce),
                          Payload {
                              msg: enc_key.get_value(),
-                             aad: &Vec::new()
+                             aad: &aad
                          })?;
 
-        self.files_service.store(encrypted_enc_key)?;
+        self.files_service.store_key(
+            EncryptedPayload::new(nonce, encrypted_enc_key))?;
+        self.files_service.store_aad(aad);
 
         let sharks = Sharks(MINIMUM_SHARES_THRESHOLD);
 
@@ -132,19 +135,19 @@ impl SecretsService {
             sharks.recover(&shares)
                 .map_err(|err| SecretsError::MasterKeyShareError(err.to_string()))?);
 
-        let mut enc_key = self.files_service.read()?;
+        let mut encrypted_enc_key = self.files_service.read_key()?;
+        let aad = self.files_service.read_aad()?;
 
-        XChaCha20Poly1305::new(GenericArray::from_slice(master_key.get_value()))
-            .decrypt_in_place(
-                GenericArray::from_slice(self.generate_nonce()?.get_value()),
-                &Vec::new(),
-                &mut enc_key)?;
+        let enc_key =
+            XChaCha20Poly1305::new(GenericArray::from_slice(master_key.get_value()))
+            .decrypt(&GenericArray::from_slice(encrypted_enc_key.get_nonce()),
+                     Payload {
+                         msg: encrypted_enc_key.get_payload(),
+                         aad: &aad
+                     })?;
 
-        self.encryption_key.store(
-            &mut XChaCha20Poly1305::new(
-                GenericArray::from_slice(
-                    EncryptionKey::new(enc_key).get_value())),
-            Ordering::Relaxed);
+        self.encryption_service.set_key(
+            ZeroizeWrapper::new(aad), EncryptionKey::new(enc_key))?;
 
         self.is_sealed.store(false, Ordering::Relaxed);
 
@@ -153,46 +156,6 @@ impl SecretsService {
 
     pub fn is_sealed(&self) -> bool {
         self.is_sealed.load(Ordering::Relaxed)
-    }
-
-    fn apply<T>(&self, operation: T) -> Result<Vec<u8>, SecretsError>
-        where T: FnOnce(&XChaCha20Poly1305) -> Result<Vec<u8>, Error> {
-        if self.is_sealed() {
-            return Err(SecretsError::Sealed)
-        }
-
-        unsafe {
-            match self.encryption_key.load(Ordering::Relaxed).as_ref() {
-                Some(algo) =>
-                    Ok( operation(algo)?),
-                None => Err(SecretsError::Unspecified)
-            }
-        }
-    }
-
-    fn generate_nonce(&self) -> Result<ZeroizeWrapper, SecretsError> {
-        Ok(ZeroizeWrapper::new(self.generate_random(NONCE_SIZE)?))
-    }
-
-    fn generate_encryption_key(&self) -> Result<EncryptionKey, SecretsError> {
-        Ok(EncryptionKey::new(self.generate_key()?))
-    }
-
-    fn generate_master_key(&self) -> Result<MasterKey, SecretsError> {
-        Ok(MasterKey::new(self.generate_key()?))
-    }
-
-    fn generate_key(&self) -> Result<Vec<u8>, SecretsError> {
-        self.generate_random(KEY_LENGTH)
-    }
-
-    fn generate_random(&self,
-                       size: usize) -> Result<Vec<u8>, SecretsError> {
-        let mut value = vec![0; size];
-
-        self.sys_random.fill(&mut value)?;
-
-        Ok(value)
     }
 
 }

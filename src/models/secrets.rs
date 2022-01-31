@@ -6,7 +6,7 @@ pub const KEY_LENGTH: usize = 32;
 
 #[derive(Zeroize)]
 #[zeroize(drop)]
-#[derive(PartialEq, Eq, Clone, Hash, Debug)]
+#[derive(PartialEq, Eq)]
 pub struct EncryptionKey {
     value: Vec<u8>
 }
@@ -33,6 +33,7 @@ pub struct MasterKeySharePayload {
 
 #[derive(Zeroize)]
 #[zeroize(drop)]
+#[derive(PartialEq, Eq, Clone, Hash, Serialize, Deserialize)]
 pub struct EncryptedPayload {
 
     nonce: Vec<u8>,

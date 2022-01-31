@@ -8,7 +8,7 @@ use chacha20poly1305::XChaCha20Poly1305;
 
 use crate::models::connections::ZeroizeWrapper;
 use crate::models::errors::SecretsError;
-use crate::models::secrets::{EncryptedPayload, EncryptionKey};
+use crate::models::secrets::{EncryptedPayload, EncryptionKey, KEY_LENGTH};
 use crate::services::secrets::generate::VecGenerator;
 
 const NONCE_SIZE: usize = 24;
@@ -22,9 +22,19 @@ pub struct EncryptionService {
 
 impl EncryptionService {
 
+    pub fn new(vec_generator: Arc<VecGenerator>) -> EncryptionService {
+        EncryptionService {
+            key_with_aad: RwLock::new(KeyWithAad {
+                aad: ZeroizeWrapper::new(Vec::new()),
+                key: XChaCha20Poly1305::new(GenericArray::from_slice(&vec![0; KEY_LENGTH]))
+            }),
+            vec_generator
+        }
+    }
+
     pub fn encrypt(&self,
                    payload: &Vec<u8>) -> Result<EncryptedPayload, SecretsError> {
-        let nonce = self.generate_nonce()?;
+        let nonce = self.vec_generator.generate_random(NONCE_SIZE)?;
 
         let key_with_aad = self.key_with_aad.read()?;
 
@@ -63,10 +73,6 @@ impl EncryptionService {
             };
 
         Ok(())
-    }
-
-    fn generate_nonce(&self) -> Result<Vec<u8>, SecretsError> {
-        self.vec_generator.generate_random(NONCE_SIZE)
     }
 
 }

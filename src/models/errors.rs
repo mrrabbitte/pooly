@@ -50,6 +50,7 @@ pub enum SecretsError {
     LockError,
     MasterKeyShareError(String),
     Sealed,
+    SerdeError(String),
     Unspecified
 }
 
@@ -167,5 +168,11 @@ impl From<SecretsError> for ConnectionConfigError {
 impl<T> From<PoisonError<T>> for SecretsError {
     fn from(_: PoisonError<T>) -> Self {
         SecretsError::LockError
+    }
+}
+
+impl From<Box<bincode::ErrorKind>> for SecretsError {
+    fn from(err: Box<ErrorKind>) -> Self {
+        SecretsError::SerdeError(format!("{:?}", err))
     }
 }
