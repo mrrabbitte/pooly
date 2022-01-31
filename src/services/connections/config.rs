@@ -8,6 +8,7 @@ use sled::{Db, IVec};
 
 use crate::models::connections::{ConnectionConfig, Versioned, ZeroizeWrapper};
 use crate::models::errors::ConnectionConfigError;
+use crate::models::secrets::EncryptedPayload;
 use crate::services::secrets::SecretsService;
 
 pub struct ConnectionConfigService {
@@ -29,16 +30,21 @@ impl ConnectionConfigService {
     }
 
     pub fn get(&self,
-               db_name: &str) -> Result<Option<Versioned<ConnectionConfig>>, ConnectionConfigError> {
+               db_name: &str) -> Result<Option<ConnectionConfig>, ConnectionConfigError> {
         match self.configs.get(db_name) {
             Ok(None) => Ok(None),
-            Ok(Some(config_bytes)) => {
-                let decrypted =
-                    ZeroizeWrapper::new(
-                        self.secrets_service.decrypt(config_bytes.as_ref())?);
+            Ok(Some(enc_bytes)) => {
+                let encrypted_payload =
+                    bincode::deserialize(enc_bytes.as_ref())?;
 
-                Ok(Some(bincode::deserialize(decrypted.get_value())?))
-            },
+                let decrypted =
+                    self.secrets_service.decrypt(&encrypted_payload)?;
+
+                let versioned_config: Versioned<ConnectionConfig> =
+                    bincode::deserialize(decrypted.get_value())?;
+
+                Ok(Some(versioned_config.unwrap()))
+            }
             Err(err) => Err(ConnectionConfigError::ConfigStorageError(err.to_string()))
         }
     }
@@ -50,7 +56,7 @@ impl ConnectionConfigService {
 
         self.configs.insert(
             db_name,
-            self.secrets_service.encrypt(&serialized)?
+            bincode::serialize(&self.secrets_service.encrypt(&serialized)?)?
         )?;
 
         self.configs.flush()?;

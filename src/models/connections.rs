@@ -16,6 +16,7 @@ pub struct ConnectionConfig {
 
 #[derive(Zeroize)]
 #[zeroize(drop)]
+#[derive(Clone)]
 pub struct ZeroizeWrapper {
 
     value: Vec<u8>
