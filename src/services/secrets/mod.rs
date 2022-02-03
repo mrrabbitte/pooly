@@ -80,10 +80,12 @@ impl SecretsService {
         }
 
         let enc_key = EncryptionKey::new(
-            self.vec_generator.generate_random(KEY_LENGTH)?);
+            self.vec_generator.generate_random(KEY_LENGTH)?
+        );
 
         let master_key = MasterKey::new(
-            self.vec_generator.generate_random(KEY_LENGTH)?);
+            self.vec_generator.generate_random(KEY_LENGTH)?
+        );
 
         let aad = self.vec_generator.generate_random(KEY_LENGTH)?;
 
@@ -100,7 +102,7 @@ impl SecretsService {
 
         self.files_service.store_key(
             EncryptedPayload::new(nonce, encrypted_enc_key))?;
-        self.files_service.store_aad(aad);
+        self.files_service.store_aad(aad)?;
 
         let sharks = Sharks(MINIMUM_SHARES_THRESHOLD);
 
@@ -128,12 +130,15 @@ impl SecretsService {
         for master_key_share in master_key_shares.iter() {
             shares.push(
                 Share::try_from(master_key_share.get_value())
-                    .map_err(|err| SecretsError::MasterKeyShareError(err.to_string()))?);
+                    .map_err(|err| SecretsError::MasterKeyShareError(err.to_string()))?
+            );
         }
 
         let master_key = MasterKey::new(
-            sharks.recover(&shares)
-                .map_err(|err| SecretsError::MasterKeyShareError(err.to_string()))?);
+            sharks
+                .recover(&shares)
+                .map_err(|err| SecretsError::MasterKeyShareError(err.to_string()))?
+        );
 
         let mut encrypted_enc_key = self.files_service.read_key()?;
         let aad = self.files_service.read_aad()?;
