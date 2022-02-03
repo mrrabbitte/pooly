@@ -1,5 +1,9 @@
 # pooly
 
-A simple protobuf -> Postgres service
+WIP. The roadmap includes:
 
-# Not production ready!
+- [ ] Batch requests + trasactions support;
+- [ ] Java client;
+- [ ] Python client;
+- [ ] wide range of postgres types support;
+- [ ] use Vault instead of local secrets keeping.
