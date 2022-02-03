@@ -1,6 +1,6 @@
 # pooly
 
-A protobuf to Postgres + connection pooling middleware.
+A protobuf to Postgres adapter + connection pooling middleware.
 
 ## Project status
 
