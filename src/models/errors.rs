@@ -14,7 +14,7 @@ use crate::models::payloads::error_response::ErrorType;
 #[derive(Debug)]
 pub enum QueryError {
 
-    ConnectionConfigError(String),
+    ConnectionConfigError(String, u16),
     CreatePoolError(String),
     UnknownDatabaseConnection(String),
     PoolError(String),
@@ -38,6 +38,7 @@ pub enum ConnectionConfigError {
 
     ConfigStorageError(String),
     ConfigSerdeError(String),
+    SecretsError(String)
 
 }
 
@@ -59,7 +60,8 @@ impl ConnectionConfigError {
     fn get_message(&self) -> &str {
         match self {
             ConnectionConfigError::ConfigStorageError(message) => message,
-            ConnectionConfigError::ConfigSerdeError(message) => message
+            ConnectionConfigError::ConfigSerdeError(message) => message,
+            ConnectionConfigError::SecretsError(message) => message
         }
     }
 
@@ -77,6 +79,18 @@ impl QueryError {
         }
     }
 
+    pub fn get_code(&self) -> u16 {
+        match self {
+            QueryError::ConnectionConfigError(_, code) => *code,
+            QueryError::CreatePoolError(_) => 500,
+            QueryError::UnknownDatabaseConnection(_) => 400,
+            QueryError::PoolError(_) => 500,
+            QueryError::PostgresError(_) => 500,
+            QueryError::WrongNumParams(_, _) => 400,
+            QueryError::UnknownPostgresValueType(_) => 500
+        }
+    }
+
     fn get_error_type(&self) -> ErrorType {
         match self {
             QueryError::UnknownDatabaseConnection(_) => ErrorType::MissingConnection,
@@ -85,7 +99,7 @@ impl QueryError {
             QueryError::WrongNumParams(_, _) => ErrorType::WrongNumOfParams,
             QueryError::UnknownPostgresValueType(_) => ErrorType::UnknownPgValueType,
             QueryError::CreatePoolError(_) => ErrorType::CreatePoolError,
-            QueryError::ConnectionConfigError(_) => ErrorType::ConnectionConfigError
+            QueryError::ConnectionConfigError(_, _) => ErrorType::ConnectionConfigError
         }
     }
 
@@ -100,7 +114,7 @@ impl QueryError {
             QueryError::UnknownPostgresValueType(pg_type) =>
                 format!("Unknown pg type: {}", pg_type),
             QueryError::CreatePoolError(message) => message,
-            QueryError::ConnectionConfigError(message) => message
+            QueryError::ConnectionConfigError(message, _) => message
         }
     }
 
@@ -120,7 +134,12 @@ impl From<Error> for QueryError {
 
 impl From<ConnectionConfigError> for QueryError {
     fn from(err: ConnectionConfigError) -> Self {
-       QueryError::ConnectionConfigError(err.get_message().to_string())
+        let message = err.get_message().to_string();
+        let code = match err {
+            ConnectionConfigError::SecretsError(_) => 401,
+            _ => 500
+        };
+       QueryError::ConnectionConfigError(message, code)
     }
 }
 
@@ -161,7 +180,7 @@ impl From<chacha20poly1305::aead::Error> for SecretsError {
 
 impl From<SecretsError> for ConnectionConfigError {
     fn from(err: SecretsError) -> Self {
-        ConnectionConfigError::ConfigSerdeError(format!("Secrets error: {:?}", err))
+        ConnectionConfigError::SecretsError(format!("Secrets error: {:?}", err))
     }
 }
 

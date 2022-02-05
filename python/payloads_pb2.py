@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='payloads.proto',
   package='payloads.proto',
   syntax='proto3',
-  serialized_pb=_b('\n\x0epayloads.proto\x12\x0epayloads.proto\"J\n\x0cValueWrapper\x12\x10\n\x06string\x18\x01 \x01(\tH\x00\x12\x0e\n\x04int8\x18\x02 \x01(\x03H\x00\x12\x0f\n\x05\x62ytes\x18\x03 \x01(\x0cH\x00\x42\x07\n\x05value\"\x8d\x01\n\x0bJsonWrapper\x12\x33\n\x04\x62ody\x18\x01 \x03(\x0b\x32%.payloads.proto.JsonWrapper.BodyEntry\x1aI\n\tBodyEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12+\n\x05value\x18\x02 \x01(\x0b\x32\x1c.payloads.proto.ValueWrapper:\x02\x38\x01\";\n\x0bRowResponse\x12,\n\x06values\x18\x01 \x03(\x0b\x32\x1c.payloads.proto.ValueWrapper\"W\n\x14QuerySuccessResponse\x12\x14\n\x0c\x63olumn_names\x18\x01 \x03(\t\x12)\n\x04rows\x18\x02 \x03(\x0b\x32\x1b.payloads.proto.RowResponse\"\xd7\x01\n\rErrorResponse\x12\x0f\n\x07message\x18\x01 \x01(\t\x12\x16\n\x0e\x63orrelation_id\x18\x02 \x01(\t\x12;\n\nerror_type\x18\x03 \x01(\x0e\x32\'.payloads.proto.ErrorResponse.ErrorType\"`\n\tErrorType\x12\x16\n\x12MISSING_CONNECTION\x10\x00\x12\x0e\n\nPOOL_ERROR\x10\x01\x12\x12\n\x0ePOSTGRES_ERROR\x10\x02\x12\x17\n\x13WRONG_NUM_OF_PARAMS\x10\x03\"\x83\x01\n\rQueryResponse\x12\x37\n\x07success\x18\x01 \x01(\x0b\x32$.payloads.proto.QuerySuccessResponseH\x00\x12.\n\x05\x65rror\x18\x03 \x01(\x0b\x32\x1d.payloads.proto.ErrorResponseH\x00\x42\t\n\x07payload\"Z\n\x0cQueryRequest\x12\r\n\x05\x64\x62_id\x18\x01 \x01(\t\x12\r\n\x05query\x18\x02 \x01(\t\x12,\n\x06params\x18\x03 \x03(\x0b\x32\x1c.payloads.proto.ValueWrapperb\x06proto3')
+  serialized_pb=_b('\n\x0epayloads.proto\x12\x0epayloads.proto\"J\n\x0cValueWrapper\x12\x10\n\x06string\x18\x01 \x01(\tH\x00\x12\x0e\n\x04int8\x18\x02 \x01(\x03H\x00\x12\x0f\n\x05\x62ytes\x18\x03 \x01(\x0cH\x00\x42\x07\n\x05value\"\x99\x01\n\x11JsonObjectWrapper\x12\x39\n\x04\x62ody\x18\x01 \x03(\x0b\x32+.payloads.proto.JsonObjectWrapper.BodyEntry\x1aI\n\tBodyEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12+\n\x05value\x18\x02 \x01(\x0b\x32\x1c.payloads.proto.ValueWrapper:\x02\x38\x01\";\n\x0bRowResponse\x12,\n\x06values\x18\x01 \x03(\x0b\x32\x1c.payloads.proto.ValueWrapper\"W\n\x14QuerySuccessResponse\x12\x14\n\x0c\x63olumn_names\x18\x02 \x03(\t\x12)\n\x04rows\x18\x03 \x03(\x0b\x32\x1b.payloads.proto.RowResponse\"\xa7\x02\n\rErrorResponse\x12\x0f\n\x07message\x18\x01 \x01(\t\x12\x16\n\x0e\x63orrelation_id\x18\x02 \x01(\t\x12;\n\nerror_type\x18\x03 \x01(\x0e\x32\'.payloads.proto.ErrorResponse.ErrorType\"\xaf\x01\n\tErrorType\x12\x1b\n\x17\x43ONNECTION_CONFIG_ERROR\x10\x00\x12\x15\n\x11\x43REATE_POOL_ERROR\x10\x01\x12\x16\n\x12MISSING_CONNECTION\x10\x02\x12\x0e\n\nPOOL_ERROR\x10\x03\x12\x12\n\x0ePOSTGRES_ERROR\x10\x04\x12\x17\n\x13WRONG_NUM_OF_PARAMS\x10\x05\x12\x19\n\x15UNKNOWN_PG_VALUE_TYPE\x10\x06\"\x83\x01\n\rQueryResponse\x12\x37\n\x07success\x18\x01 \x01(\x0b\x32$.payloads.proto.QuerySuccessResponseH\x00\x12.\n\x05\x65rror\x18\x02 \x01(\x0b\x32\x1d.payloads.proto.ErrorResponseH\x00\x42\t\n\x07payload\"Z\n\x0cQueryRequest\x12\r\n\x05\x64\x62_id\x18\x01 \x01(\t\x12\r\n\x05query\x18\x02 \x01(\t\x12,\n\x06params\x18\x03 \x03(\x0b\x32\x1c.payloads.proto.ValueWrapper\"A\n\x11TxBulkQueryParams\x12,\n\x06values\x18\x01 \x03(\x0b\x32\x1c.payloads.proto.ValueWrapper\"Z\n\x16TxBulkQueryRequestBody\x12\r\n\x05query\x18\x01 \x01(\t\x12\x31\n\x06params\x18\x02 \x03(\x0b\x32!.payloads.proto.TxBulkQueryParams\"\\\n\x12TxBulkQueryRequest\x12\r\n\x05\x64\x62_id\x18\x01 \x01(\t\x12\x37\n\x07queries\x18\x02 \x03(\x0b\x32&.payloads.proto.TxBulkQueryRequestBody\"=\n\x10RowResponseGroup\x12)\n\x04rows\x18\x01 \x03(\x0b\x32\x1b.payloads.proto.RowResponse\"u\n\x16TxQuerySuccessResponse\x12\x0f\n\x07ord_num\x18\x01 \x01(\x05\x12\x14\n\x0c\x63olumn_names\x18\x02 \x03(\t\x12\x34\n\nrow_groups\x18\x03 \x03(\x0b\x32 .payloads.proto.RowResponseGroup\"W\n\x1aTxBulkQuerySuccessResponse\x12\x39\n\tresponses\x18\x01 \x03(\x0b\x32&.payloads.proto.TxQuerySuccessResponse\"\x8f\x01\n\x13TxBulkQueryResponse\x12=\n\x07success\x18\x01 \x01(\x0b\x32*.payloads.proto.TxBulkQuerySuccessResponseH\x00\x12.\n\x05\x65rror\x18\x02 \x01(\x0b\x32\x1d.payloads.proto.ErrorResponseH\x00\x42\t\n\x07payloadb\x06proto3')
 )
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -32,26 +32,38 @@ _ERRORRESPONSE_ERRORTYPE = _descriptor.EnumDescriptor(
   file=DESCRIPTOR,
   values=[
     _descriptor.EnumValueDescriptor(
-      name='MISSING_CONNECTION', index=0, number=0,
+      name='CONNECTION_CONFIG_ERROR', index=0, number=0,
       options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='POOL_ERROR', index=1, number=1,
+      name='CREATE_POOL_ERROR', index=1, number=1,
       options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='POSTGRES_ERROR', index=2, number=2,
+      name='MISSING_CONNECTION', index=2, number=2,
       options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
-      name='WRONG_NUM_OF_PARAMS', index=3, number=3,
+      name='POOL_ERROR', index=3, number=3,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='POSTGRES_ERROR', index=4, number=4,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='WRONG_NUM_OF_PARAMS', index=5, number=5,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='UNKNOWN_PG_VALUE_TYPE', index=6, number=6,
       options=None,
       type=None),
   ],
   containing_type=None,
   options=None,
-  serialized_start=524,
-  serialized_end=620,
+  serialized_start=537,
+  serialized_end=712,
 )
 _sym_db.RegisterEnumDescriptor(_ERRORRESPONSE_ERRORTYPE)
 
@@ -104,22 +116,22 @@ _VALUEWRAPPER = _descriptor.Descriptor(
 )
 
 
-_JSONWRAPPER_BODYENTRY = _descriptor.Descriptor(
+_JSONOBJECTWRAPPER_BODYENTRY = _descriptor.Descriptor(
   name='BodyEntry',
-  full_name='payloads.proto.JsonWrapper.BodyEntry',
+  full_name='payloads.proto.JsonObjectWrapper.BodyEntry',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='key', full_name='payloads.proto.JsonWrapper.BodyEntry.key', index=0,
+      name='key', full_name='payloads.proto.JsonObjectWrapper.BodyEntry.key', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='value', full_name='payloads.proto.JsonWrapper.BodyEntry.value', index=1,
+      name='value', full_name='payloads.proto.JsonObjectWrapper.BodyEntry.value', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -137,19 +149,19 @@ _JSONWRAPPER_BODYENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=179,
-  serialized_end=252,
+  serialized_start=191,
+  serialized_end=264,
 )
 
-_JSONWRAPPER = _descriptor.Descriptor(
-  name='JsonWrapper',
-  full_name='payloads.proto.JsonWrapper',
+_JSONOBJECTWRAPPER = _descriptor.Descriptor(
+  name='JsonObjectWrapper',
+  full_name='payloads.proto.JsonObjectWrapper',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='body', full_name='payloads.proto.JsonWrapper.body', index=0,
+      name='body', full_name='payloads.proto.JsonObjectWrapper.body', index=0,
       number=1, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -158,7 +170,7 @@ _JSONWRAPPER = _descriptor.Descriptor(
   ],
   extensions=[
   ],
-  nested_types=[_JSONWRAPPER_BODYENTRY, ],
+  nested_types=[_JSONOBJECTWRAPPER_BODYENTRY, ],
   enum_types=[
   ],
   options=None,
@@ -168,7 +180,7 @@ _JSONWRAPPER = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=111,
-  serialized_end=252,
+  serialized_end=264,
 )
 
 
@@ -198,8 +210,8 @@ _ROWRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=254,
-  serialized_end=313,
+  serialized_start=266,
+  serialized_end=325,
 )
 
 
@@ -212,14 +224,14 @@ _QUERYSUCCESSRESPONSE = _descriptor.Descriptor(
   fields=[
     _descriptor.FieldDescriptor(
       name='column_names', full_name='payloads.proto.QuerySuccessResponse.column_names', index=0,
-      number=1, type=9, cpp_type=9, label=3,
+      number=2, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
       name='rows', full_name='payloads.proto.QuerySuccessResponse.rows', index=1,
-      number=2, type=11, cpp_type=10, label=3,
+      number=3, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -236,8 +248,8 @@ _QUERYSUCCESSRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=315,
-  serialized_end=402,
+  serialized_start=327,
+  serialized_end=414,
 )
 
 
@@ -282,8 +294,8 @@ _ERRORRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=405,
-  serialized_end=620,
+  serialized_start=417,
+  serialized_end=712,
 )
 
 
@@ -303,7 +315,7 @@ _QUERYRESPONSE = _descriptor.Descriptor(
       options=None),
     _descriptor.FieldDescriptor(
       name='error', full_name='payloads.proto.QueryResponse.error', index=1,
-      number=3, type=11, cpp_type=10, label=1,
+      number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -323,8 +335,8 @@ _QUERYRESPONSE = _descriptor.Descriptor(
       name='payload', full_name='payloads.proto.QueryResponse.payload',
       index=0, containing_type=None, fields=[]),
   ],
-  serialized_start=623,
-  serialized_end=754,
+  serialized_start=715,
+  serialized_end=846,
 )
 
 
@@ -368,8 +380,263 @@ _QUERYREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=756,
-  serialized_end=846,
+  serialized_start=848,
+  serialized_end=938,
+)
+
+
+_TXBULKQUERYPARAMS = _descriptor.Descriptor(
+  name='TxBulkQueryParams',
+  full_name='payloads.proto.TxBulkQueryParams',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='values', full_name='payloads.proto.TxBulkQueryParams.values', index=0,
+      number=1, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=940,
+  serialized_end=1005,
+)
+
+
+_TXBULKQUERYREQUESTBODY = _descriptor.Descriptor(
+  name='TxBulkQueryRequestBody',
+  full_name='payloads.proto.TxBulkQueryRequestBody',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='query', full_name='payloads.proto.TxBulkQueryRequestBody.query', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='params', full_name='payloads.proto.TxBulkQueryRequestBody.params', index=1,
+      number=2, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1007,
+  serialized_end=1097,
+)
+
+
+_TXBULKQUERYREQUEST = _descriptor.Descriptor(
+  name='TxBulkQueryRequest',
+  full_name='payloads.proto.TxBulkQueryRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='db_id', full_name='payloads.proto.TxBulkQueryRequest.db_id', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='queries', full_name='payloads.proto.TxBulkQueryRequest.queries', index=1,
+      number=2, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1099,
+  serialized_end=1191,
+)
+
+
+_ROWRESPONSEGROUP = _descriptor.Descriptor(
+  name='RowResponseGroup',
+  full_name='payloads.proto.RowResponseGroup',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='rows', full_name='payloads.proto.RowResponseGroup.rows', index=0,
+      number=1, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1193,
+  serialized_end=1254,
+)
+
+
+_TXQUERYSUCCESSRESPONSE = _descriptor.Descriptor(
+  name='TxQuerySuccessResponse',
+  full_name='payloads.proto.TxQuerySuccessResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='ord_num', full_name='payloads.proto.TxQuerySuccessResponse.ord_num', index=0,
+      number=1, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='column_names', full_name='payloads.proto.TxQuerySuccessResponse.column_names', index=1,
+      number=2, type=9, cpp_type=9, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='row_groups', full_name='payloads.proto.TxQuerySuccessResponse.row_groups', index=2,
+      number=3, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1256,
+  serialized_end=1373,
+)
+
+
+_TXBULKQUERYSUCCESSRESPONSE = _descriptor.Descriptor(
+  name='TxBulkQuerySuccessResponse',
+  full_name='payloads.proto.TxBulkQuerySuccessResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='responses', full_name='payloads.proto.TxBulkQuerySuccessResponse.responses', index=0,
+      number=1, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1375,
+  serialized_end=1462,
+)
+
+
+_TXBULKQUERYRESPONSE = _descriptor.Descriptor(
+  name='TxBulkQueryResponse',
+  full_name='payloads.proto.TxBulkQueryResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='success', full_name='payloads.proto.TxBulkQueryResponse.success', index=0,
+      number=1, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='error', full_name='payloads.proto.TxBulkQueryResponse.error', index=1,
+      number=2, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+    _descriptor.OneofDescriptor(
+      name='payload', full_name='payloads.proto.TxBulkQueryResponse.payload',
+      index=0, containing_type=None, fields=[]),
+  ],
+  serialized_start=1465,
+  serialized_end=1608,
 )
 
 _VALUEWRAPPER.oneofs_by_name['value'].fields.append(
@@ -381,9 +648,9 @@ _VALUEWRAPPER.fields_by_name['int8'].containing_oneof = _VALUEWRAPPER.oneofs_by_
 _VALUEWRAPPER.oneofs_by_name['value'].fields.append(
   _VALUEWRAPPER.fields_by_name['bytes'])
 _VALUEWRAPPER.fields_by_name['bytes'].containing_oneof = _VALUEWRAPPER.oneofs_by_name['value']
-_JSONWRAPPER_BODYENTRY.fields_by_name['value'].message_type = _VALUEWRAPPER
-_JSONWRAPPER_BODYENTRY.containing_type = _JSONWRAPPER
-_JSONWRAPPER.fields_by_name['body'].message_type = _JSONWRAPPER_BODYENTRY
+_JSONOBJECTWRAPPER_BODYENTRY.fields_by_name['value'].message_type = _VALUEWRAPPER
+_JSONOBJECTWRAPPER_BODYENTRY.containing_type = _JSONOBJECTWRAPPER
+_JSONOBJECTWRAPPER.fields_by_name['body'].message_type = _JSONOBJECTWRAPPER_BODYENTRY
 _ROWRESPONSE.fields_by_name['values'].message_type = _VALUEWRAPPER
 _QUERYSUCCESSRESPONSE.fields_by_name['rows'].message_type = _ROWRESPONSE
 _ERRORRESPONSE.fields_by_name['error_type'].enum_type = _ERRORRESPONSE_ERRORTYPE
@@ -397,13 +664,34 @@ _QUERYRESPONSE.oneofs_by_name['payload'].fields.append(
   _QUERYRESPONSE.fields_by_name['error'])
 _QUERYRESPONSE.fields_by_name['error'].containing_oneof = _QUERYRESPONSE.oneofs_by_name['payload']
 _QUERYREQUEST.fields_by_name['params'].message_type = _VALUEWRAPPER
+_TXBULKQUERYPARAMS.fields_by_name['values'].message_type = _VALUEWRAPPER
+_TXBULKQUERYREQUESTBODY.fields_by_name['params'].message_type = _TXBULKQUERYPARAMS
+_TXBULKQUERYREQUEST.fields_by_name['queries'].message_type = _TXBULKQUERYREQUESTBODY
+_ROWRESPONSEGROUP.fields_by_name['rows'].message_type = _ROWRESPONSE
+_TXQUERYSUCCESSRESPONSE.fields_by_name['row_groups'].message_type = _ROWRESPONSEGROUP
+_TXBULKQUERYSUCCESSRESPONSE.fields_by_name['responses'].message_type = _TXQUERYSUCCESSRESPONSE
+_TXBULKQUERYRESPONSE.fields_by_name['success'].message_type = _TXBULKQUERYSUCCESSRESPONSE
+_TXBULKQUERYRESPONSE.fields_by_name['error'].message_type = _ERRORRESPONSE
+_TXBULKQUERYRESPONSE.oneofs_by_name['payload'].fields.append(
+  _TXBULKQUERYRESPONSE.fields_by_name['success'])
+_TXBULKQUERYRESPONSE.fields_by_name['success'].containing_oneof = _TXBULKQUERYRESPONSE.oneofs_by_name['payload']
+_TXBULKQUERYRESPONSE.oneofs_by_name['payload'].fields.append(
+  _TXBULKQUERYRESPONSE.fields_by_name['error'])
+_TXBULKQUERYRESPONSE.fields_by_name['error'].containing_oneof = _TXBULKQUERYRESPONSE.oneofs_by_name['payload']
 DESCRIPTOR.message_types_by_name['ValueWrapper'] = _VALUEWRAPPER
-DESCRIPTOR.message_types_by_name['JsonWrapper'] = _JSONWRAPPER
+DESCRIPTOR.message_types_by_name['JsonObjectWrapper'] = _JSONOBJECTWRAPPER
 DESCRIPTOR.message_types_by_name['RowResponse'] = _ROWRESPONSE
 DESCRIPTOR.message_types_by_name['QuerySuccessResponse'] = _QUERYSUCCESSRESPONSE
 DESCRIPTOR.message_types_by_name['ErrorResponse'] = _ERRORRESPONSE
 DESCRIPTOR.message_types_by_name['QueryResponse'] = _QUERYRESPONSE
 DESCRIPTOR.message_types_by_name['QueryRequest'] = _QUERYREQUEST
+DESCRIPTOR.message_types_by_name['TxBulkQueryParams'] = _TXBULKQUERYPARAMS
+DESCRIPTOR.message_types_by_name['TxBulkQueryRequestBody'] = _TXBULKQUERYREQUESTBODY
+DESCRIPTOR.message_types_by_name['TxBulkQueryRequest'] = _TXBULKQUERYREQUEST
+DESCRIPTOR.message_types_by_name['RowResponseGroup'] = _ROWRESPONSEGROUP
+DESCRIPTOR.message_types_by_name['TxQuerySuccessResponse'] = _TXQUERYSUCCESSRESPONSE
+DESCRIPTOR.message_types_by_name['TxBulkQuerySuccessResponse'] = _TXBULKQUERYSUCCESSRESPONSE
+DESCRIPTOR.message_types_by_name['TxBulkQueryResponse'] = _TXBULKQUERYRESPONSE
 
 ValueWrapper = _reflection.GeneratedProtocolMessageType('ValueWrapper', (_message.Message,), dict(
   DESCRIPTOR = _VALUEWRAPPER,
@@ -412,20 +700,20 @@ ValueWrapper = _reflection.GeneratedProtocolMessageType('ValueWrapper', (_messag
   ))
 _sym_db.RegisterMessage(ValueWrapper)
 
-JsonWrapper = _reflection.GeneratedProtocolMessageType('JsonWrapper', (_message.Message,), dict(
+JsonObjectWrapper = _reflection.GeneratedProtocolMessageType('JsonObjectWrapper', (_message.Message,), dict(
 
   BodyEntry = _reflection.GeneratedProtocolMessageType('BodyEntry', (_message.Message,), dict(
-    DESCRIPTOR = _JSONWRAPPER_BODYENTRY,
+    DESCRIPTOR = _JSONOBJECTWRAPPER_BODYENTRY,
     __module__ = 'payloads_pb2'
-    # @@protoc_insertion_point(class_scope:payloads.proto.JsonWrapper.BodyEntry)
+    # @@protoc_insertion_point(class_scope:payloads.proto.JsonObjectWrapper.BodyEntry)
     ))
   ,
-  DESCRIPTOR = _JSONWRAPPER,
+  DESCRIPTOR = _JSONOBJECTWRAPPER,
   __module__ = 'payloads_pb2'
-  # @@protoc_insertion_point(class_scope:payloads.proto.JsonWrapper)
+  # @@protoc_insertion_point(class_scope:payloads.proto.JsonObjectWrapper)
   ))
-_sym_db.RegisterMessage(JsonWrapper)
-_sym_db.RegisterMessage(JsonWrapper.BodyEntry)
+_sym_db.RegisterMessage(JsonObjectWrapper)
+_sym_db.RegisterMessage(JsonObjectWrapper.BodyEntry)
 
 RowResponse = _reflection.GeneratedProtocolMessageType('RowResponse', (_message.Message,), dict(
   DESCRIPTOR = _ROWRESPONSE,
@@ -462,7 +750,56 @@ QueryRequest = _reflection.GeneratedProtocolMessageType('QueryRequest', (_messag
   ))
 _sym_db.RegisterMessage(QueryRequest)
 
+TxBulkQueryParams = _reflection.GeneratedProtocolMessageType('TxBulkQueryParams', (_message.Message,), dict(
+  DESCRIPTOR = _TXBULKQUERYPARAMS,
+  __module__ = 'payloads_pb2'
+  # @@protoc_insertion_point(class_scope:payloads.proto.TxBulkQueryParams)
+  ))
+_sym_db.RegisterMessage(TxBulkQueryParams)
 
-_JSONWRAPPER_BODYENTRY.has_options = True
-_JSONWRAPPER_BODYENTRY._options = _descriptor._ParseOptions(descriptor_pb2.MessageOptions(), _b('8\001'))
+TxBulkQueryRequestBody = _reflection.GeneratedProtocolMessageType('TxBulkQueryRequestBody', (_message.Message,), dict(
+  DESCRIPTOR = _TXBULKQUERYREQUESTBODY,
+  __module__ = 'payloads_pb2'
+  # @@protoc_insertion_point(class_scope:payloads.proto.TxBulkQueryRequestBody)
+  ))
+_sym_db.RegisterMessage(TxBulkQueryRequestBody)
+
+TxBulkQueryRequest = _reflection.GeneratedProtocolMessageType('TxBulkQueryRequest', (_message.Message,), dict(
+  DESCRIPTOR = _TXBULKQUERYREQUEST,
+  __module__ = 'payloads_pb2'
+  # @@protoc_insertion_point(class_scope:payloads.proto.TxBulkQueryRequest)
+  ))
+_sym_db.RegisterMessage(TxBulkQueryRequest)
+
+RowResponseGroup = _reflection.GeneratedProtocolMessageType('RowResponseGroup', (_message.Message,), dict(
+  DESCRIPTOR = _ROWRESPONSEGROUP,
+  __module__ = 'payloads_pb2'
+  # @@protoc_insertion_point(class_scope:payloads.proto.RowResponseGroup)
+  ))
+_sym_db.RegisterMessage(RowResponseGroup)
+
+TxQuerySuccessResponse = _reflection.GeneratedProtocolMessageType('TxQuerySuccessResponse', (_message.Message,), dict(
+  DESCRIPTOR = _TXQUERYSUCCESSRESPONSE,
+  __module__ = 'payloads_pb2'
+  # @@protoc_insertion_point(class_scope:payloads.proto.TxQuerySuccessResponse)
+  ))
+_sym_db.RegisterMessage(TxQuerySuccessResponse)
+
+TxBulkQuerySuccessResponse = _reflection.GeneratedProtocolMessageType('TxBulkQuerySuccessResponse', (_message.Message,), dict(
+  DESCRIPTOR = _TXBULKQUERYSUCCESSRESPONSE,
+  __module__ = 'payloads_pb2'
+  # @@protoc_insertion_point(class_scope:payloads.proto.TxBulkQuerySuccessResponse)
+  ))
+_sym_db.RegisterMessage(TxBulkQuerySuccessResponse)
+
+TxBulkQueryResponse = _reflection.GeneratedProtocolMessageType('TxBulkQueryResponse', (_message.Message,), dict(
+  DESCRIPTOR = _TXBULKQUERYRESPONSE,
+  __module__ = 'payloads_pb2'
+  # @@protoc_insertion_point(class_scope:payloads.proto.TxBulkQueryResponse)
+  ))
+_sym_db.RegisterMessage(TxBulkQueryResponse)
+
+
+_JSONOBJECTWRAPPER_BODYENTRY.has_options = True
+_JSONOBJECTWRAPPER_BODYENTRY._options = _descriptor._ParseOptions(descriptor_pb2.MessageOptions(), _b('8\001'))
 # @@protoc_insertion_point(module_scope)

@@ -12,9 +12,9 @@ shares = [
 ]
 
 for share in shares:
-	response = requests.post("http://127.0.0.1:59090/v1/shares", headers = {"content-type": "application/json"}, json={"value": share})
+	response = requests.post("http://127.0.0.1:8868/v1/shares", headers = {"content-type": "application/json"}, json={"value": share})
 	print(response)
 
 
-response = requests.post("http://127.0.0.1:59090/v1/secrets/unseal")
+response = requests.post("http://127.0.0.1:8868/v1/secrets/unseal")
 print(response)

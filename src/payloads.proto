@@ -27,8 +27,8 @@ message RowResponse {
 
 message QuerySuccessResponse {
 
-  repeated string column_names = 1;
-  repeated RowResponse rows = 2;
+  repeated string column_names = 2;
+  repeated RowResponse rows = 3;
 
 }
 
@@ -54,7 +54,7 @@ message QueryResponse {
 
   oneof payload {
     QuerySuccessResponse success = 1;
-    ErrorResponse error = 3;
+    ErrorResponse error = 2;
   }
 
 }
@@ -66,3 +66,52 @@ message QueryRequest {
   repeated ValueWrapper params = 3;
 
 }
+
+message TxBulkQueryParams {
+  repeated ValueWrapper values = 1;
+}
+
+message TxBulkQueryRequestBody {
+
+  string query = 1;
+  repeated TxBulkQueryParams params = 2;
+
+}
+
+message TxBulkQueryRequest {
+
+  string db_id = 1;
+  repeated TxBulkQueryRequestBody queries = 2;
+
+}
+
+message RowResponseGroup {
+
+  repeated RowResponse rows = 1;
+
+}
+
+message TxQuerySuccessResponse {
+
+  int32 ord_num = 1;
+  repeated string column_names = 2;
+  repeated RowResponseGroup row_groups = 3;
+
+}
+
+message TxBulkQuerySuccessResponse {
+
+  repeated TxQuerySuccessResponse responses = 1;
+
+}
+
+message TxBulkQueryResponse {
+
+  oneof payload {
+    TxBulkQuerySuccessResponse success = 1;
+    ErrorResponse error = 2;
+  }
+
+}
+
+
