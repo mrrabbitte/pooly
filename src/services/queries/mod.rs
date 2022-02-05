@@ -1,16 +1,19 @@
+use std::net::ToSocketAddrs;
+
 use actix_web::web::Query;
 use bytes::BytesMut;
 use deadpool::managed::PoolError;
+use deadpool_postgres::Transaction;
 use postgres_types::{IsNull, ToSql, Type};
 use tokio_postgres::Error;
 
 use crate::models::errors::QueryError;
 use crate::models::parameters::convert_params;
-use crate::models::payloads::{ErrorResponse, QueryRequest, QueryResponse, ValueWrapper};
+use crate::models::payloads::{ErrorResponse, query_response, QueryRequest, QueryResponse, tx_bulk_query_response, TxBulkQueryRequest, TxBulkQueryResponse, TxBulkQuerySuccessResponse, ValueWrapper};
 use crate::models::payloads::error_response::ErrorType;
-use crate::models::payloads::query_response::Payload;
 use crate::models::payloads::QuerySuccessResponse;
 use crate::models::payloads::value_wrapper::Value;
+use crate::models::responses::ResponseWithCode;
 use crate::models::rows::convert_rows;
 use crate::services::connections::{Connection, ConnectionService};
 
@@ -29,13 +32,57 @@ impl QueryService {
         }
     }
 
+    pub async fn bulk_tx(&self,
+                         request: &TxBulkQueryRequest,
+                         correlation_id: &str) -> ResponseWithCode<TxBulkQueryResponse> {
+        match self.do_bulk_tx(request).await {
+            Ok(ok) => ResponseWithCode::ok(ok.into()),
+            Err(err) => QueryService::build_response(err, correlation_id)
+        }
+    }
+
     pub async fn query(&self,
                        request: &QueryRequest,
-                       correlation_id: &str) -> QueryResponse {
+                       correlation_id: &str) -> ResponseWithCode<QueryResponse> {
         match self.do_query(request).await {
-            Ok(ok) => ok.into(),
-            Err(err) =>
-                err.to_error_response(correlation_id.to_string()).into()
+            Ok(ok) => ResponseWithCode::ok(ok.into()),
+            Err(err) => QueryService::build_response(err, correlation_id)
+        }
+    }
+
+    pub async fn do_bulk_tx(&self,
+                            request: &TxBulkQueryRequest) -> Result<Vec<QuerySuccessResponse>, QueryError> {
+        let db_id: &str = &request.db_id;
+
+        match self.connection_service.get(db_id).await {
+            Some(connection_result) => {
+                let mut connection = connection_result?;
+
+                let mut tx: Transaction = connection.transaction().await?;
+
+                let mut results =
+                    Vec::with_capacity(request.queries.len());
+
+                for query_request_body in &request.queries {
+                    let stmt =
+                        tx.prepare_cached(&query_request_body.query).await?;
+
+                    let params: Vec<&(dyn ToSql + Sync)> = convert_params(
+                        stmt.params(),
+                        &query_request_body.params
+                    )?;
+
+                    let query_results =
+                        tx.query(&stmt, params.as_slice()).await?;
+
+                    results.push(convert_rows(query_results)?);
+                }
+
+                tx.commit().await?;
+
+                Ok(results)
+            },
+            None => Err(QueryError::UnknownDatabaseConnection(db_id.to_owned())),
         }
     }
 
@@ -59,12 +106,21 @@ impl QueryService {
             None => Err(QueryError::UnknownDatabaseConnection(db_id.to_owned()))
         }
     }
+
+    fn build_response<T: From<ErrorResponse>>(err: QueryError,
+                                              correlation_id: &str) -> ResponseWithCode<T> {
+        let code = err.get_code();
+        ResponseWithCode(err, code)
+            .map(|err|
+                err.to_error_response(correlation_id.to_string()))
+            .map(|err_response| err_response.into())
+    }
 }
 
 impl From<QuerySuccessResponse> for QueryResponse {
     fn from(success: QuerySuccessResponse) -> Self {
         QueryResponse {
-            payload: Some(Payload::Success(success))
+            payload: Some(query_response::Payload::Success(success))
         }
     }
 }
@@ -72,7 +128,26 @@ impl From<QuerySuccessResponse> for QueryResponse {
 impl From<ErrorResponse> for QueryResponse {
     fn from(err: ErrorResponse) -> Self {
         QueryResponse {
-            payload: Some(Payload::Error(err))
+            payload: Some(query_response::Payload::Error(err))
+        }
+    }
+}
+
+impl From<Vec<QuerySuccessResponse>> for TxBulkQueryResponse {
+    fn from(responses: Vec<QuerySuccessResponse>) -> Self {
+        TxBulkQueryResponse {
+            payload: Some(tx_bulk_query_response::Payload::Success(
+                TxBulkQuerySuccessResponse {
+                    responses
+                }))
+        }
+    }
+}
+
+impl From<ErrorResponse> for TxBulkQueryResponse {
+    fn from(err: ErrorResponse) -> Self {
+        TxBulkQueryResponse {
+            payload: Some(tx_bulk_query_response::Payload::Error(err))
         }
     }
 }

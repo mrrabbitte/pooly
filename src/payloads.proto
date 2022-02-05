@@ -54,8 +54,15 @@ message QueryResponse {
 
   oneof payload {
     QuerySuccessResponse success = 1;
-    ErrorResponse error = 3;
+    ErrorResponse error = 2;
   }
+
+}
+
+message QueryRequestBody {
+
+  string query = 1;
+  repeated ValueWrapper params = 2;
 
 }
 
@@ -66,3 +73,27 @@ message QueryRequest {
   repeated ValueWrapper params = 3;
 
 }
+
+message TxBulkQueryRequest {
+
+  string db_id = 1;
+  repeated QueryRequestBody queries = 2;
+
+}
+
+message TxBulkQuerySuccessResponse {
+
+  repeated QuerySuccessResponse responses = 1;
+
+}
+
+message TxBulkQueryResponse {
+
+  oneof payload {
+    TxBulkQuerySuccessResponse success = 1;
+    ErrorResponse error = 2;
+  }
+
+}
+
+

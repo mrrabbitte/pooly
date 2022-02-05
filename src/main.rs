@@ -53,16 +53,17 @@ async fn main() -> std::io::Result<()> {
                 .app_data(Data::new(connection_config_service.clone()))
                 .app_data(Data::new(secrets_service.clone()))
                 .app_data(Data::new(shares_service.clone()))
+                .service(resources::query::bulk)
                 .service(resources::query::query)
                 .service(resources::configs::create)
                 .service(resources::secrets::initialize)
                 .service(resources::secrets::unseal)
                 .service(resources::shares::add_share)
         })
-        .bind("127.0.0.1:59090")?
+        .bind("127.0.0.1:8868")?
         .run();
 
-    println!("Server running at http://{}/", "127.0.0.1:59090");
+    println!("Server running at http://{}/", "127.0.0.1:8868");
 
     server.await
 }
