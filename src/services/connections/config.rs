@@ -9,18 +9,18 @@ use sled::{Db, IVec};
 use crate::models::connections::{ConnectionConfig, Versioned, ZeroizeWrapper};
 use crate::models::errors::ConnectionConfigError;
 use crate::models::secrets::EncryptedPayload;
-use crate::services::secrets::SecretsService;
+use crate::services::secrets::LocalSecretsService;
 
 pub struct ConnectionConfigService {
 
     configs: Db,
-    secrets_service: Arc<SecretsService>
+    secrets_service: Arc<LocalSecretsService>
 
 }
 
 impl ConnectionConfigService {
 
-    pub fn new(secrets_service: Arc<SecretsService>) -> Self {
+    pub fn new(secrets_service: Arc<LocalSecretsService>) -> Self {
         let configs = sled::open("./stored/pooly_configs").unwrap();
 
         ConnectionConfigService {

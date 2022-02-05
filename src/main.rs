@@ -16,8 +16,8 @@ use crate::models::payloads::QueryRequest;
 use crate::services::connections::config::ConnectionConfigService;
 use crate::services::connections::ConnectionService;
 use crate::services::queries::QueryService;
+use crate::services::secrets::{LocalSecretsService, SecretServiceFactory, SecretsService};
 use crate::services::secrets::generate::VecGenerator;
-use crate::services::secrets::SecretsService;
 use crate::services::secrets::shares::MasterKeySharesService;
 
 pub mod resources;
@@ -33,9 +33,9 @@ async fn main() -> std::io::Result<()> {
 
     let shares_service = Arc::new(MasterKeySharesService::new());
 
-    let secrets_service =
+    let secrets_service: Arc<LocalSecretsService> =
         Arc::new(
-            SecretsService::new(shares_service.clone(), vec_generator));
+            SecretServiceFactory::create(shares_service.clone(), vec_generator));
 
     let connection_config_service =
         Arc::new(ConnectionConfigService::new(secrets_service.clone()));

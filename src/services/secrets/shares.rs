@@ -10,6 +10,7 @@ pub struct MasterKeySharesService {
 
 }
 
+
 impl MasterKeySharesService {
 
     pub fn new() -> MasterKeySharesService {

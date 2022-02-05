@@ -14,7 +14,7 @@ use crate::models::connections::ZeroizeWrapper;
 use crate::models::errors::SecretsError;
 use crate::models::secrets::{EncryptedPayload, EncryptionKey, KEY_LENGTH, MasterKey, MasterKeyShare, MasterKeySharePayload};
 use crate::services::secrets::encryption::EncryptionService;
-use crate::services::secrets::files::SecretFilesService;
+use crate::services::secrets::files::{FilesService, SimpleFilesService};
 use crate::services::secrets::generate::VecGenerator;
 use crate::services::secrets::shares::MasterKeySharesService;
 
@@ -27,26 +27,34 @@ pub mod shares;
 mod files;
 mod encryption;
 
-pub struct SecretsService {
+pub type LocalSecretsService = SecretsService<SimpleFilesService>;
+
+pub struct SecretsService<T: FilesService> {
 
     encryption_service: EncryptionService,
-    files_service: SecretFilesService,
+    files_service: T,
     is_sealed: AtomicBool,
     shares_service: Arc<MasterKeySharesService>,
     vec_generator: Arc<VecGenerator>,
 
 }
 
-impl SecretsService {
+pub struct SecretServiceFactory;
 
-    pub fn new(shares_service: Arc<MasterKeySharesService>,
-               vec_generator: Arc<VecGenerator>) -> SecretsService {
-        SecretsService::from(SecretFilesService::new(), shares_service, vec_generator)
+impl SecretServiceFactory {
+
+    pub fn create(shares_service: Arc<MasterKeySharesService>,
+                  vec_generator: Arc<VecGenerator>) -> LocalSecretsService {
+        SecretsService::new(SimpleFilesService::new(), shares_service, vec_generator)
     }
 
-    pub fn from(files_service: SecretFilesService,
-                shares_service: Arc<MasterKeySharesService>,
-                vec_generator: Arc<VecGenerator>) -> SecretsService {
+}
+
+impl<T: FilesService> SecretsService<T> {
+
+    fn new(files_service: T,
+           shares_service: Arc<MasterKeySharesService>,
+           vec_generator: Arc<VecGenerator>) -> SecretsService<T> {
         SecretsService {
             encryption_service: EncryptionService::new(vec_generator.clone()),
             files_service,
@@ -145,11 +153,11 @@ impl SecretsService {
 
         let enc_key =
             XChaCha20Poly1305::new(GenericArray::from_slice(master_key.get_value()))
-            .decrypt(&GenericArray::from_slice(encrypted_enc_key.get_nonce()),
-                     Payload {
-                         msg: encrypted_enc_key.get_payload(),
-                         aad: &aad
-                     })?;
+                .decrypt(&GenericArray::from_slice(encrypted_enc_key.get_nonce()),
+                         Payload {
+                             msg: encrypted_enc_key.get_payload(),
+                             aad: &aad
+                         })?;
 
         self.encryption_service.set_key(
             ZeroizeWrapper::new(aad), EncryptionKey::new(enc_key))?;
@@ -161,6 +169,116 @@ impl SecretsService {
 
     pub fn is_sealed(&self) -> bool {
         self.is_sealed.load(Ordering::Relaxed)
+    }
+
+}
+
+#[cfg(test)]
+mod tests {
+    use std::ops::Deref;
+    use std::sync::{Arc, RwLock};
+
+    use mockall::predicate::*;
+    use ring::rand::SystemRandom;
+
+    use crate::{MasterKeySharesService, SecretsService, VecGenerator};
+    use crate::models::errors::SecretsError;
+    use crate::models::secrets::EncryptedPayload;
+    use crate::services::secrets::files::FilesService;
+    use crate::services::secrets::files::MockFilesService;
+
+    #[test]
+    fn test_returns_error_on_encdec_when_sealed() {
+        let service = build_service(MockFilesService::new());
+
+        assert!(service.encrypt(&vec![1,2,3]).is_err());
+        assert!(service.decrypt(
+            &EncryptedPayload::new(vec![1,1], vec![3,4])).is_err());
+    }
+
+    #[test]
+    fn test_initializes_and_useals_correctly() {
+        let mut mock = MockFilesService::new();
+
+        mock.expect_exists_key()
+            .times(1)
+            .returning(|| Ok(false));
+
+        mock.expect_exists_aad()
+            .times(1)
+            .returning(|| Ok(false));
+
+        let key_spy = Arc::new(
+            FileSpy::new(EncryptedPayload::new(vec![], vec![])));
+        let ks_ptr = key_spy.clone();
+
+        mock.expect_store_key()
+            .times(1)
+            .returning(move |key| ks_ptr.consume(key));
+
+        let aad_spy: Arc<FileSpy<Vec<u8>>> = Arc::new(FileSpy::new(Vec::new()));
+        let as_ptr = aad_spy.clone();
+
+        mock.expect_store_aad()
+            .times(1)
+            .returning(move |aad| as_ptr.consume(aad));
+
+        let service = build_service(mock);
+
+        let shares = service.initialize().unwrap();
+
+        assert!(!shares.is_empty());
+
+        let saved_key = key_spy.get();
+        let saved_aad = aad_spy.get();
+
+        assert!(!saved_key.get_payload().is_empty());
+        assert!(!saved_key.get_nonce().is_empty());
+        assert!(!saved_aad.is_empty());
+    }
+
+    #[test]
+    fn test_will_not_initialize_if_key_data_is_present() {
+        let mut mock = MockFilesService::new();
+
+        mock.expect_exists_key()
+            .times(1)
+            .returning(|| Ok(true));
+
+        let service = build_service(mock);
+
+        assert!(service.initialize().is_err());
+    }
+
+    fn build_service(mock: MockFilesService) -> SecretsService<MockFilesService> {
+        SecretsService::new(mock,
+                            Arc::new(MasterKeySharesService::new()),
+                            Arc::new(
+                                VecGenerator::new(
+                                    Arc::new(SystemRandom::new()))))
+    }
+
+    struct FileSpy<T: Clone> {
+        data: RwLock<T>
+    }
+
+    impl<T: Clone> FileSpy<T> {
+
+        fn new(initial: T) -> FileSpy<T> {
+            FileSpy {
+                data: RwLock::new(initial)
+            }
+        }
+
+        fn consume(&self,
+                   data: T) -> Result<(), SecretsError> {
+            *self.data.write().unwrap() = data;
+            Ok(())
+        }
+
+        fn get(&self) -> T {
+            self.data.read().unwrap().clone()
+        }
     }
 
 }
