@@ -6,7 +6,7 @@ A protobuf to Postgres adapter + connection pooling middleware.
 
 WIP. The roadmap includes:
 
-- [ ] Batch requests + trasactions support;
+- [x] Batch requests + trasactions support;
 - [ ] Java client;
 - [ ] Python client;
 - [ ] Rust client;
