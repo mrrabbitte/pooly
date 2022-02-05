@@ -5,16 +5,16 @@ use bytes::BytesMut;
 use deadpool::managed::PoolError;
 use deadpool_postgres::Transaction;
 use postgres_types::{IsNull, ToSql, Type};
-use tokio_postgres::Error;
+use tokio_postgres::{Error, Statement};
 
 use crate::models::errors::QueryError;
 use crate::models::parameters::convert_params;
-use crate::models::payloads::{ErrorResponse, query_response, QueryRequest, QueryResponse, tx_bulk_query_response, TxBulkQueryRequest, TxBulkQueryResponse, TxBulkQuerySuccessResponse, ValueWrapper};
+use crate::models::payloads::{ErrorResponse, query_response, QueryRequest, QueryResponse, RowResponseGroup, tx_bulk_query_response, TxBulkQueryParams, TxBulkQueryRequest, TxBulkQueryRequestBody, TxBulkQueryResponse, TxBulkQuerySuccessResponse, TxQuerySuccessResponse, ValueWrapper};
 use crate::models::payloads::error_response::ErrorType;
 use crate::models::payloads::QuerySuccessResponse;
 use crate::models::payloads::value_wrapper::Value;
 use crate::models::responses::ResponseWithCode;
-use crate::models::rows::convert_rows;
+use crate::models::rows::{convert_rows, RowResponsesWithColumnNames};
 use crate::services::connections::{Connection, ConnectionService};
 
 pub struct QueryService {
@@ -51,31 +51,23 @@ impl QueryService {
     }
 
     pub async fn do_bulk_tx(&self,
-                            request: &TxBulkQueryRequest) -> Result<Vec<QuerySuccessResponse>, QueryError> {
+                            request: &TxBulkQueryRequest) -> Result<Vec<TxQuerySuccessResponse>, QueryError> {
         let db_id: &str = &request.db_id;
 
         match self.connection_service.get(db_id).await {
             Some(connection_result) => {
                 let mut connection = connection_result?;
 
-                let mut tx: Transaction = connection.transaction().await?;
+                let tx: Transaction = connection.transaction().await?;
 
-                let mut results =
-                    Vec::with_capacity(request.queries.len());
+                let mut results = Vec::new();
 
-                for query_request_body in &request.queries {
-                    let stmt =
-                        tx.prepare_cached(&query_request_body.query).await?;
+                for (i, query_request_body) in request.queries.iter().enumerate() {
+                    let query_response =
+                        QueryService::do_execute_bulk(&tx, &query_request_body,i)
+                            .await?;
 
-                    let params: Vec<&(dyn ToSql + Sync)> = convert_params(
-                        stmt.params(),
-                        &query_request_body.params
-                    )?;
-
-                    let query_results =
-                        tx.query(&stmt, params.as_slice()).await?;
-
-                    results.push(convert_rows(query_results)?);
+                    results.push(query_response);
                 }
 
                 tx.commit().await?;
@@ -84,6 +76,42 @@ impl QueryService {
             },
             None => Err(QueryError::UnknownDatabaseConnection(db_id.to_owned())),
         }
+    }
+
+    async fn do_execute_bulk(tx: &Transaction<'_>,
+                             bulk_body: &TxBulkQueryRequestBody,
+                             ord_num: usize) -> Result<TxQuerySuccessResponse, QueryError> {
+        let stmt =
+            tx.prepare_cached(&bulk_body.query).await?;
+
+        let mut results = Vec::new();
+
+        for params_row in &bulk_body.params {
+            let param_values: Vec<&(dyn ToSql + Sync)> = convert_params(
+                stmt.params(),
+                &params_row.values
+            )?;
+
+            let query_results =
+                tx.query(&stmt, param_values.as_slice()).await?;
+
+            results.push(convert_rows(query_results)?);
+        }
+
+        let column_names =
+            results.first()
+                .map_or(Vec::new(), |cwr| cwr.1.clone());
+
+        let row_groups =
+            results.into_iter()
+                .map(|cwr| RowResponseGroup { rows: cwr.0 })
+                .collect();
+
+        Ok(TxQuerySuccessResponse {
+            ord_num: ord_num as i32,
+            column_names,
+            row_groups
+        })
     }
 
     async fn do_query(&self, request: &QueryRequest) -> Result<QuerySuccessResponse, QueryError> {
@@ -101,7 +129,14 @@ impl QueryService {
                 let results =
                     connection.query(&stmt, params.as_slice()).await?;
 
-                convert_rows(results)
+                let cwr = convert_rows(results)?;
+
+                Ok(
+                    QuerySuccessResponse {
+                        rows: cwr.0,
+                        column_names: cwr.1
+                    }
+                )
             }
             None => Err(QueryError::UnknownDatabaseConnection(db_id.to_owned()))
         }
@@ -133,8 +168,8 @@ impl From<ErrorResponse> for QueryResponse {
     }
 }
 
-impl From<Vec<QuerySuccessResponse>> for TxBulkQueryResponse {
-    fn from(responses: Vec<QuerySuccessResponse>) -> Self {
+impl From<Vec<TxQuerySuccessResponse>> for TxBulkQueryResponse {
+    fn from(responses: Vec<TxQuerySuccessResponse>) -> Self {
         TxBulkQueryResponse {
             payload: Some(tx_bulk_query_response::Payload::Success(
                 TxBulkQuerySuccessResponse {

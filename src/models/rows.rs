@@ -7,7 +7,9 @@ use crate::models::errors::QueryError;
 use crate::models::payloads::{QuerySuccessResponse, RowResponse, ValueWrapper};
 use crate::models::payloads::value_wrapper::Value;
 
-pub fn convert_rows(rows: Vec<Row>) -> Result<QuerySuccessResponse, QueryError> {
+pub struct RowResponsesWithColumnNames(pub Vec<RowResponse>, pub Vec<String>);
+
+pub fn convert_rows(rows: Vec<Row>) -> Result<RowResponsesWithColumnNames, QueryError> {
     let column_names = match rows.first() {
         None => Vec::default(),
         Some(row) =>
@@ -21,10 +23,7 @@ pub fn convert_rows(rows: Vec<Row>) -> Result<QuerySuccessResponse, QueryError> 
     }
 
     Ok(
-        QuerySuccessResponse {
-            column_names,
-            rows: row_responses
-        }
+        RowResponsesWithColumnNames(row_responses, column_names)
     )
 }
 

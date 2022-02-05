@@ -27,8 +27,8 @@ message RowResponse {
 
 message QuerySuccessResponse {
 
-  repeated string column_names = 1;
-  repeated RowResponse rows = 2;
+  repeated string column_names = 2;
+  repeated RowResponse rows = 3;
 
 }
 
@@ -59,13 +59,6 @@ message QueryResponse {
 
 }
 
-message QueryRequestBody {
-
-  string query = 1;
-  repeated ValueWrapper params = 2;
-
-}
-
 message QueryRequest {
 
   string db_id = 1;
@@ -74,16 +67,41 @@ message QueryRequest {
 
 }
 
+message TxBulkQueryParams {
+  repeated ValueWrapper values = 1;
+}
+
+message TxBulkQueryRequestBody {
+
+  string query = 1;
+  repeated TxBulkQueryParams params = 2;
+
+}
+
 message TxBulkQueryRequest {
 
   string db_id = 1;
-  repeated QueryRequestBody queries = 2;
+  repeated TxBulkQueryRequestBody queries = 2;
+
+}
+
+message RowResponseGroup {
+
+  repeated RowResponse rows = 1;
+
+}
+
+message TxQuerySuccessResponse {
+
+  int32 ord_num = 1;
+  repeated string column_names = 2;
+  repeated RowResponseGroup row_groups = 3;
 
 }
 
 message TxBulkQuerySuccessResponse {
 
-  repeated QuerySuccessResponse responses = 1;
+  repeated TxQuerySuccessResponse responses = 1;
 
 }
 
