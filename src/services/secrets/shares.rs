@@ -1,5 +1,7 @@
 use std::collections::HashSet;
+
 use dashmap::DashSet;
+
 use crate::models::secrets::MasterKeyShare;
 
 pub struct MasterKeySharesService {
@@ -22,7 +24,7 @@ impl MasterKeySharesService {
     }
 
     pub fn remove(&self,
-                  share: MasterKeyShare) {
+                  share: &MasterKeyShare) {
         self.shares.remove(&share);
     }
 
@@ -32,6 +34,45 @@ impl MasterKeySharesService {
 
     pub fn clear(&self) {
         self.shares.clear();
+    }
+
+}
+
+
+#[cfg(test)]
+mod tests {
+    use crate::MasterKeySharesService;
+    use crate::models::secrets::MasterKeyShare;
+
+    #[test]
+    fn test_add_remove_get_clear() {
+        let service = MasterKeySharesService::new();
+
+        let (first, second, third) =
+            (MasterKeyShare::new(vec![1, 1, 1]),
+             MasterKeyShare::new(vec![2, 2, 2]),
+             MasterKeyShare::new(vec![3, 3, 3]));
+
+
+        service.add(first.clone());
+
+        assert!(service.get().contains(&first));
+
+        service.remove(&first);
+
+        assert!(!service.get().contains(&first));
+
+        service.add(first.clone());
+        service.add(second.clone());
+        service.add(third.clone());
+
+        assert!(service.get().contains(&first));
+        assert!(service.get().contains(&second));
+        assert!(service.get().contains(&third));
+
+        service.clear();
+
+        assert!(service.get().is_empty());
     }
 
 }

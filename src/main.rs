@@ -59,6 +59,7 @@ async fn main() -> std::io::Result<()> {
                 .service(resources::secrets::initialize)
                 .service(resources::secrets::unseal)
                 .service(resources::shares::add_share)
+                .service(resources::shares::clear_shares)
         })
         .bind("127.0.0.1:8868")?
         .run();

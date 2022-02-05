@@ -22,3 +22,10 @@ pub async fn add_share(service: Data<Arc<MasterKeySharesService>>,
         Err(_) => Ok(HttpResponse::BadRequest().finish())
     }
 }
+
+#[post("/v1/clear")]
+pub async fn clear_shares(service: Data<Arc<MasterKeySharesService>>) -> Result<HttpResponse> {
+    service.clear();
+
+    Ok(HttpResponse::Ok().finish())
+}
