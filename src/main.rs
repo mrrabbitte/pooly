@@ -4,19 +4,16 @@ extern crate rustls;
 extern crate tokio_postgres;
 extern crate tokio_postgres_rustls;
 
-use std::collections::HashMap;
-use std::io::ErrorKind;
 use std::sync::Arc;
 
-use actix_web::{App, HttpServer, middleware, web};
+use actix_web::{App, HttpServer, middleware};
 use actix_web::web::Data;
 use ring::rand::SystemRandom;
 
-use crate::models::payloads::QueryRequest;
 use crate::services::connections::config::ConnectionConfigService;
 use crate::services::connections::ConnectionService;
 use crate::services::queries::QueryService;
-use crate::services::secrets::{LocalSecretsService, SecretServiceFactory, SecretsService};
+use crate::services::secrets::{LocalSecretsService, SecretServiceFactory};
 use crate::services::secrets::generate::VecGenerator;
 use crate::services::secrets::shares::MasterKeySharesService;
 

@@ -1,8 +1,6 @@
-use std::ops::Deref;
-use std::sync::{Arc, LockResult, RwLock};
-use std::sync::atomic::{AtomicBool, AtomicPtr, Ordering};
+use std::sync::{Arc, RwLock};
 
-use chacha20poly1305::aead::{Aead, Error, NewAead, Payload};
+use chacha20poly1305::aead::{Aead, NewAead, Payload};
 use chacha20poly1305::aead::generic_array::GenericArray;
 use chacha20poly1305::XChaCha20Poly1305;
 #[cfg(test)]

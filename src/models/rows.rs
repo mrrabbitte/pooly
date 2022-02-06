@@ -1,10 +1,8 @@
-use std::any::Any;
-
-use postgres_types::{FromSql, Oid};
-use tokio_postgres::{Column, Error, Row};
+use postgres_types::FromSql;
+use tokio_postgres::Row;
 
 use crate::models::errors::QueryError;
-use crate::models::payloads::{QuerySuccessResponse, RowResponse, ValueWrapper};
+use crate::models::payloads::{RowResponse, ValueWrapper};
 use crate::models::payloads::value_wrapper::Value;
 
 pub struct RowResponsesWithColumnNames(pub Vec<RowResponse>, pub Vec<String>);

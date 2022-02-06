@@ -1,13 +1,9 @@
-use std::fs;
-use std::fs::File;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, AtomicPtr, Ordering};
+use std::sync::atomic::{AtomicBool, Ordering};
 
-use chacha20poly1305::aead::{Aead, AeadInPlace, Error, NewAead, Payload};
+use chacha20poly1305::aead::{Aead, NewAead, Payload};
 use chacha20poly1305::aead::generic_array::GenericArray;
-use chacha20poly1305::aead::generic_array::typenum::Or;
 use chacha20poly1305::XChaCha20Poly1305;
-use ring::rand::{SecureRandom, SystemRandom};
 use sharks::{Share, Sharks};
 
 use crate::models::connections::ZeroizeWrapper;
@@ -148,7 +144,7 @@ impl<T: FilesService> SecretsService<T> {
                 .map_err(|err| SecretsError::MasterKeyShareError(err.to_string()))?
         );
 
-        let mut encrypted_enc_key = self.files_service.read_key()?;
+        let encrypted_enc_key = self.files_service.read_key()?;
         let aad = self.files_service.read_aad()?;
 
         let enc_key =

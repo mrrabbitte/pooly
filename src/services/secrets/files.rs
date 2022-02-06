@@ -1,13 +1,12 @@
 use std::fs;
-use std::fs::Metadata;
 use std::path::Path;
-use std::sync::{LockResult, RwLock};
+use std::sync::RwLock;
 
 #[cfg(test)]
 use mockall::automock;
 
 use crate::models::errors::SecretsError;
-use crate::models::secrets::{EncryptedPayload, EncryptionKey};
+use crate::models::secrets::EncryptedPayload;
 
 const ENCRYPTION_KEY_PATH: &str = "./stored/pk";
 const AAD_PATH: &str = "./stored/pa";

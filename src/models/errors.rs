@@ -1,4 +1,3 @@
-use std::fmt::format;
 use std::sync::PoisonError;
 
 use bincode::ErrorKind;
@@ -8,8 +7,8 @@ use ring::error::Unspecified;
 use serde::{Deserialize, Serialize};
 use tokio_postgres::Error;
 
-use crate::models::payloads::{ErrorResponse, QueryResponse};
 use crate::models::payloads::error_response::ErrorType;
+use crate::models::payloads::ErrorResponse;
 
 #[derive(Debug)]
 pub enum QueryError {

@@ -1,14 +1,10 @@
-use std::error::Error;
 use std::sync::Arc;
 
-use dashmap::DashMap;
-use dashmap::mapref::one::Ref;
 use sled;
-use sled::{Db, IVec};
+use sled::Db;
 
-use crate::models::connections::{ConnectionConfig, Versioned, ZeroizeWrapper};
+use crate::models::connections::{ConnectionConfig, Versioned};
 use crate::models::errors::ConnectionConfigError;
-use crate::models::secrets::EncryptedPayload;
 use crate::services::secrets::LocalSecretsService;
 
 pub struct ConnectionConfigService {

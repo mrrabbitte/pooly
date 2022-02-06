@@ -1,12 +1,9 @@
 use std::sync::Arc;
 
 use dashmap::DashMap;
-use dashmap::mapref::one::Ref;
 use deadpool::managed::{Object, PoolConfig};
-use deadpool_postgres::{Config, CreatePoolError, Manager, ManagerConfig, Pool, PoolError, RecyclingMethod, Runtime, SslMode};
-use rustls::ClientConfig;
-use tokio_postgres::{Client, NoTls};
-use tokio_postgres_rustls::MakeRustlsConnect;
+use deadpool_postgres::{Config, Manager, ManagerConfig, Pool, RecyclingMethod, Runtime};
+use tokio_postgres::NoTls;
 
 use crate::models::connections::ConnectionConfig;
 use crate::models::errors::ConnectionError;

@@ -5,8 +5,6 @@ use actix_web::post;
 use actix_web::Result;
 use actix_web::web::Data;
 
-use crate::models::errors::SecretsError;
-use crate::models::secrets::MasterKeyShare;
 use crate::services::secrets::LocalSecretsService;
 
 #[post("/v1/secrets/initialize")]

@@ -1,21 +1,13 @@
-use std::net::ToSocketAddrs;
-
-use actix_web::web::Query;
-use bytes::BytesMut;
-use deadpool::managed::PoolError;
 use deadpool_postgres::Transaction;
-use postgres_types::{IsNull, ToSql, Type};
-use tokio_postgres::{Error, Statement};
+use postgres_types::ToSql;
 
 use crate::models::errors::QueryError;
 use crate::models::parameters::convert_params;
-use crate::models::payloads::{ErrorResponse, query_response, QueryRequest, QueryResponse, RowResponseGroup, tx_bulk_query_response, TxBulkQueryParams, TxBulkQueryRequest, TxBulkQueryRequestBody, TxBulkQueryResponse, TxBulkQuerySuccessResponse, TxQuerySuccessResponse, ValueWrapper};
-use crate::models::payloads::error_response::ErrorType;
+use crate::models::payloads::{ErrorResponse, query_response, QueryRequest, QueryResponse, RowResponseGroup, tx_bulk_query_response, TxBulkQueryRequest, TxBulkQueryRequestBody, TxBulkQueryResponse, TxBulkQuerySuccessResponse, TxQuerySuccessResponse};
 use crate::models::payloads::QuerySuccessResponse;
-use crate::models::payloads::value_wrapper::Value;
 use crate::models::responses::ResponseWithCode;
-use crate::models::rows::{convert_rows, RowResponsesWithColumnNames};
-use crate::services::connections::{Connection, ConnectionService};
+use crate::models::rows::convert_rows;
+use crate::services::connections::ConnectionService;
 
 pub struct QueryService {
 
@@ -50,8 +42,8 @@ impl QueryService {
         }
     }
 
-    pub async fn do_bulk_tx(&self,
-                            request: &TxBulkQueryRequest) -> Result<Vec<TxQuerySuccessResponse>, QueryError> {
+    async fn do_bulk_tx(&self,
+                        request: &TxBulkQueryRequest) -> Result<Vec<TxQuerySuccessResponse>, QueryError> {
         let db_id: &str = &request.db_id;
 
         match self.connection_service.get(db_id).await {
@@ -185,4 +177,20 @@ impl From<ErrorResponse> for TxBulkQueryResponse {
             payload: Some(tx_bulk_query_response::Payload::Error(err))
         }
     }
+}
+
+
+#[cfg(test)]
+mod tests {
+
+    #[tokio::test]
+    async fn test_single_query() {
+
+    }
+
+    #[tokio::test]
+    async fn test_bulk_query() {
+
+    }
+
 }
