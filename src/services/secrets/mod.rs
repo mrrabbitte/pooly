@@ -189,7 +189,7 @@ mod tests {
 
     #[test]
     fn test_returns_error_on_encdec_when_sealed() {
-        let service = build_service(MockFilesService::new());
+        let service = build_default_service(MockFilesService::new());
 
         assert!(service.encrypt(&vec![1,2,3]).is_err());
         assert!(service.decrypt(
@@ -210,20 +210,33 @@ mod tests {
 
         let key_spy = Arc::new(
             FileSpy::new(EncryptedPayload::new(vec![], vec![])));
-        let ks_ptr = key_spy.clone();
+        let ks_ptr_one = key_spy.clone();
+        let ks_ptr_two = key_spy.clone();
 
         mock.expect_store_key()
             .times(1)
-            .returning(move |key| ks_ptr.consume(key));
+            .returning(move |key| ks_ptr_one.consume(key));
+
+        mock.expect_read_key()
+            .times(1)
+            .returning(move || Ok(ks_ptr_two.get()));
 
         let aad_spy: Arc<FileSpy<Vec<u8>>> = Arc::new(FileSpy::new(Vec::new()));
-        let as_ptr = aad_spy.clone();
+        let as_ptr_one = aad_spy.clone();
+        let as_ptr_two = aad_spy.clone();
 
         mock.expect_store_aad()
             .times(1)
-            .returning(move |aad| as_ptr.consume(aad));
+            .returning(move |aad| as_ptr_one.consume(aad));
 
-        let service = build_service(mock);
+        mock.expect_read_aad()
+            .times(1)
+            .returning(move || Ok(as_ptr_two.get()));
+
+        let shares_service = Arc::new(MasterKeySharesService::new());
+
+        let service =
+            build_service(mock, shares_service.clone());
 
         let shares = service.initialize().unwrap();
 
@@ -235,6 +248,26 @@ mod tests {
         assert!(!saved_key.get_payload().is_empty());
         assert!(!saved_key.get_nonce().is_empty());
         assert!(!saved_aad.is_empty());
+
+        shares
+            .into_iter()
+            .for_each(|share|
+                shares_service.add(share.try_into().unwrap()));
+
+        assert!(service.unseal().is_ok());
+
+        let payload = vec![1,2,3,4];
+
+        assert_eq!(
+            service.decrypt(&service.encrypt(&payload).unwrap()).unwrap().get_value(),
+            &payload);
+
+        assert!(service.unseal().is_err());
+        assert!(service.initialize().is_err());
+
+        assert_eq!(
+            service.decrypt(&service.encrypt(&payload).unwrap()).unwrap().get_value(),
+            &payload);
     }
 
     #[test]
@@ -245,17 +278,23 @@ mod tests {
             .times(1)
             .returning(|| Ok(true));
 
-        let service = build_service(mock);
+        let service = build_default_service(mock);
 
         assert!(service.initialize().is_err());
     }
 
-    fn build_service(mock: MockFilesService) -> SecretsService<MockFilesService> {
+    fn build_service(mock: MockFilesService,
+                     key_shares_service: Arc<MasterKeySharesService>)
+        -> SecretsService<MockFilesService> {
         SecretsService::new(mock,
-                            Arc::new(MasterKeySharesService::new()),
+                            key_shares_service,
                             Arc::new(
                                 VecGenerator::new(
                                     Arc::new(SystemRandom::new()))))
+    }
+
+    fn build_default_service(mock: MockFilesService) -> SecretsService<MockFilesService> {
+        build_service(mock, Arc::new(MasterKeySharesService::new()))
     }
 
     struct FileSpy<T: Clone> {
