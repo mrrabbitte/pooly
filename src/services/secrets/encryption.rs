@@ -3,8 +3,6 @@ use std::sync::{Arc, RwLock};
 use chacha20poly1305::aead::{Aead, NewAead, Payload};
 use chacha20poly1305::aead::generic_array::GenericArray;
 use chacha20poly1305::XChaCha20Poly1305;
-#[cfg(test)]
-use mockall::automock;
 
 use crate::models::connections::ZeroizeWrapper;
 use crate::models::errors::SecretsError;
@@ -88,10 +86,9 @@ struct KeyWithAad {
 #[cfg(test)]
 mod tests {
     use std::sync::{Arc, RwLock};
-    use std::sync::atomic::{AtomicBool, AtomicPtr};
 
-    use chacha20poly1305::aead::{Aead, NewAead, Payload};
     use chacha20poly1305::aead::generic_array::GenericArray;
+    use chacha20poly1305::aead::NewAead;
     use chacha20poly1305::XChaCha20Poly1305;
     use ring::rand::SystemRandom;
 

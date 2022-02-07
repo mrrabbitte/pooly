@@ -15,7 +15,6 @@ pub struct QueryService {
 
 }
 
-
 impl QueryService {
 
     pub fn new(connection_service: ConnectionService) -> Self {
@@ -177,20 +176,4 @@ impl From<ErrorResponse> for TxBulkQueryResponse {
             payload: Some(tx_bulk_query_response::Payload::Error(err))
         }
     }
-}
-
-
-#[cfg(test)]
-mod tests {
-
-    #[tokio::test]
-    async fn test_single_query() {
-
-    }
-
-    #[tokio::test]
-    async fn test_bulk_query() {
-
-    }
-
 }

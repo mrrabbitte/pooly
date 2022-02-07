@@ -171,17 +171,15 @@ impl<T: FilesService> SecretsService<T> {
 
 #[cfg(test)]
 mod tests {
-    use std::ops::Deref;
     use std::sync::{Arc, RwLock};
 
-    use mockall::predicate::*;
     use ring::rand::SystemRandom;
 
-    use crate::{MasterKeySharesService, SecretsService, VecGenerator};
+    use crate::{MasterKeySharesService, VecGenerator};
     use crate::models::errors::SecretsError;
     use crate::models::secrets::EncryptedPayload;
-    use crate::services::secrets::files::FilesService;
     use crate::services::secrets::files::MockFilesService;
+    use crate::services::secrets::SecretsService;
 
     #[test]
     fn test_returns_error_on_encdec_when_sealed() {
