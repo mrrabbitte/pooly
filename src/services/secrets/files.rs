@@ -7,13 +7,13 @@ use mockall::automock;
 
 use crate::models::errors::SecretsError;
 use crate::models::secrets::EncryptedPayload;
-
-const ENCRYPTION_KEY_PATH: &str = "./stored/pk";
-const AAD_PATH: &str = "./stored/pa";
+use crate::services::BASE_STORAGE_PATH;
 
 pub struct SimpleFilesService {
 
-    lock: RwLock<()>
+    enc_key_path: String,
+    aad_path: String,
+    lock: RwLock<()>,
 
 }
 
@@ -36,6 +36,8 @@ impl SimpleFilesService {
 
     pub fn new() -> SimpleFilesService {
         SimpleFilesService {
+            aad_path: BASE_STORAGE_PATH.to_owned() + "/pa",
+            enc_key_path: BASE_STORAGE_PATH.to_owned() + "/pk",
             lock: RwLock::new(())
         }
     }
@@ -75,28 +77,28 @@ impl SimpleFilesService {
 
 impl FilesService for SimpleFilesService {
     fn read_key(&self) -> Result<EncryptedPayload, SecretsError> {
-        Ok(bincode::deserialize(&self.read(ENCRYPTION_KEY_PATH)?)?)
+        Ok(bincode::deserialize(&self.read(&self.enc_key_path)?)?)
     }
 
     fn store_key(&self,
                  payload: EncryptedPayload) -> Result<(), SecretsError> {
-        self.store(bincode::serialize(&payload)?, ENCRYPTION_KEY_PATH)
+        self.store(bincode::serialize(&payload)?, &self.enc_key_path)
     }
 
     fn exists_key(&self) -> Result<bool, SecretsError> {
-        self.exists(ENCRYPTION_KEY_PATH)
+        self.exists(&self.enc_key_path)
     }
 
     fn read_aad(&self) -> Result<Vec<u8>, SecretsError> {
-        self.read(AAD_PATH)
+        self.read(&self.aad_path)
     }
 
     fn store_aad(&self,
                  aad: Vec<u8>) -> Result<(), SecretsError> {
-        self.store(aad, AAD_PATH)
+        self.store(aad, &self.aad_path)
     }
 
     fn exists_aad(&self) -> Result<bool, SecretsError> {
-        self.exists(AAD_PATH)
+        self.exists(&self.aad_path)
     }
 }

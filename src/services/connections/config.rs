@@ -5,6 +5,7 @@ use sled::Db;
 
 use crate::models::connections::{ConnectionConfig, Versioned};
 use crate::models::errors::ConnectionConfigError;
+use crate::services::BASE_STORAGE_PATH;
 use crate::services::secrets::LocalSecretsService;
 
 pub struct ConnectionConfigService {
@@ -17,7 +18,7 @@ pub struct ConnectionConfigService {
 impl ConnectionConfigService {
 
     pub fn new(secrets_service: Arc<LocalSecretsService>) -> Self {
-        let configs = sled::open("./stored/pooly_configs").unwrap();
+        let configs = sled::open(BASE_STORAGE_PATH.to_owned() + "/pooly_configs").unwrap();
 
         ConnectionConfigService {
             configs,
