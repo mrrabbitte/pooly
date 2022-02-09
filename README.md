@@ -7,11 +7,15 @@ A protobuf to Postgres adapter + connection pooling middleware.
 WIP. The roadmap includes:
 
 - [x] Batch requests + trasactions support;
-- [ ] test coverage;
+- [ ] basic unit tests;
+- [ ] basic integration tests;
 - [ ] TLS postgres support;
 - [ ] Java client;
 - [ ] Python client;
 - [ ] Rust client;
-- [ ] end to end Property-Based Tests;
+- [ ] rich logging support;
+- [ ] metrics support -> Prometheus;
 - [ ] wide range of postgres types support;
-- [ ] use Vault instead of local secrets keeping.
+- [ ] Property-Based Testing;
+- [ ] add option to use Vault instead of local secrets keeping;
+- [ ] docker image + unsealing script.
