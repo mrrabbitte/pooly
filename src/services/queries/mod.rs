@@ -43,7 +43,7 @@ impl QueryService {
 
     async fn do_bulk_tx(&self,
                         request: &TxBulkQueryRequest) -> Result<Vec<TxQuerySuccessResponse>, QueryError> {
-        let db_id: &str = &request.db_id;
+        let db_id: &str = &request.connection_id;
 
         match self.connection_service.get(db_id).await {
             Some(connection_result) => {
@@ -106,9 +106,9 @@ impl QueryService {
     }
 
     async fn do_query(&self, request: &QueryRequest) -> Result<QuerySuccessResponse, QueryError> {
-        let db_id: &str = &request.db_id;
+        let connection_id: &str = &request.connection_id;
 
-        match self.connection_service.get(db_id).await {
+        match self.connection_service.get(connection_id).await {
             Some(connection_result) => {
                 let connection = connection_result?;
 
@@ -129,7 +129,7 @@ impl QueryService {
                     }
                 )
             }
-            None => Err(QueryError::UnknownDatabaseConnection(db_id.to_owned()))
+            None => Err(QueryError::UnknownDatabaseConnection(connection_id.to_owned()))
         }
     }
 
@@ -177,3 +177,5 @@ impl From<ErrorResponse> for TxBulkQueryResponse {
         }
     }
 }
+
+

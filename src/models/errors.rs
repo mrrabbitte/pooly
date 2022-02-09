@@ -5,6 +5,7 @@ use deadpool::managed::PoolError;
 use deadpool_postgres::CreatePoolError;
 use ring::error::Unspecified;
 use serde::{Deserialize, Serialize};
+use sled::CompareAndSwapError;
 use tokio_postgres::Error;
 
 use crate::models::payloads::error_response::ErrorType;
@@ -35,6 +36,7 @@ pub enum ConnectionError {
 #[derive(Debug, Serialize, Deserialize)]
 pub enum ConnectionConfigError {
 
+    AlreadyExistsError,
     ConfigStorageError(String),
     ConfigSerdeError(String),
     SecretsError(String)
@@ -58,6 +60,8 @@ impl ConnectionConfigError {
 
     fn get_message(&self) -> &str {
         match self {
+            ConnectionConfigError::AlreadyExistsError =>
+                "Config for this connection id already exists",
             ConnectionConfigError::ConfigStorageError(message) => message,
             ConnectionConfigError::ConfigSerdeError(message) => message,
             ConnectionConfigError::SecretsError(message) => message
@@ -136,6 +140,7 @@ impl From<ConnectionConfigError> for QueryError {
         let message = err.get_message().to_string();
         let code = match err {
             ConnectionConfigError::SecretsError(_) => 401,
+            ConnectionConfigError::AlreadyExistsError => 409,
             _ => 500
         };
        QueryError::ConnectionConfigError(message, code)
@@ -192,5 +197,11 @@ impl<T> From<PoisonError<T>> for SecretsError {
 impl From<Box<bincode::ErrorKind>> for SecretsError {
     fn from(err: Box<ErrorKind>) -> Self {
         SecretsError::SerdeError(format!("{:?}", err))
+    }
+}
+
+impl From<CompareAndSwapError> for ConnectionConfigError {
+    fn from(_: CompareAndSwapError) -> Self {
+        ConnectionConfigError::AlreadyExistsError
     }
 }

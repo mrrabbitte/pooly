@@ -27,8 +27,8 @@ impl ConnectionConfigService {
     }
 
     pub fn get(&self,
-               db_name: &str) -> Result<Option<ConnectionConfig>, ConnectionConfigError> {
-        match self.configs.get(db_name) {
+               connection_id: &str) -> Result<Option<ConnectionConfig>, ConnectionConfigError> {
+        match self.configs.get(connection_id) {
             Ok(None) => Ok(None),
             Ok(Some(enc_bytes)) => {
                 let encrypted_payload =
@@ -47,14 +47,19 @@ impl ConnectionConfigService {
     }
 
     pub fn put(&self, config: ConnectionConfig) -> Result<(), ConnectionConfigError> {
-        let db_name = config.db_name.clone();
+        let connection_id = config.id.clone();
 
         let serialized = bincode::serialize(&Versioned::V1(config))?;
 
-        self.configs.insert(
-            db_name,
-            bincode::serialize(&self.secrets_service.encrypt(&serialized)?)?
-        )?;
+        self.configs.compare_and_swap(
+            connection_id,
+            None as Option<&[u8]>,
+            Some(
+                bincode::serialize(
+                    &self.secrets_service.encrypt(&serialized)?
+                )?
+            )
+        )??;
 
         self.configs.flush()?;
 

@@ -31,11 +31,17 @@ fn convert_row(row: &Row) -> Result<Vec<ValueWrapper>, QueryError> {
     let mut values = vec![];
 
     for i in 0..columns.len() {
-        let value = match columns[i].type_().oid() {
+        let col_type = columns[i].type_();
+
+        let value = match col_type.oid() {
             25 => get_or_empty(&row, proto_string, i)?,
             1043 => get_or_empty(&row, proto_string, i)?,
             20 => get_or_empty(&row, Value::Int8, i)?,
-            _ => panic!("Unknown value type.")
+            unknown => return Err(
+                        QueryError::UnknownPostgresValueType(
+                            format!("Got unsupported row value type: {}, oid: {}.",
+                                    col_type.name(), unknown))
+                    )
         };
 
         values.push(ValueWrapper { value });

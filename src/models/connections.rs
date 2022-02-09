@@ -6,6 +6,7 @@ use zeroize::Zeroize;
 #[derive(PartialEq, Hash, Serialize, Deserialize, Debug)]
 pub struct ConnectionConfig {
 
+    pub id: String,
     pub hosts: Vec<String>,
     pub db_name: String,
     pub user: String,

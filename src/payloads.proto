@@ -61,7 +61,7 @@ message QueryResponse {
 
 message QueryRequest {
 
-  string db_id = 1;
+  string connection_id = 1;
   string query = 2;
   repeated ValueWrapper params = 3;
 
@@ -80,7 +80,7 @@ message TxBulkQueryRequestBody {
 
 message TxBulkQueryRequest {
 
-  string db_id = 1;
+  string connection_id = 1;
   repeated TxBulkQueryRequestBody queries = 2;
 
 }
