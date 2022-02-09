@@ -8,7 +8,6 @@ pub struct MasterKeySharesService {
 
 }
 
-
 impl MasterKeySharesService {
 
     pub fn new() -> MasterKeySharesService {
@@ -40,8 +39,8 @@ impl MasterKeySharesService {
 
 #[cfg(test)]
 mod tests {
-    use crate::MasterKeySharesService;
     use crate::models::secrets::MasterKeyShare;
+    use crate::services::secrets::shares::MasterKeySharesService;
 
     #[test]
     fn test_add_remove_get_clear() {

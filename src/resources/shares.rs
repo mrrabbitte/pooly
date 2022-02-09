@@ -5,8 +5,8 @@ use actix_web::post;
 use actix_web::Result;
 use actix_web::web::{Data, Json};
 
-use crate::MasterKeySharesService;
 use crate::models::secrets::MasterKeySharePayload;
+use crate::services::secrets::shares::MasterKeySharesService;
 
 #[post("/v1/shares")]
 pub async fn add_share(service: Data<Arc<MasterKeySharesService>>,

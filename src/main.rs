@@ -10,16 +10,13 @@ use actix_web::{App, HttpServer, middleware};
 use actix_web::web::Data;
 use ring::rand::SystemRandom;
 
-use crate::services::connections::config::ConnectionConfigService;
-use crate::services::connections::ConnectionService;
-use crate::services::queries::QueryService;
-use crate::services::secrets::{LocalSecretsService, SecretServiceFactory};
-use crate::services::secrets::generate::VecGenerator;
-use crate::services::secrets::shares::MasterKeySharesService;
-
-pub mod resources;
-pub mod models;
-pub mod services;
+use pooly::resources;
+use pooly::services::connections::config::ConnectionConfigService;
+use pooly::services::connections::ConnectionService;
+use pooly::services::queries::QueryService;
+use pooly::services::secrets::{LocalSecretsService, SecretServiceFactory};
+use pooly::services::secrets::generate::VecGenerator;
+use pooly::services::secrets::shares::MasterKeySharesService;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

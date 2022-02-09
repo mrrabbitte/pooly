@@ -175,11 +175,12 @@ mod tests {
 
     use ring::rand::SystemRandom;
 
-    use crate::{MasterKeySharesService, VecGenerator};
     use crate::models::errors::SecretsError;
     use crate::models::secrets::EncryptedPayload;
     use crate::services::secrets::files::MockFilesService;
+    use crate::services::secrets::generate::VecGenerator;
     use crate::services::secrets::SecretsService;
+    use crate::services::secrets::shares::MasterKeySharesService;
 
     #[test]
     fn test_returns_error_on_encdec_when_sealed() {

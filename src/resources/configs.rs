@@ -5,7 +5,7 @@ use actix_web::post;
 use actix_web::Result;
 use actix_web::web::{Data, Json};
 
-use crate::ConnectionConfigService;
+use crate::services::connections::config::ConnectionConfigService;
 use crate::models::connections::ConnectionConfig;
 
 #[post("/v1/configs")]
