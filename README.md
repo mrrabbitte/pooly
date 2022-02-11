@@ -9,7 +9,7 @@ WIP. The roadmap includes:
 - [x] Batch requests + trasactions support;
 - [ ] basic unit tests;
 - [ ] basic integration tests;
-- [ ] send back only row bytes, accept strongly typed param values;
+- [ ] send back bytes received from db, accept strongly typed param values;
 - [ ] JWT auth + admin / client_service roles;
 - [ ] Client based throttling;
 - [ ] TLS postgres support;
