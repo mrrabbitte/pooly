@@ -7,7 +7,7 @@ use crate::services::connections::config::ConnectionConfigService;
 use crate::services::connections::ConnectionService;
 use crate::services::queries::QueryService;
 use crate::services::secrets::{LocalSecretsService, SecretServiceFactory};
-use crate::services::secrets::generate::VecGenerator;
+use crate::services::secrets::random::VecGenerator;
 use crate::services::secrets::shares::MasterKeySharesService;
 
 pub mod data;

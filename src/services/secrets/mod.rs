@@ -11,13 +11,13 @@ use crate::models::errors::SecretsError;
 use crate::models::secrets::{EncryptedPayload, EncryptionKey, KEY_LENGTH, MasterKey, MasterKeyShare, MasterKeySharePayload};
 use crate::services::secrets::encryption::EncryptionService;
 use crate::data::files::{FilesService, SimpleFilesService};
-use crate::services::secrets::generate::VecGenerator;
+use crate::services::secrets::random::VecGenerator;
 use crate::services::secrets::shares::MasterKeySharesService;
 
 const MINIMUM_SHARES_THRESHOLD: u8 = 8;
 const NONCE_SIZE: usize = 24;
 
-pub mod generate;
+pub mod random;
 pub mod shares;
 
 mod encryption;
@@ -181,7 +181,7 @@ mod tests {
     use crate::models::errors::SecretsError;
     use crate::models::secrets::EncryptedPayload;
     use crate::data::files::MockFilesService;
-    use crate::services::secrets::generate::VecGenerator;
+    use crate::services::secrets::random::VecGenerator;
     use crate::services::secrets::SecretsService;
     use crate::services::secrets::shares::MasterKeySharesService;
 

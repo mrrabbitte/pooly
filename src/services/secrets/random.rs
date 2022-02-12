@@ -35,7 +35,7 @@ mod tests {
 
     use ring::rand::SystemRandom;
 
-    use crate::services::secrets::generate::VecGenerator;
+    use crate::services::secrets::random::VecGenerator;
 
     #[test]
     fn test_generates_random_vec_with_expected_size() {
