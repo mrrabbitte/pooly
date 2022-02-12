@@ -7,8 +7,8 @@ A protobuf to Postgres adapter + connection pooling middleware.
 WIP. The roadmap includes:
 
 - [x] Batch requests + trasactions support;
-- [ ] basic unit tests;
-- [ ] basic integration tests;
+- [x] basic unit tests;
+- [x] basic integration tests;
 - [ ] send back bytes received from db, accept strongly typed param values;
 - [ ] JWT auth + admin / client_service roles;
 - [ ] Client based throttling;
