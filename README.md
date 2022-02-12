@@ -9,7 +9,6 @@ WIP. The roadmap includes:
 - [x] Batch requests + trasactions support;
 - [x] basic unit tests;
 - [x] basic integration tests;
-- [ ] send back bytes received from db, accept strongly typed param values;
 - [ ] JWT auth + admin / client_service roles;
 - [ ] you can throttle requests based on the client-id;
 - [ ] TLS postgres support;
@@ -21,4 +20,5 @@ WIP. The roadmap includes:
 - [ ] metrics support -> Prometheus;
 - [ ] wide range of postgres types support as input;
 - [ ] add option to use Vault instead of local secrets keeping;
-- [ ] docker image + unsealing script.
+- [ ] docker image + unsealing script;
+- [ ] send back bytes received from db, accept strongly typed param values;
