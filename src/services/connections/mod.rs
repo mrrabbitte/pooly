@@ -2,8 +2,7 @@ use std::sync::Arc;
 
 use dashmap::DashMap;
 use deadpool::managed::{Object, PoolConfig};
-use deadpool_postgres::{Config, Manager, ManagerConfig, Pool, RecyclingMethod, Runtime};
-
+use deadpool_postgres::{Config, Manager, ManagerConfig, Pool, RecyclingMethod, Runtime, SslMode};
 use tokio_postgres::NoTls;
 
 use crate::models::connections::ConnectionConfig;
@@ -32,7 +31,8 @@ impl ConnectionService {
         }
     }
 
-    pub async fn get(&self, connection_id: &str) -> Option<Result<Connection, ConnectionError>> {
+    pub async fn get(&self,
+                     connection_id: &str) -> Option<Result<Connection, ConnectionError>> {
         match self.pools.get(connection_id) {
             Some(pool) =>
                 Some(pool.get().await.map_err(ConnectionError::PoolError)),
@@ -57,10 +57,12 @@ impl ConnectionService {
 
         config.dbname = Some(connection_config.db_name.clone());
         config.hosts = Some(connection_config.hosts.clone());
+        config.ports = Some(connection_config.ports.clone());
         config.user = Some(connection_config.user.clone());
         config.password = Some(connection_config.password.clone());
         config.manager = Some(ManagerConfig { recycling_method: RecyclingMethod::Fast });
         config.pool = Some(PoolConfig::new(connection_config.max_connections as usize));
+        config.ssl_mode = Some(SslMode::Prefer);
 
         Some(match config.create_pool(
             Some(Runtime::Tokio1),

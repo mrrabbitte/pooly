@@ -27,6 +27,7 @@ pub fn convert_params<'a>(expected_param_types: &[Type],
             None => params.push(get_null_for_type(expected_type)?),
             Some(Value::String(val)) => params.push(val),
             Some(Value::Int8(val)) => params.push(val),
+            Some(Value::Int4(val)) => params.push(val),
             Some(Value::Bytes(val)) => params.push(val)
         }
 

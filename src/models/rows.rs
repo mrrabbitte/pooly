@@ -37,6 +37,7 @@ fn convert_row(row: &Row) -> Result<Vec<ValueWrapper>, QueryError> {
             25 => get_or_empty(&row, proto_string, i)?,
             1043 => get_or_empty(&row, proto_string, i)?,
             20 => get_or_empty(&row, Value::Int8, i)?,
+            23 => get_or_empty(&row, Value::Int4, i)?,
             unknown => return Err(
                         QueryError::UnknownPostgresValueType(
                             format!("Got unsupported row value type: {}, oid: {}.",

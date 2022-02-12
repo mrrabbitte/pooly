@@ -8,6 +8,7 @@ pub struct ConnectionConfig {
 
     pub id: String,
     pub hosts: Vec<String>,
+    pub ports: Vec<u16>,
     pub db_name: String,
     pub user: String,
     pub password: String,

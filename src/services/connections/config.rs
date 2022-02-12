@@ -46,7 +46,8 @@ impl ConnectionConfigService {
         }
     }
 
-    pub fn put(&self, config: ConnectionConfig) -> Result<(), ConnectionConfigError> {
+    pub fn create(&self,
+                  config: ConnectionConfig) -> Result<(), ConnectionConfigError> {
         let connection_id = config.id.clone();
 
         let serialized = bincode::serialize(&Versioned::V1(config))?;
@@ -64,6 +65,10 @@ impl ConnectionConfigService {
         self.configs.flush()?;
 
         Ok(())
+    }
+
+    pub fn clear(&self) -> Result<(), ()> {
+        self.configs.clear().map_err(|_| ())
     }
 
 }

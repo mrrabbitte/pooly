@@ -167,6 +167,10 @@ impl<T: FilesService> SecretsService<T> {
         self.is_sealed.load(Ordering::Relaxed)
     }
 
+    pub fn clear(&self) -> Result<(), SecretsError> {
+        self.files_service.clear()
+    }
+
 }
 
 #[cfg(test)]

@@ -4,49 +4,23 @@ extern crate rustls;
 extern crate tokio_postgres;
 extern crate tokio_postgres_rustls;
 
-use std::sync::Arc;
-
 use actix_web::{App, HttpServer, middleware};
 use actix_web::web::Data;
-use ring::rand::SystemRandom;
 
-use pooly::resources;
-use pooly::services::connections::config::ConnectionConfigService;
-use pooly::services::connections::ConnectionService;
-use pooly::services::queries::QueryService;
-use pooly::services::secrets::{LocalSecretsService, SecretServiceFactory};
-use pooly::services::secrets::generate::VecGenerator;
-use pooly::services::secrets::shares::MasterKeySharesService;
+use pooly::{AppContext, resources};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let vec_generator =
-        Arc::new(
-            VecGenerator::new(
-                Arc::new(SystemRandom::new())));
-
-    let shares_service = Arc::new(MasterKeySharesService::new());
-
-    let secrets_service: Arc<LocalSecretsService> =
-        Arc::new(
-            SecretServiceFactory::create(shares_service.clone(), vec_generator));
-
-    let connection_config_service =
-        Arc::new(ConnectionConfigService::new(secrets_service.clone()));
-
-    let query_service =
-        Arc::new(QueryService::new(
-            ConnectionService::new(
-                connection_config_service.clone())));
+    let app_context = AppContext::new();
 
     let server = HttpServer::new(
         move || {
             App::new()
                 .wrap(middleware::Logger::default())
-                .app_data(Data::new(query_service.clone()))
-                .app_data(Data::new(connection_config_service.clone()))
-                .app_data(Data::new(secrets_service.clone()))
-                .app_data(Data::new(shares_service.clone()))
+                .app_data(Data::new(app_context.query_service.clone()))
+                .app_data(Data::new(app_context.connection_config_service.clone()))
+                .app_data(Data::new(app_context.secrets_service.clone()))
+                .app_data(Data::new(app_context.shares_service.clone()))
                 .service(resources::query::bulk)
                 .service(resources::query::query)
                 .service(resources::configs::create)

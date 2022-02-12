@@ -11,7 +11,7 @@ use crate::models::connections::ConnectionConfig;
 #[post("/v1/configs")]
 pub async fn create(service: Data<Arc<ConnectionConfigService>>,
                     request: Json<ConnectionConfig>) -> Result<HttpResponse> {
-    match service.put(request.0) {
+    match service.create(request.0) {
         Ok(_) => Ok(HttpResponse::Ok().finish()),
         Err(err) => Ok(HttpResponse::InternalServerError().json(err))
     }

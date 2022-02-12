@@ -30,6 +30,8 @@ pub trait FilesService {
     fn store_aad(&self, aad: Vec<u8>) -> Result<(), SecretsError>;
 
     fn exists_aad(&self) -> Result<bool, SecretsError>;
+
+    fn clear(&self) -> Result<(), SecretsError>;
 }
 
 impl SimpleFilesService {
@@ -46,7 +48,7 @@ impl SimpleFilesService {
             path: &str) -> Result<Vec<u8>, SecretsError> {
         match self.lock.read() {
             Ok(_) => fs::read(path)
-                .map_err(SimpleFilesService::file_read_err),
+                .map_err(SimpleFilesService::file_err),
             Err(_) => Err(SecretsError::LockError)
         }
     }
@@ -56,7 +58,7 @@ impl SimpleFilesService {
              path: &str) -> Result<(), SecretsError> {
         match self.lock.write() {
             Ok(_) => fs::write(path, payload)
-                .map_err(SimpleFilesService::file_read_err),
+                .map_err(SimpleFilesService::file_err),
             Err(_) => Err(SecretsError::LockError)
         }
     }
@@ -69,7 +71,15 @@ impl SimpleFilesService {
         }
     }
 
-    fn file_read_err<T>(_: T) -> SecretsError {
+    fn remove_if_exists(path: &str) -> Result<(), SecretsError> {
+        if Path::new(path).exists() {
+            return fs::remove_file(path).map_err(SimpleFilesService::file_err);
+        }
+
+        Ok(())
+    }
+
+    fn file_err<T>(_: T) -> SecretsError {
         SecretsError::FileReadError
     }
 
@@ -100,5 +110,16 @@ impl FilesService for SimpleFilesService {
 
     fn exists_aad(&self) -> Result<bool, SecretsError> {
         self.exists(&self.aad_path)
+    }
+
+    fn clear(&self) -> Result<(), SecretsError> {
+        match self.lock.write() {
+            Ok(_) => {
+                SimpleFilesService::remove_if_exists(&self.enc_key_path)
+                    .and(
+                        SimpleFilesService::remove_if_exists(&self.aad_path))
+            },
+            Err(_) => Err(SecretsError::LockError)
+        }
     }
 }
