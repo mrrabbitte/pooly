@@ -10,7 +10,7 @@ use crate::models::connections::ZeroizeWrapper;
 use crate::models::errors::SecretsError;
 use crate::models::secrets::{EncryptedPayload, EncryptionKey, KEY_LENGTH, MasterKey, MasterKeyShare, MasterKeySharePayload};
 use crate::services::secrets::encryption::EncryptionService;
-use crate::services::secrets::files::{FilesService, SimpleFilesService};
+use crate::data::files::{FilesService, SimpleFilesService};
 use crate::services::secrets::generate::VecGenerator;
 use crate::services::secrets::shares::MasterKeySharesService;
 
@@ -20,7 +20,6 @@ const NONCE_SIZE: usize = 24;
 pub mod generate;
 pub mod shares;
 
-mod files;
 mod encryption;
 
 pub type LocalSecretsService = SecretsService<SimpleFilesService>;
@@ -181,7 +180,7 @@ mod tests {
 
     use crate::models::errors::SecretsError;
     use crate::models::secrets::EncryptedPayload;
-    use crate::services::secrets::files::MockFilesService;
+    use crate::data::files::MockFilesService;
     use crate::services::secrets::generate::VecGenerator;
     use crate::services::secrets::SecretsService;
     use crate::services::secrets::shares::MasterKeySharesService;

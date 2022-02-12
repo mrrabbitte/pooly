@@ -24,6 +24,7 @@ pub struct SimpleDao {
 }
 
 impl SimpleDao {
+
     pub fn new(keyspace: &str,
                db: Arc<Db>) -> Result<Self, StorageError> {
         Ok(
@@ -33,6 +34,7 @@ impl SimpleDao {
             }
         )
     }
+
 }
 
 impl Dao<Vec<u8>> for SimpleDao {
