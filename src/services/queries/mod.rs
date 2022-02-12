@@ -1,28 +1,19 @@
-use std::net::ToSocketAddrs;
-
-use actix_web::web::Query;
-use bytes::BytesMut;
-use deadpool::managed::PoolError;
 use deadpool_postgres::Transaction;
-use postgres_types::{IsNull, ToSql, Type};
-use tokio_postgres::{Error, Statement};
+use postgres_types::ToSql;
 
 use crate::models::errors::QueryError;
 use crate::models::parameters::convert_params;
-use crate::models::payloads::{ErrorResponse, query_response, QueryRequest, QueryResponse, RowResponseGroup, tx_bulk_query_response, TxBulkQueryParams, TxBulkQueryRequest, TxBulkQueryRequestBody, TxBulkQueryResponse, TxBulkQuerySuccessResponse, TxQuerySuccessResponse, ValueWrapper};
-use crate::models::payloads::error_response::ErrorType;
+use crate::models::payloads::{ErrorResponse, query_response, QueryRequest, QueryResponse, RowResponseGroup, tx_bulk_query_response, TxBulkQueryRequest, TxBulkQueryRequestBody, TxBulkQueryResponse, TxBulkQuerySuccessResponse, TxQuerySuccessResponse};
 use crate::models::payloads::QuerySuccessResponse;
-use crate::models::payloads::value_wrapper::Value;
 use crate::models::responses::ResponseWithCode;
-use crate::models::rows::{convert_rows, RowResponsesWithColumnNames};
-use crate::services::connections::{Connection, ConnectionService};
+use crate::models::rows::convert_rows;
+use crate::services::connections::ConnectionService;
 
 pub struct QueryService {
 
     connection_service: ConnectionService
 
 }
-
 
 impl QueryService {
 
@@ -50,9 +41,9 @@ impl QueryService {
         }
     }
 
-    pub async fn do_bulk_tx(&self,
-                            request: &TxBulkQueryRequest) -> Result<Vec<TxQuerySuccessResponse>, QueryError> {
-        let db_id: &str = &request.db_id;
+    async fn do_bulk_tx(&self,
+                        request: &TxBulkQueryRequest) -> Result<Vec<TxQuerySuccessResponse>, QueryError> {
+        let db_id: &str = &request.connection_id;
 
         match self.connection_service.get(db_id).await {
             Some(connection_result) => {
@@ -115,9 +106,9 @@ impl QueryService {
     }
 
     async fn do_query(&self, request: &QueryRequest) -> Result<QuerySuccessResponse, QueryError> {
-        let db_id: &str = &request.db_id;
+        let connection_id: &str = &request.connection_id;
 
-        match self.connection_service.get(db_id).await {
+        match self.connection_service.get(connection_id).await {
             Some(connection_result) => {
                 let connection = connection_result?;
 
@@ -138,7 +129,7 @@ impl QueryService {
                     }
                 )
             }
-            None => Err(QueryError::UnknownDatabaseConnection(db_id.to_owned()))
+            None => Err(QueryError::UnknownDatabaseConnection(connection_id.to_owned()))
         }
     }
 
@@ -186,3 +177,5 @@ impl From<ErrorResponse> for TxBulkQueryResponse {
         }
     }
 }
+
+

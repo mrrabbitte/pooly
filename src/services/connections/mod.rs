@@ -1,18 +1,16 @@
 use std::sync::Arc;
 
 use dashmap::DashMap;
-use dashmap::mapref::one::Ref;
 use deadpool::managed::{Object, PoolConfig};
-use deadpool_postgres::{Config, CreatePoolError, Manager, ManagerConfig, Pool, PoolError, RecyclingMethod, Runtime, SslMode};
-use rustls::ClientConfig;
-use tokio_postgres::{Client, NoTls};
-use tokio_postgres_rustls::MakeRustlsConnect;
+use deadpool_postgres::{Config, Manager, ManagerConfig, Pool, RecyclingMethod, Runtime, SslMode};
+use tokio_postgres::NoTls;
 
 use crate::models::connections::ConnectionConfig;
 use crate::models::errors::ConnectionError;
 use crate::services::connections::config::ConnectionConfigService;
 
 pub mod config;
+
 
 pub struct ConnectionService {
 
@@ -23,6 +21,7 @@ pub struct ConnectionService {
 
 pub type Connection = Object<Manager>;
 
+
 impl ConnectionService {
 
     pub fn new(connection_config_service: Arc<ConnectionConfigService>) -> Self {
@@ -32,17 +31,18 @@ impl ConnectionService {
         }
     }
 
-    pub async fn get(&self, db_id: &str) -> Option<Result<Connection, ConnectionError>> {
-        match self.pools.get(db_id) {
+    pub async fn get(&self,
+                     connection_id: &str) -> Option<Result<Connection, ConnectionError>> {
+        match self.pools.get(connection_id) {
             Some(pool) =>
                 Some(pool.get().await.map_err(ConnectionError::PoolError)),
-            None => self.create_or_empty(db_id).await
+            None => self.create_or_empty(connection_id).await
         }
     }
 
     async fn create_or_empty(&self,
-                             db_id: &str) -> Option<Result<Connection, ConnectionError>> {
-        match self.config_service.get(db_id) {
+                             connection_id: &str) -> Option<Result<Connection, ConnectionError>> {
+        match self.config_service.get(connection_id) {
             Ok(None) => Option::None,
             Ok(Some(config)) =>
                 self.add_connection_pool(&config).await,
@@ -57,10 +57,12 @@ impl ConnectionService {
 
         config.dbname = Some(connection_config.db_name.clone());
         config.hosts = Some(connection_config.hosts.clone());
+        config.ports = Some(connection_config.ports.clone());
         config.user = Some(connection_config.user.clone());
         config.password = Some(connection_config.password.clone());
         config.manager = Some(ManagerConfig { recycling_method: RecyclingMethod::Fast });
         config.pool = Some(PoolConfig::new(connection_config.max_connections as usize));
+        config.ssl_mode = Some(SslMode::Prefer);
 
         Some(match config.create_pool(
             Some(Runtime::Tokio1),
@@ -71,7 +73,7 @@ impl ConnectionService {
                     pool.get().await.map_err(ConnectionError::PoolError);
 
                 if result.is_ok() {
-                    self.pools.insert(connection_config.db_name.clone(), pool);
+                    self.pools.insert(connection_config.id.clone(), pool);
                 }
 
                 result

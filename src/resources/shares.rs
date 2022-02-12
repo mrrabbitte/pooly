@@ -5,8 +5,8 @@ use actix_web::post;
 use actix_web::Result;
 use actix_web::web::{Data, Json};
 
-use crate::MasterKeySharesService;
-use crate::models::secrets::{MasterKeyShare, MasterKeySharePayload};
+use crate::models::secrets::MasterKeySharePayload;
+use crate::services::secrets::shares::MasterKeySharesService;
 
 #[post("/v1/shares")]
 pub async fn add_share(service: Data<Arc<MasterKeySharesService>>,
@@ -21,4 +21,11 @@ pub async fn add_share(service: Data<Arc<MasterKeySharesService>>,
         },
         Err(_) => Ok(HttpResponse::BadRequest().finish())
     }
+}
+
+#[post("/v1/clear")]
+pub async fn clear_shares(service: Data<Arc<MasterKeySharesService>>) -> Result<HttpResponse> {
+    service.clear();
+
+    Ok(HttpResponse::Ok().finish())
 }

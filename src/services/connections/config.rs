@@ -1,27 +1,24 @@
-use std::error::Error;
 use std::sync::Arc;
 
-use dashmap::DashMap;
-use dashmap::mapref::one::Ref;
 use sled;
-use sled::{Db, IVec};
+use sled::Db;
 
-use crate::models::connections::{ConnectionConfig, Versioned, ZeroizeWrapper};
+use crate::models::connections::{ConnectionConfig, Versioned};
 use crate::models::errors::ConnectionConfigError;
-use crate::models::secrets::EncryptedPayload;
-use crate::services::secrets::SecretsService;
+use crate::services::BASE_STORAGE_PATH;
+use crate::services::secrets::LocalSecretsService;
 
 pub struct ConnectionConfigService {
 
     configs: Db,
-    secrets_service: Arc<SecretsService>
+    secrets_service: Arc<LocalSecretsService>
 
 }
 
 impl ConnectionConfigService {
 
-    pub fn new(secrets_service: Arc<SecretsService>) -> Self {
-        let configs = sled::open("./stored/pooly_configs").unwrap();
+    pub fn new(secrets_service: Arc<LocalSecretsService>) -> Self {
+        let configs = sled::open(BASE_STORAGE_PATH.to_owned() + "/pooly_configs").unwrap();
 
         ConnectionConfigService {
             configs,
@@ -30,8 +27,8 @@ impl ConnectionConfigService {
     }
 
     pub fn get(&self,
-               db_name: &str) -> Result<Option<ConnectionConfig>, ConnectionConfigError> {
-        match self.configs.get(db_name) {
+               connection_id: &str) -> Result<Option<ConnectionConfig>, ConnectionConfigError> {
+        match self.configs.get(connection_id) {
             Ok(None) => Ok(None),
             Ok(Some(enc_bytes)) => {
                 let encrypted_payload =
@@ -49,19 +46,29 @@ impl ConnectionConfigService {
         }
     }
 
-    pub fn put(&self, config: ConnectionConfig) -> Result<(), ConnectionConfigError> {
-        let db_name = config.db_name.clone();
+    pub fn create(&self,
+                  config: ConnectionConfig) -> Result<(), ConnectionConfigError> {
+        let connection_id = config.id.clone();
 
         let serialized = bincode::serialize(&Versioned::V1(config))?;
 
-        self.configs.insert(
-            db_name,
-            bincode::serialize(&self.secrets_service.encrypt(&serialized)?)?
-        )?;
+        self.configs.compare_and_swap(
+            connection_id,
+            None as Option<&[u8]>,
+            Some(
+                bincode::serialize(
+                    &self.secrets_service.encrypt(&serialized)?
+                )?
+            )
+        )??;
 
         self.configs.flush()?;
 
         Ok(())
+    }
+
+    pub fn clear(&self) -> Result<(), ()> {
+        self.configs.clear().map_err(|_| ())
     }
 
 }

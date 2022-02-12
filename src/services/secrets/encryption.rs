@@ -1,8 +1,6 @@
-use std::ops::Deref;
-use std::sync::{Arc, LockResult, RwLock};
-use std::sync::atomic::{AtomicBool, AtomicPtr, Ordering};
+use std::sync::{Arc, RwLock};
 
-use chacha20poly1305::aead::{Aead, Error, NewAead, Payload};
+use chacha20poly1305::aead::{Aead, NewAead, Payload};
 use chacha20poly1305::aead::generic_array::GenericArray;
 use chacha20poly1305::XChaCha20Poly1305;
 
@@ -88,10 +86,9 @@ struct KeyWithAad {
 #[cfg(test)]
 mod tests {
     use std::sync::{Arc, RwLock};
-    use std::sync::atomic::{AtomicBool, AtomicPtr};
 
-    use chacha20poly1305::aead::{Aead, NewAead, Payload};
     use chacha20poly1305::aead::generic_array::GenericArray;
+    use chacha20poly1305::aead::NewAead;
     use chacha20poly1305::XChaCha20Poly1305;
     use ring::rand::SystemRandom;
 
@@ -102,22 +99,48 @@ mod tests {
 
     #[test]
     fn test_encrypts_and_decrypts_correctly() {
-        let encryption_service = build_service();
+        check_encrypt_decrypt(&default_build_service(), &vec![5; 256]);
+    }
 
-        let payload = vec![5; 256];
+    #[test]
+    fn test_changes_key_correctly() {
+        let mut key = vec![2; KEY_LENGTH];
 
+        let encryption_service = build_service(key.clone());
+
+        let payload = vec![1; 112];
+
+        check_encrypt_decrypt(&encryption_service, &payload);
+
+        let encrypted_with_old = encryption_service.encrypt(&payload).unwrap();
+
+        key[0] = key[0] + 1;
+
+        encryption_service.set_key(ZeroizeWrapper::new(vec![1; 10]),
+                                   EncryptionKey::new(key.clone()))
+            .unwrap();
+
+        assert!(encryption_service.decrypt(&encrypted_with_old).is_err());
+
+        check_encrypt_decrypt(&encryption_service, &payload);
+    }
+
+    fn check_encrypt_decrypt(encryption_service: &EncryptionService,
+                             payload: &Vec<u8>) {
         let encrypted = encryption_service.encrypt(&payload).unwrap();
 
         let decrypted = encryption_service
             .decrypt(&encrypted)
             .unwrap();
 
-        assert_eq!(&payload, decrypted.get_value());
+        assert_eq!(payload, decrypted.get_value());
     }
 
-    fn build_service() -> EncryptionService {
-        let key: Vec<u8> = vec![2; KEY_LENGTH];
+    fn default_build_service() -> EncryptionService {
+        build_service(vec![2; KEY_LENGTH])
+    }
 
+    fn build_service(key: Vec<u8>) -> EncryptionService {
         EncryptionService {
             key_with_aad:
             RwLock::new(KeyWithAad {

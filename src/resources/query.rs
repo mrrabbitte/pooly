@@ -8,7 +8,6 @@ use actix_web::Result;
 use actix_web::web::Data;
 use uuid::Uuid;
 
-use crate::models::errors::QueryError;
 use crate::models::payloads::{QueryRequest, TxBulkQueryRequest};
 use crate::models::responses::ResponseWithCode;
 use crate::services::queries::QueryService;

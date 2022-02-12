@@ -1,10 +1,8 @@
-use std::any::Any;
-
-use postgres_types::{FromSql, Oid};
-use tokio_postgres::{Column, Error, Row};
+use postgres_types::FromSql;
+use tokio_postgres::Row;
 
 use crate::models::errors::QueryError;
-use crate::models::payloads::{QuerySuccessResponse, RowResponse, ValueWrapper};
+use crate::models::payloads::{RowResponse, ValueWrapper};
 use crate::models::payloads::value_wrapper::Value;
 
 pub struct RowResponsesWithColumnNames(pub Vec<RowResponse>, pub Vec<String>);
@@ -33,11 +31,18 @@ fn convert_row(row: &Row) -> Result<Vec<ValueWrapper>, QueryError> {
     let mut values = vec![];
 
     for i in 0..columns.len() {
-        let value = match columns[i].type_().oid() {
+        let col_type = columns[i].type_();
+
+        let value = match col_type.oid() {
             25 => get_or_empty(&row, proto_string, i)?,
             1043 => get_or_empty(&row, proto_string, i)?,
             20 => get_or_empty(&row, Value::Int8, i)?,
-            _ => panic!("Unknown value type.")
+            23 => get_or_empty(&row, Value::Int4, i)?,
+            unknown => return Err(
+                        QueryError::UnknownPostgresValueType(
+                            format!("Got unsupported row value type: {}, oid: {}.",
+                                    col_type.name(), unknown))
+                    )
         };
 
         values.push(ValueWrapper { value });
