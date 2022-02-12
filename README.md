@@ -11,7 +11,7 @@ WIP. The roadmap includes:
 - [x] basic integration tests;
 - [ ] send back bytes received from db, accept strongly typed param values;
 - [ ] JWT auth + admin / client_service roles;
-- [ ] Client based throttling;
+- [ ] you can throttle requests based on the client-id;
 - [ ] TLS postgres support;
 - [ ] Java client;
 - [ ] Property-Based Testing;
