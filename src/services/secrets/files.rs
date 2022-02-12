@@ -5,9 +5,9 @@ use std::sync::RwLock;
 #[cfg(test)]
 use mockall::automock;
 
+use crate::data::db::BASE_STORAGE_PATH;
 use crate::models::errors::SecretsError;
 use crate::models::secrets::EncryptedPayload;
-use crate::services::BASE_STORAGE_PATH;
 
 pub struct SimpleFilesService {
 
