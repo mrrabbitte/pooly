@@ -3,72 +3,58 @@ use std::sync::Arc;
 use sled;
 use sled::Db;
 
+use crate::data::dao::{Dao, EncryptedDao, SimpleDao};
 use crate::models::connections::{ConnectionConfig, Versioned};
 use crate::models::errors::ConnectionConfigError;
-use crate::services::BASE_STORAGE_PATH;
 use crate::services::secrets::LocalSecretsService;
+
+const CONNECTION_CONFIGS: &str = "connection_configs";
 
 pub struct ConnectionConfigService {
 
-    configs: Db,
-    secrets_service: Arc<LocalSecretsService>
+    dao: EncryptedDao
 
 }
 
 impl ConnectionConfigService {
 
-    pub fn new(secrets_service: Arc<LocalSecretsService>) -> Self {
-        let configs = sled::open(BASE_STORAGE_PATH.to_owned() + "/pooly_configs").unwrap();
-
+    pub fn new(db: Arc<Db>,
+               secrets_service: Arc<LocalSecretsService>) -> Self {
         ConnectionConfigService {
-            configs,
-            secrets_service
+            dao: EncryptedDao::new(
+                SimpleDao::new(CONNECTION_CONFIGS, db)
+                    .unwrap(),
+                secrets_service)
         }
     }
 
     pub fn get(&self,
                connection_id: &str) -> Result<Option<ConnectionConfig>, ConnectionConfigError> {
-        match self.configs.get(connection_id) {
-            Ok(None) => Ok(None),
-            Ok(Some(enc_bytes)) => {
-                let encrypted_payload =
-                    bincode::deserialize(enc_bytes.as_ref())?;
-
-                let decrypted =
-                    self.secrets_service.decrypt(&encrypted_payload)?;
-
+        match self.dao.get(connection_id)? {
+            Some(decrypted) => {
                 let versioned_config: Versioned<ConnectionConfig> =
                     bincode::deserialize(decrypted.get_value())?;
 
                 Ok(Some(versioned_config.unwrap()))
-            }
-            Err(err) => Err(ConnectionConfigError::ConfigStorageError(err.to_string()))
+            },
+            None => Ok(None)
         }
     }
 
     pub fn create(&self,
                   config: ConnectionConfig) -> Result<(), ConnectionConfigError> {
-        let connection_id = config.id.clone();
+        let config_id = config.id.clone();
 
         let serialized = bincode::serialize(&Versioned::V1(config))?;
 
-        self.configs.compare_and_swap(
-            connection_id,
-            None as Option<&[u8]>,
-            Some(
-                bincode::serialize(
-                    &self.secrets_service.encrypt(&serialized)?
-                )?
-            )
-        )??;
-
-        self.configs.flush()?;
+        self.dao.create(&config_id, serialized)?;
 
         Ok(())
     }
 
+    #[cfg(test)]
     pub fn clear(&self) -> Result<(), ()> {
-        self.configs.clear().map_err(|_| ())
+        self.storage_service.clear()
     }
 
 }

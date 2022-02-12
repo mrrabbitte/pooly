@@ -37,7 +37,7 @@ pub enum ConnectionError {
 pub enum ConnectionConfigError {
 
     AlreadyExistsError,
-    ConfigStorageError(String),
+    ConfigStorageError(StorageError),
     ConfigSerdeError(String),
     SecretsError(String)
 
@@ -56,15 +56,27 @@ pub enum SecretsError {
     Unspecified
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub enum StorageError {
+
+    AlreadyExistsError,
+    RetrievalError(String),
+    SerdeError(String),
+    SecretsError(SecretsError),
+    SledError(String)
+
+}
+
 impl ConnectionConfigError {
 
-    fn get_message(&self) -> &str {
+    fn get_message(&self) -> String {
         match self {
             ConnectionConfigError::AlreadyExistsError =>
-                "Config for this connection id already exists",
-            ConnectionConfigError::ConfigStorageError(message) => message,
-            ConnectionConfigError::ConfigSerdeError(message) => message,
-            ConnectionConfigError::SecretsError(message) => message
+                "Config for this connection id already exists".to_string(),
+            ConnectionConfigError::ConfigStorageError(err) =>
+                format!("{:?}", err),
+            ConnectionConfigError::ConfigSerdeError(message) => message.clone(),
+            ConnectionConfigError::SecretsError(message) => message.clone()
         }
     }
 
@@ -137,7 +149,7 @@ impl From<Error> for QueryError {
 
 impl From<ConnectionConfigError> for QueryError {
     fn from(err: ConnectionConfigError) -> Self {
-        let message = err.get_message().to_string();
+        let message = err.get_message();
         let code = match err {
             ConnectionConfigError::SecretsError(_) => 401,
             ConnectionConfigError::AlreadyExistsError => 409,
@@ -161,12 +173,6 @@ impl From<ConnectionError> for QueryError {
 impl From<Box<ErrorKind>> for ConnectionConfigError {
     fn from(err: Box<ErrorKind>) -> Self {
         ConnectionConfigError::ConfigSerdeError(err.to_string())
-    }
-}
-
-impl From<sled::Error> for ConnectionConfigError {
-    fn from(err: sled::Error) -> Self {
-        ConnectionConfigError::ConfigStorageError(err.to_string())
     }
 }
 
@@ -200,8 +206,38 @@ impl From<Box<bincode::ErrorKind>> for SecretsError {
     }
 }
 
+impl From<CompareAndSwapError> for StorageError {
+    fn from(_: CompareAndSwapError) -> Self {
+        StorageError::AlreadyExistsError
+    }
+}
+
 impl From<CompareAndSwapError> for ConnectionConfigError {
     fn from(_: CompareAndSwapError) -> Self {
         ConnectionConfigError::AlreadyExistsError
+    }
+}
+
+impl From<sled::Error> for StorageError {
+    fn from(err: sled::Error) -> Self {
+        StorageError::SledError(err.to_string())
+    }
+}
+
+impl From<Box<bincode::ErrorKind>> for StorageError {
+    fn from(err: Box<ErrorKind>) -> Self {
+        StorageError::SerdeError(format!("{:?}", err))
+    }
+}
+
+impl From<SecretsError> for StorageError {
+    fn from(err: SecretsError) -> Self {
+        StorageError::SecretsError(err)
+    }
+}
+
+impl From<StorageError> for ConnectionConfigError {
+    fn from(err: StorageError) -> Self {
+        ConnectionConfigError::ConfigStorageError(err)
     }
 }

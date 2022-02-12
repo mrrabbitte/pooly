@@ -1,14 +1,16 @@
 use std::sync::Arc;
 
 use ring::rand::SystemRandom;
+use crate::data::db::DbBuilder;
 
 use crate::services::connections::config::ConnectionConfigService;
 use crate::services::connections::ConnectionService;
 use crate::services::queries::QueryService;
 use crate::services::secrets::{LocalSecretsService, SecretServiceFactory};
-use crate::services::secrets::generate::VecGenerator;
+use crate::services::secrets::random::VecGenerator;
 use crate::services::secrets::shares::MasterKeySharesService;
 
+pub mod data;
 pub mod resources;
 pub mod models;
 pub mod services;
@@ -38,8 +40,12 @@ impl AppContext {
                 SecretServiceFactory::create(
                     shares_service.clone(), vec_generator.clone()));
 
+        let db = DbBuilder::new();
+
         let connection_config_service =
-            Arc::new(ConnectionConfigService::new(secrets_service.clone()));
+            Arc::new(
+                ConnectionConfigService::new(
+                    db.clone(), secrets_service.clone()));
 
         let query_service =
             Arc::new(QueryService::new(

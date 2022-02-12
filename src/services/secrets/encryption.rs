@@ -7,7 +7,7 @@ use chacha20poly1305::XChaCha20Poly1305;
 use crate::models::connections::ZeroizeWrapper;
 use crate::models::errors::SecretsError;
 use crate::models::secrets::{EncryptedPayload, EncryptionKey, KEY_LENGTH};
-use crate::services::secrets::generate::VecGenerator;
+use crate::services::secrets::random::VecGenerator;
 
 const NONCE_SIZE: usize = 24;
 
@@ -95,7 +95,7 @@ mod tests {
     use crate::models::connections::ZeroizeWrapper;
     use crate::models::secrets::{EncryptionKey, KEY_LENGTH};
     use crate::services::secrets::encryption::{EncryptionService, KeyWithAad};
-    use crate::services::secrets::generate::VecGenerator;
+    use crate::services::secrets::random::VecGenerator;
 
     #[test]
     fn test_encrypts_and_decrypts_correctly() {
