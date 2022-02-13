@@ -1,3 +1,5 @@
+use chacha20poly1305::aead::AeadMut;
+
 use crate::models::trie::TrieError::{ContainsMoreThanOneStarInSequence, ContainsNonAscii, ContainsWhitespace, EmptyString};
 
 pub struct Trie {
@@ -39,20 +41,26 @@ impl Trie {
     fn parse(trimmed: &str) -> Trie {
         let split = trimmed.split('*');
 
-        let mut children = Vec::new();
+        let mut current = Option::None;
 
         for (i, piece) in split.rev().enumerate() {
             if i % 2  == 1 {
-                children.push(TrieNode::AnyCharsNode(AnyCharsNode::new(vec![])));
-            }
-            if !piece.is_empty() {
-                children.push(
-                    TrieNode::SubstringNode(
-                        SubstringNode::new(piece.into(), Vec::new())))
+                let children = Trie::wrap(current);
+
+                current = Some(TrieNode::AnyCharsNode(AnyCharsNode::new(children)));
+            } else if !piece.is_empty() {
+                let children = Trie::wrap(current);
+
+                current = Some(TrieNode::SubstringNode(
+                    SubstringNode::new(piece.into(), children)));
             }
         }
 
-        Trie::new(children)
+        Trie::new(vec![])
+    }
+
+    fn wrap(node_maybe: Option<TrieNode>) -> Vec<TrieNode> {
+        node_maybe.map(|node| vec![node]).unwrap_or(Vec::new())
     }
 
 }
@@ -298,6 +306,13 @@ mod tests {
 
         assert!(matches!(try_build_trie("a*l**lf"), Err(TrieError::ContainsMoreThanOneStarInSequence)));
         assert!(matches!(try_build_trie("al***lf"), Err(TrieError::ContainsMoreThanOneStarInSequence)));
+    }
+
+    #[test]
+    fn test_builds_from_correct_input() {
+        assert!(matches!(try_build_trie("alf*"), Ok(_)));
+        assert!(matches!(try_build_trie("*alf*loves*cats*"), Ok(_)));
+        assert!(matches!(try_build_trie("*alf_loves_eating_cats*"), Ok(_)));
     }
 
     fn try_build_trie(val: &str) -> Result<Trie, TrieError> {
