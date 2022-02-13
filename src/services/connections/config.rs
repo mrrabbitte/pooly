@@ -4,11 +4,11 @@ use sled;
 use sled::Db;
 
 use crate::data::dao::{Dao, EncryptedDao, SimpleDao};
-use crate::models::connections::{ConnectionConfig, Versioned};
+use crate::models::connections::ConnectionConfig;
 use crate::models::errors::ConnectionConfigError;
 use crate::services::secrets::LocalSecretsService;
 
-const CONNECTION_CONFIGS: &str = "connection_configs";
+const CONNECTION_CONFIGS: &str = "connection_configs_v1";
 
 pub struct ConnectionConfigService {
 
@@ -32,10 +32,10 @@ impl ConnectionConfigService {
                connection_id: &str) -> Result<Option<ConnectionConfig>, ConnectionConfigError> {
         match self.dao.get(connection_id)? {
             Some(decrypted) => {
-                let versioned_config: Versioned<ConnectionConfig> =
+                let versioned_config: ConnectionConfig =
                     bincode::deserialize(decrypted.get_value())?;
 
-                Ok(Some(versioned_config.unwrap()))
+                Ok(Some(versioned_config))
             },
             None => Ok(None)
         }
@@ -45,7 +45,7 @@ impl ConnectionConfigService {
                   config: ConnectionConfig) -> Result<(), ConnectionConfigError> {
         let config_id = config.id.clone();
 
-        let serialized = bincode::serialize(&Versioned::V1(config))?;
+        let serialized = bincode::serialize(&config)?;
 
         self.dao.create(&config_id, serialized)?;
 
@@ -54,7 +54,7 @@ impl ConnectionConfigService {
 
     #[cfg(test)]
     pub fn clear(&self) -> Result<(), ()> {
-        self.storage_service.clear()
+        self.dao.clear()
     }
 
 }
