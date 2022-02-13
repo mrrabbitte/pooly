@@ -1,4 +1,4 @@
-use crate::models::trie::TrieError::{ContainsNonAscii, ContainsWhitespace, EmptyString};
+use crate::models::trie::TrieError::{ContainsMoreThanOneStarInSequence, ContainsNonAscii, ContainsWhitespace, EmptyString};
 
 pub struct Trie {
 
@@ -60,6 +60,7 @@ impl Trie {
 pub enum TrieError {
 
     ContainsNonAscii,
+    ContainsMoreThanOneStarInSequence,
     ContainsWhitespace,
     EmptyString,
 
@@ -81,6 +82,10 @@ impl TryFrom<String> for Trie {
 
         if trimmed.contains(|c: char| c.is_ascii_whitespace()) {
             return Err(ContainsWhitespace);
+        }
+
+        if trimmed.contains("**") {
+            return Err(ContainsMoreThanOneStarInSequence)
         }
 
         Ok(Trie::parse(trimmed))
@@ -284,10 +289,15 @@ mod tests {
     #[test]
     fn test_returns_errors_on_invalid_inputs() {
         assert!(matches!(try_build_trie(""), Err(TrieError::EmptyString)));
-        assert!(matches!(try_build_trie("a l"), Err(TrieError::ContainsWhitespace)));
-        assert!(matches!(try_build_trie("a  l"), Err(TrieError::ContainsWhitespace)));
-        assert!(matches!(try_build_trie("a d l"), Err(TrieError::ContainsWhitespace)));
-        assert!(matches!(try_build_trie("łę"), Err(TrieError::ContainsNonAscii)));
+
+        assert!(matches!(try_build_trie("a lf"), Err(TrieError::ContainsWhitespace)));
+        assert!(matches!(try_build_trie("a  lf"), Err(TrieError::ContainsWhitespace)));
+        assert!(matches!(try_build_trie("a l f"), Err(TrieError::ContainsWhitespace)));
+
+        assert!(matches!(try_build_trie("ą ł f"), Err(TrieError::ContainsNonAscii)));
+
+        assert!(matches!(try_build_trie("a*l**lf"), Err(TrieError::ContainsMoreThanOneStarInSequence)));
+        assert!(matches!(try_build_trie("al***lf"), Err(TrieError::ContainsMoreThanOneStarInSequence)));
     }
 
     fn try_build_trie(val: &str) -> Result<Trie, TrieError> {
