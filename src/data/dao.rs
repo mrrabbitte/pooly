@@ -41,7 +41,7 @@ impl Dao<Vec<u8>> for SimpleDao {
 
     fn get(&self,
            id: &str) -> Result<Option<Vec<u8>>, StorageError> {
-        match self.tree.get(format!("{}{}", self.keyspace, id)) {
+        match self.tree.get(id) {
             Ok(None) => Ok(None),
             Ok(Some(i_vec)) => { Ok( Some(i_vec.to_vec()) ) }
             Err(err) => Err(StorageError::RetrievalError(err.to_string()))
