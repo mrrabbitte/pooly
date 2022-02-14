@@ -41,6 +41,8 @@ async fn test_simple_query() {
     app_context.secrets_service.clear().unwrap();
     app_context.connection_config_service.clear().unwrap();
 
+    println!("{:?}", &response.0);
+
     assert!(matches!(response.0.payload, Some(Payload::Success(_))))
 }
 

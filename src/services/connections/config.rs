@@ -52,7 +52,6 @@ impl ConnectionConfigService {
         Ok(())
     }
 
-    #[cfg(test)]
     pub fn clear(&self) -> Result<(), ()> {
         self.dao.clear()
     }

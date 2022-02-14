@@ -67,6 +67,14 @@ pub enum StorageError {
 
 }
 
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+pub enum WildcardPatternError {
+
+    TooManyStars,
+    UnsupportedPattern
+
+}
+
 impl ConnectionConfigError {
 
     fn get_message(&self) -> String {
@@ -121,7 +129,7 @@ impl QueryError {
     fn get_message(self) -> String {
         match self {
             QueryError::UnknownDatabaseConnection(missing_name) =>
-                format!("Not found database: {}", missing_name),
+                format!("Connection not found: {}", missing_name),
             QueryError::PoolError(message) => message,
             QueryError::PostgresError(message) => message,
             QueryError::WrongNumParams(actual, expected) =>
