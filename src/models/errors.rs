@@ -70,6 +70,7 @@ pub enum StorageError {
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub enum WildcardPatternError {
 
+    NoStars,
     TooManyStars,
     UnsupportedPattern
 

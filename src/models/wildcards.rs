@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use serde::{Deserialize, Serialize};
 
 use crate::models::errors::WildcardPatternError;
@@ -8,7 +9,6 @@ pub enum WildcardPattern {
     Any,
     Contains(String),
     EndsWith(String),
-    Exact(String),
     StartsWith(String),
     StartsAndEndsWith(String, String)
 
@@ -18,6 +18,17 @@ const STAR: &str = "*";
 
 impl WildcardPattern {
 
+    pub fn matches(&self, target: &str) -> bool {
+        match self {
+            WildcardPattern::Any => true,
+            WildcardPattern::Contains(val) => target.contains(val),
+            WildcardPattern::EndsWith(val) => target.ends_with(val),
+            WildcardPattern::StartsWith(val) => target.starts_with(val),
+            WildcardPattern::StartsAndEndsWith(first, second) =>
+                target.starts_with(first) && target.ends_with(second)
+        }
+    }
+
     pub fn parse(value: &str) -> Result<WildcardPattern, WildcardPatternError> {
         if value == STAR {
             return Ok(WildcardPattern::Any);
@@ -26,22 +37,10 @@ impl WildcardPattern {
         let num_stars = value.matches(STAR).count();
 
         match num_stars {
-            0 => Ok(WildcardPattern::Exact(value.into())),
+            0 => Err(WildcardPatternError::NoStars),
             1 => Ok(WildcardPattern::parse_one_star(value)),
             2 => WildcardPattern::parse_two_star(value),
             _ => Err(WildcardPatternError::TooManyStars)
-        }
-    }
-
-    pub fn matches(&self, target: &str) -> bool {
-        match self {
-            WildcardPattern::Any => true,
-            WildcardPattern::Contains(val) => target.contains(val),
-            WildcardPattern::EndsWith(val) => target.ends_with(val),
-            WildcardPattern::Exact(val) => target.eq(val),
-            WildcardPattern::StartsWith(val) => target.starts_with(val),
-            WildcardPattern::StartsAndEndsWith(first, second) =>
-                target.starts_with(first) && target.ends_with(second)
         }
     }
 
@@ -83,14 +82,6 @@ mod tests {
     }
 
     #[test]
-    fn test_matches_exact_correctly() {
-        check(
-            &WildcardPattern::Exact("alfie".into()),
-            vec!["alfie"],
-            vec!["alf-loves-cats", "alfcats", "alf+cats", "", "something"]);
-    }
-
-    #[test]
     fn test_matches_starts_and_ends_with_correctly() {
         check(
             &WildcardPattern::StartsAndEndsWith("alf".into(), "cats".into()),
@@ -129,13 +120,14 @@ mod tests {
                  WildcardPattern::StartsAndEndsWith(
                      "alf_loves".into(), "cats".into()));
         check_ok("*alf*", WildcardPattern::Contains("alf".into()));
-        check_ok("alf_loves_cats", WildcardPattern::Exact("alf_loves_cats".into()));
         check_ok("alf*", WildcardPattern::StartsWith("alf".into()));
         check_ok("*alf", WildcardPattern::EndsWith("alf".into()));
     }
 
     #[test]
     fn test_returns_err_on_illegal_patterns() {
+        check_err("alf_loves_cats", WildcardPatternError::NoStars);
+
         check_err("*alf*loves*cats*", WildcardPatternError::TooManyStars);
         check_err("*alf*loves*cats", WildcardPatternError::TooManyStars);
 
