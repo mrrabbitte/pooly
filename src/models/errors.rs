@@ -60,6 +60,7 @@ pub enum SecretsError {
 pub enum StorageError {
 
     AlreadyExistsError,
+    OptimisticLockingError(u32, u32),
     RetrievalError(String),
     SerdeError(String),
     SecretsError(SecretsError),
@@ -73,6 +74,14 @@ pub enum WildcardPatternError {
     NoStars,
     TooManyStars,
     UnsupportedPattern
+
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+pub enum AceUpdateError {
+
+    OptimisticLockingVersion(u32, u32),
+    WildcardPatternError(WildcardPatternError)
 
 }
 

@@ -7,4 +7,5 @@ pub mod payloads;
 pub mod responses;
 pub mod rows;
 pub mod secrets;
+pub mod versioned;
 pub mod wildcards;

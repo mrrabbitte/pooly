@@ -1,4 +1,3 @@
-use std::collections::HashSet;
 use serde::{Deserialize, Serialize};
 
 use crate::models::errors::WildcardPatternError;
