@@ -223,7 +223,6 @@ impl<T: Serialize + for<'de> Deserialize<'de>> Dao<T> for TypedDao<T> {
     }
 }
 
-
 fn map_to_storage_err<E>(err: E) -> ConflictableTransactionError<StorageError>
     where StorageError: std::convert::From<E> {
     ConflictableTransactionError::Abort(err.into())

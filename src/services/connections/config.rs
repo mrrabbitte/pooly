@@ -8,7 +8,7 @@ use crate::models::connections::{ConnectionConfig, VersionedConnectionConfig, Ze
 use crate::models::errors::ConnectionConfigError;
 use crate::services::secrets::LocalSecretsService;
 
-const CONNECTION_CONFIGS: &str = "connection_configs_v1";
+const CONNECTION_CONFIGS_KEYSPACE: &str = "connection_configs_v1";
 
 pub struct ConnectionConfigService {
 
@@ -23,7 +23,7 @@ impl ConnectionConfigService {
         ConnectionConfigService {
             dao: TypedDao::new(
                 EncryptedDao::new(
-                    SimpleDao::new(CONNECTION_CONFIGS, db)
+                    SimpleDao::new(CONNECTION_CONFIGS_KEYSPACE, db)
                         .unwrap(),
                     secrets_service)
             )

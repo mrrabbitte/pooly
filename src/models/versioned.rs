@@ -24,11 +24,11 @@ impl<T> Versioned<T> {
 
     pub fn update(&self,
                   new: Versioned<T>) -> Result<Versioned<T>, StorageError> {
-        if new.version <= self.version {
+        if new.version != self.version {
             return Err(StorageError::OptimisticLockingError(self.version, new.version));
         }
 
-        Ok(Versioned { version: new.version + 1, value: new.value } )
+        Ok(Versioned { version: self.version + 1, value: new.value } )
     }
 
     pub fn get_value(&self) -> &T {
