@@ -1,5 +1,8 @@
 use serde::{Deserialize, Serialize};
 use zeroize::Zeroize;
+use crate::models::versioned::Versioned;
+
+pub type VersionedConnectionConfig = Versioned<ConnectionConfig>;
 
 #[derive(Zeroize)]
 #[zeroize(drop)]

@@ -1,16 +1,20 @@
 use std::sync::Arc;
 
-use sled::{Db, Tree};
+use sled::{Db, IVec, Tree};
+use sled::transaction::{abort, ConflictableTransactionError};
 
 use crate::LocalSecretsService;
 use crate::models::connections::ZeroizeWrapper;
 use crate::models::errors::StorageError;
+use crate::models::versioned::{Versioned, VersionedVec};
 
 pub trait Dao<T> {
 
-    fn get(&self, id: &str) -> Result<Option<T>, StorageError>;
+    fn get(&self, id: &str) -> Result<Option<Versioned<T>>, StorageError>;
 
     fn create(&self, id: &str, payload: Vec<u8>) -> Result<(), StorageError>;
+
+    fn update(&self, id: &str, new: Versioned<Vec<u8>>) -> Result<(), StorageError>;
 
     fn clear(&self) -> Result<(), ()>;
 
@@ -40,10 +44,12 @@ impl SimpleDao {
 impl Dao<Vec<u8>> for SimpleDao {
 
     fn get(&self,
-           id: &str) -> Result<Option<Vec<u8>>, StorageError> {
+           id: &str) -> Result<Option<VersionedVec>, StorageError> {
         match self.tree.get(id) {
             Ok(None) => Ok(None),
-            Ok(Some(i_vec)) => { Ok( Some(i_vec.to_vec()) ) }
+            Ok(Some(i_vec)) => {
+                Ok( Some(bincode::deserialize(&i_vec.to_vec())? ) )
+            },
             Err(err) => Err(StorageError::RetrievalError(err.to_string()))
         }
     }
@@ -51,11 +57,40 @@ impl Dao<Vec<u8>> for SimpleDao {
     fn create(&self,
               id: &str,
               payload: Vec<u8>) -> Result<(), StorageError> {
+        let new = bincode::serialize(&Versioned::new(payload))?;
+
         self.tree.compare_and_swap(
             id,
             None as Option<&[u8]>,
-            Some(payload)
+            Some(new)
         )??;
+
+        self.tree.flush()?;
+
+        Ok(())
+    }
+
+    fn update(&self,
+              id: &str,
+              new: VersionedVec) -> Result<(), StorageError> {
+        self.tree.transaction(move |tx| {
+            match tx.get(id)? {
+                None => abort(StorageError::CouldNotFindValueToUpdate),
+                Some(old_payload) => {
+                    let old: VersionedVec = bincode::deserialize(&old_payload.to_vec())
+                        .map_err(map_to_storage_err)?;
+
+                    let updated = old.update(new.clone())
+                        .map_err(wrap_storage_err)?;
+
+                    tx.insert(id,
+                              bincode::serialize(&updated)
+                                  .map_err(map_to_storage_err)?)?;
+
+                    Ok(())
+                }
+            }
+        })?;
 
         self.tree.flush()?;
 
@@ -90,12 +125,14 @@ impl EncryptedDao {
 impl Dao<ZeroizeWrapper> for EncryptedDao {
 
     fn get(&self,
-           id: &str) -> Result<Option<ZeroizeWrapper>, StorageError> {
+           id: &str) -> Result<Option<Versioned<ZeroizeWrapper>>, StorageError> {
         match self.delegate_dao.get(id) {
-            Ok(Some(payload)) =>
-                Ok(Some(
-                    self.secrets_service.decrypt(
-                        &bincode::deserialize(&payload)?)?)),
+            Ok(Some(payload)) => {
+                let decrypted = self.secrets_service.decrypt(
+                    &bincode::deserialize(payload.get_value())?)?;
+
+                Ok(Some(payload.replace(decrypted)))
+            },
             Ok(None) => Ok(None),
             Err(err) => Err(err)
         }
@@ -106,12 +143,31 @@ impl Dao<ZeroizeWrapper> for EncryptedDao {
               payload: Vec<u8>) -> Result<(), StorageError> {
         self.delegate_dao.create(id,
                                  bincode::serialize(
-                                        &self.secrets_service.encrypt(&payload)?
-                                    )?
+                                     &self.secrets_service.encrypt(&payload)?
+                                 )?
         )
+    }
+
+    fn update(&self,
+              id: &str,
+              new: VersionedVec) -> Result<(), StorageError> {
+        let encrypted = bincode::serialize(
+            &self.secrets_service.encrypt(new.get_value())?
+        )?;
+
+        self.delegate_dao.update(id,new.replace(encrypted))
     }
 
     fn clear(&self) -> Result<(), ()> {
         self.delegate_dao.clear()
     }
+}
+
+fn map_to_storage_err<E>(err: E) -> ConflictableTransactionError<StorageError>
+    where StorageError: std::convert::From<E> {
+    ConflictableTransactionError::Abort(err.into())
+}
+
+fn wrap_storage_err(err: StorageError) -> ConflictableTransactionError<StorageError> {
+    ConflictableTransactionError::Abort(err)
 }

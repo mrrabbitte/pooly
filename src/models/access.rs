@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use crate::models::versioned::Versioned;
 use crate::models::wildcards::WildcardPattern;
 
-pub struct ConnectionAccessControlEntity {
+pub struct ConnectionAccessControlEntry {
 
     client_id: String,
     connection_ids: Versioned<HashSet<String>>,
@@ -11,12 +11,12 @@ pub struct ConnectionAccessControlEntity {
 
 }
 
-impl ConnectionAccessControlEntity {
+impl ConnectionAccessControlEntry {
 
     pub fn new(client_id: String,
                connection_ids: Versioned<HashSet<String>>,
-               connection_id_patters: Versioned<HashSet<WildcardPattern>>) -> ConnectionAccessControlEntity {
-        ConnectionAccessControlEntity {
+               connection_id_patters: Versioned<HashSet<WildcardPattern>>) -> ConnectionAccessControlEntry {
+        ConnectionAccessControlEntry {
             client_id,
             connection_ids,
             connection_id_patters
@@ -33,11 +33,7 @@ impl ConnectionAccessControlEntity {
         let connection_ids = self.connection_ids.get_value();
         let connection_id_patterns = self.connection_id_patters.get_value();
 
-        if connection_ids.is_empty() && connection_id_patterns.is_empty() {
-            return false;
-        }
-
-        if connection_ids.contains(connection_id) {
+        if !connection_ids.is_empty() && connection_ids.contains(connection_id) {
             return true;
         }
 
@@ -56,7 +52,7 @@ impl ConnectionAccessControlEntity {
 mod tests {
     use std::collections::HashSet;
 
-    use crate::models::access::ConnectionAccessControlEntity;
+    use crate::models::access::ConnectionAccessControlEntry;
     use crate::models::versioned::Versioned;
     use crate::models::wildcards::WildcardPattern;
 
@@ -73,7 +69,7 @@ mod tests {
     fn test_matches_correctly_exact() {
         let mut should_match = get_should_match();
 
-        let ace = ConnectionAccessControlEntity::new(
+        let ace = ConnectionAccessControlEntry::new(
             CLIENT_ID.to_string(),
             Versioned::new(should_match.clone()),
             Versioned::new(HashSet::new()));
@@ -84,7 +80,7 @@ mod tests {
 
         assert!(should_match.remove(FIRST_CONNECTION_ID));
 
-        let ace = ConnectionAccessControlEntity::new(
+        let ace = ConnectionAccessControlEntry::new(
             CLIENT_ID.to_string(),
             Versioned::new(should_match.clone()),
             Versioned::new(HashSet::new()));
@@ -103,7 +99,7 @@ mod tests {
         patterns.insert(WildcardPattern::parse("*connection*").unwrap());
         patterns.insert(WildcardPattern::parse("first*").unwrap());
 
-        let ace = ConnectionAccessControlEntity::new(
+        let ace = ConnectionAccessControlEntry::new(
             CLIENT_ID.to_string(),
             Versioned::new(HashSet::new()),
             Versioned::new(patterns));
@@ -117,7 +113,7 @@ mod tests {
     fn test_does_not_match_on_client_id_mismatch() {
         let should_match = get_should_match();
 
-        let ace = ConnectionAccessControlEntity::new(
+        let ace = ConnectionAccessControlEntry::new(
             "not".to_string() + CLIENT_ID,
             Versioned::new(should_match.clone()),
             Versioned::new(HashSet::new()));
@@ -129,7 +125,7 @@ mod tests {
 
     #[test]
     fn empty_never_matches() {
-        let ace = ConnectionAccessControlEntity::new(
+        let ace = ConnectionAccessControlEntry::new(
             CLIENT_ID.to_string(),
             Versioned::new(HashSet::new()),
             Versioned::new(HashSet::new()));

@@ -1,3 +1,5 @@
+use std::fmt;
+use std::fmt::Debug;
 use std::sync::PoisonError;
 
 use bincode::ErrorKind;
@@ -6,6 +8,7 @@ use deadpool_postgres::CreatePoolError;
 use ring::error::Unspecified;
 use serde::{Deserialize, Serialize};
 use sled::CompareAndSwapError;
+use sled::transaction::TransactionError;
 use tokio_postgres::Error;
 
 use crate::models::payloads::error_response::ErrorType;
@@ -60,11 +63,13 @@ pub enum SecretsError {
 pub enum StorageError {
 
     AlreadyExistsError,
+    CouldNotFindValueToUpdate,
     OptimisticLockingError(u32, u32),
     RetrievalError(String),
     SerdeError(String),
     SecretsError(SecretsError),
-    SledError(String)
+    SledError(String),
+    TransactionError(String)
 
 }
 
@@ -227,6 +232,12 @@ impl From<Box<bincode::ErrorKind>> for SecretsError {
 impl From<CompareAndSwapError> for StorageError {
     fn from(_: CompareAndSwapError) -> Self {
         StorageError::AlreadyExistsError
+    }
+}
+
+impl<E: Debug> From<TransactionError<E>> for StorageError {
+    fn from(err: TransactionError<E>) -> Self {
+        StorageError::TransactionError(format!("{:?}", err))
     }
 }
 

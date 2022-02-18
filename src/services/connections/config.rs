@@ -4,7 +4,7 @@ use sled;
 use sled::Db;
 
 use crate::data::dao::{Dao, EncryptedDao, SimpleDao};
-use crate::models::connections::ConnectionConfig;
+use crate::models::connections::{ConnectionConfig, VersionedConnectionConfig};
 use crate::models::errors::ConnectionConfigError;
 use crate::services::secrets::LocalSecretsService;
 
@@ -29,13 +29,13 @@ impl ConnectionConfigService {
     }
 
     pub fn get(&self,
-               connection_id: &str) -> Result<Option<ConnectionConfig>, ConnectionConfigError> {
+               connection_id: &str) -> Result<Option<VersionedConnectionConfig>, ConnectionConfigError> {
         match self.dao.get(connection_id)? {
             Some(decrypted) => {
                 let versioned_config: ConnectionConfig =
-                    bincode::deserialize(decrypted.get_value())?;
+                    bincode::deserialize(decrypted.get_value().get_value())?;
 
-                Ok(Some(versioned_config))
+                Ok(Some(decrypted.replace(versioned_config)))
             },
             None => Ok(None)
         }

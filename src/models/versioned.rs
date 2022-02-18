@@ -1,5 +1,10 @@
 use crate::models::errors::StorageError;
 
+use serde::{Deserialize, Serialize};
+
+pub type VersionedVec = Versioned<Vec<u8>>;
+
+#[derive(Clone, PartialEq, Hash, Serialize, Deserialize, Debug)]
 pub struct Versioned<T> {
 
     version: u32,
@@ -13,14 +18,17 @@ impl<T> Versioned<T> {
         Versioned { version: 0, value }
     }
 
+    pub fn replace<U>(self, value: U) -> Versioned<U> {
+        Versioned { version: self.version, value }
+    }
+
     pub fn update(&self,
-                  version: u32,
-                  new_value: T) -> Result<Versioned<T>, StorageError> {
-        if version != self.version {
-            return Err(StorageError::OptimisticLockingError(self.version, version));
+                  new: Versioned<T>) -> Result<Versioned<T>, StorageError> {
+        if new.version <= self.version {
+            return Err(StorageError::OptimisticLockingError(self.version, new.version));
         }
 
-        Ok(Versioned { version: version + 1, value: new_value } )
+        Ok(Versioned { version: new.version + 1, value: new.value } )
     }
 
     pub fn get_value(&self) -> &T {
