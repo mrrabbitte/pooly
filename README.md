@@ -13,6 +13,7 @@ WIP. The roadmap includes:
 - [ ] JWT auth + admin / client_service roles;
 - [ ] throttle requests based on the client_id;
 - [ ] TLS postgres support;
+- [ ] gRPC Streaming results
 - [ ] Java client;
 - [ ] Property-Based Testing;
 - [ ] Python client;
