@@ -3,8 +3,8 @@ use std::sync::Arc;
 use sled;
 use sled::Db;
 
-use crate::data::dao::{Dao, EncryptedDao, SimpleDao};
-use crate::models::connections::{ConnectionConfig, VersionedConnectionConfig};
+use crate::data::dao::{Dao, EncryptedDao, SimpleDao, TypedDao};
+use crate::models::connections::{ConnectionConfig, VersionedConnectionConfig, ZeroizeWrapper};
 use crate::models::errors::ConnectionConfigError;
 use crate::services::secrets::LocalSecretsService;
 
@@ -47,7 +47,7 @@ impl ConnectionConfigService {
 
         let serialized = bincode::serialize(&config)?;
 
-        self.dao.create(&config_id, serialized)?;
+        self.dao.create(&config_id, ZeroizeWrapper::new(serialized))?;
 
         Ok(())
     }

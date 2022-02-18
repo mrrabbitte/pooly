@@ -1,5 +1,7 @@
+use std::marker::PhantomData;
 use std::sync::Arc;
 
+use serde::{Deserialize, Serialize};
 use sled::{Db, IVec, Tree};
 use sled::transaction::{abort, ConflictableTransactionError};
 
@@ -12,9 +14,9 @@ pub trait Dao<T> {
 
     fn get(&self, id: &str) -> Result<Option<Versioned<T>>, StorageError>;
 
-    fn create(&self, id: &str, payload: Vec<u8>) -> Result<(), StorageError>;
+    fn create(&self, id: &str, payload: T) -> Result<(), StorageError>;
 
-    fn update(&self, id: &str, new: Versioned<Vec<u8>>) -> Result<(), StorageError>;
+    fn update(&self, id: &str, new: Versioned<T>) -> Result<(), StorageError>;
 
     fn clear(&self) -> Result<(), ()>;
 
@@ -140,19 +142,19 @@ impl Dao<ZeroizeWrapper> for EncryptedDao {
 
     fn create(&self,
               id: &str,
-              payload: Vec<u8>) -> Result<(), StorageError> {
+              payload: ZeroizeWrapper) -> Result<(), StorageError> {
         self.delegate_dao.create(id,
                                  bincode::serialize(
-                                     &self.secrets_service.encrypt(&payload)?
+                                     &self.secrets_service.encrypt(payload.get_value())?
                                  )?
         )
     }
 
     fn update(&self,
               id: &str,
-              new: VersionedVec) -> Result<(), StorageError> {
+              new: Versioned<ZeroizeWrapper>) -> Result<(), StorageError> {
         let encrypted = bincode::serialize(
-            &self.secrets_service.encrypt(new.get_value())?
+            &self.secrets_service.encrypt(new.get_value().get_value())?
         )?;
 
         self.delegate_dao.update(id,new.replace(encrypted))
@@ -162,6 +164,65 @@ impl Dao<ZeroizeWrapper> for EncryptedDao {
         self.delegate_dao.clear()
     }
 }
+
+pub struct TypedDao<T> {
+
+    dao_type: PhantomData<T>,
+    dao: EncryptedDao
+
+}
+
+impl<T: Serialize + for<'de> Deserialize<'de>> TypedDao<T> {
+
+    pub fn new(dao: EncryptedDao) -> TypedDao<T> {
+        TypedDao {
+            dao_type: PhantomData,
+            dao
+        }
+    }
+
+}
+
+impl<T: Serialize + for<'de> Deserialize<'de>> Dao<T> for TypedDao<T> {
+
+    fn get(&self,
+           id: &str) -> Result<Option<Versioned<T>>, StorageError> {
+        match self.dao.get(id)? {
+            Some(decrypted) => {
+                let versioned: T =
+                    bincode::deserialize(decrypted.get_value().get_value())?;
+
+                Ok(Some(decrypted.replace(versioned)))
+            },
+            None => Ok(None)
+        }
+    }
+
+    fn create(&self,
+              id: &str,
+              payload: T) -> Result<(), StorageError> {
+        let serialized = bincode::serialize(&payload)?;
+
+        self.dao.create(id, ZeroizeWrapper::new(serialized))?;
+
+        Ok(())
+    }
+
+    fn update(&self,
+              id: &str,
+              new: Versioned<T>) -> Result<(), StorageError> {
+        let serialized = bincode::serialize(new.get_value())?;
+
+        self.dao.update(id, new.replace(ZeroizeWrapper::new(serialized)))?;
+
+        Ok(())
+    }
+
+    fn clear(&self) -> Result<(), ()> {
+        self.dao.clear()
+    }
+}
+
 
 fn map_to_storage_err<E>(err: E) -> ConflictableTransactionError<StorageError>
     where StorageError: std::convert::From<E> {
