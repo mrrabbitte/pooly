@@ -12,7 +12,7 @@ const CONNECTION_CONFIGS: &str = "connection_configs_v1";
 
 pub struct ConnectionConfigService {
 
-    dao: EncryptedDao
+    dao: TypedDao<ConnectionConfig>
 
 }
 
@@ -21,33 +21,25 @@ impl ConnectionConfigService {
     pub fn new(db: Arc<Db>,
                secrets_service: Arc<LocalSecretsService>) -> Self {
         ConnectionConfigService {
-            dao: EncryptedDao::new(
-                SimpleDao::new(CONNECTION_CONFIGS, db)
-                    .unwrap(),
-                secrets_service)
+            dao: TypedDao::new(
+                EncryptedDao::new(
+                    SimpleDao::new(CONNECTION_CONFIGS, db)
+                        .unwrap(),
+                    secrets_service)
+            )
         }
     }
 
     pub fn get(&self,
                connection_id: &str) -> Result<Option<VersionedConnectionConfig>, ConnectionConfigError> {
-        match self.dao.get(connection_id)? {
-            Some(decrypted) => {
-                let versioned_config: ConnectionConfig =
-                    bincode::deserialize(decrypted.get_value().get_value())?;
-
-                Ok(Some(decrypted.replace(versioned_config)))
-            },
-            None => Ok(None)
-        }
+        Ok(self.dao.get(connection_id)?)
     }
 
     pub fn create(&self,
                   config: ConnectionConfig) -> Result<(), ConnectionConfigError> {
         let config_id = config.id.clone();
 
-        let serialized = bincode::serialize(&config)?;
-
-        self.dao.create(&config_id, ZeroizeWrapper::new(serialized))?;
+        self.dao.create(&config_id, config)?;
 
         Ok(())
     }
