@@ -9,9 +9,7 @@ use crate::models::connections::ConnectionConfig;
 use crate::models::errors::ConnectionError;
 use crate::services::connections::config::ConnectionConfigService;
 
-pub mod access;
 pub mod config;
-
 
 pub struct ConnectionService {
 

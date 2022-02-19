@@ -7,6 +7,7 @@ authors = ["P. Gli <pgli@pm.me>"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+actix-web-httpauth = "0.6.0-beta.7"
 actix-web = "4.0.0-beta.15"
 actix-protobuf = "0.7.0-beta.3"
 base64 = "0.20.0-alpha.1"

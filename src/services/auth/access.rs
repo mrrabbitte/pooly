@@ -6,11 +6,11 @@ use dashmap::mapref::one::Ref;
 use sled::Db;
 
 use crate::data::dao::{Dao, EncryptedDao, SimpleDao, TypedDao};
-use crate::LocalSecretsService;
 use crate::models::access::ConnectionAccessControlEntry;
 use crate::models::errors::StorageError;
 use crate::models::versioned::Versioned;
 use crate::models::wildcards::WildcardPattern;
+use crate::services::secrets::LocalSecretsService;
 use crate::services::secrets::SecretsService;
 
 const CONNECTION_IDS_KEYSPACE: &str = "connection_ids_v1";
