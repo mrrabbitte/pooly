@@ -39,7 +39,7 @@ impl ConnectionConfigService {
                   config: ConnectionConfig) -> Result<(), ConnectionConfigError> {
         let config_id = config.id.clone();
 
-        self.dao.create(&config_id, config)?;
+        self.dao.create(&config_id, &config)?;
 
         Ok(())
     }

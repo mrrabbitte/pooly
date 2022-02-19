@@ -27,7 +27,7 @@ pub struct AccessControlService {
 impl AccessControlService {
 
     pub fn new(db: Arc<Db>,
-               secrets_service: Arc<LocalSecretsService>) -> AccessControlService {
+               secrets_service: Arc<LocalSecretsService>) -> Result<AccessControlService, StorageError> {
         let service = AccessControlService {
             aces: DashMap::new(),
             connection_ids: TypedDao::new(
@@ -48,7 +48,7 @@ impl AccessControlService {
 
         service.initialize()?;
 
-        service
+        Ok(service)
     }
 
     pub fn is_allowed(&self,
@@ -67,13 +67,13 @@ impl AccessControlService {
     pub fn add_connection_ids(&self,
                               client_id: &str,
                               connection_ids: HashSet<String>) -> Result<(), StorageError> {
-        self.connection_ids.create(client_id, connection_ids)
+        self.connection_ids.create(client_id, &connection_ids)
     }
 
     pub fn update_connection_ids(&self,
                                  client_id: &str,
                                  connection_ids: Versioned<HashSet<String>>) -> Result<(), StorageError> {
-        self.connection_ids.update(client_id, connection_ids)
+        self.connection_ids.update(client_id, &connection_ids)
     }
 
     pub fn delete_connection_ids(&self, client_id: &str) -> Result<(), StorageError> {
@@ -83,7 +83,7 @@ impl AccessControlService {
     pub fn add_patterns(&self,
                         client_id: &str,
                         patterns: HashSet<WildcardPattern>) -> Result<(), StorageError> {
-        self.connection_id_patters.create(client_id, patterns)?;
+        self.connection_id_patters.create(client_id, &patterns)?;
 
         Ok(())
     }
@@ -91,7 +91,7 @@ impl AccessControlService {
     pub fn update_patterns(&self,
                            client_id: &str,
                            patterns: Versioned<HashSet<WildcardPattern>>) -> Result<(), StorageError> {
-        self.connection_id_patters.update(client_id, patterns)?;
+        self.connection_id_patters.update(client_id, &patterns)?;
 
         Ok(())
     }

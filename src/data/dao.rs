@@ -17,9 +17,9 @@ pub trait Dao<T> {
 
     fn get_all_keys(&self) -> Result<HashSet<String>, StorageError>;
 
-    fn create(&self, id: &str, payload: T) -> Result<(), StorageError>;
+    fn create(&self, id: &str, payload: &T) -> Result<(), StorageError>;
 
-    fn update(&self, id: &str, new: Versioned<T>) -> Result<(), StorageError>;
+    fn update(&self, id: &str, new: &Versioned<T>) -> Result<(), StorageError>;
 
     fn delete(&self, id: &str) -> Result<(), StorageError>;
 
@@ -75,8 +75,8 @@ impl Dao<Vec<u8>> for SimpleDao {
 
     fn create(&self,
               id: &str,
-              payload: Vec<u8>) -> Result<(), StorageError> {
-        let new = bincode::serialize(&Versioned::new(payload))?;
+              payload: &Vec<u8>) -> Result<(), StorageError> {
+        let new = bincode::serialize(&Versioned::new(payload.clone()))?;
 
         self.tree.compare_and_swap(
             id,
@@ -91,7 +91,7 @@ impl Dao<Vec<u8>> for SimpleDao {
 
     fn update(&self,
               id: &str,
-              new: VersionedVec) -> Result<(), StorageError> {
+              new: &VersionedVec) -> Result<(), StorageError> {
         self.tree.transaction(move |tx| {
             match tx.get(id)? {
                 None => abort(StorageError::CouldNotFindValueToUpdate),
@@ -156,7 +156,7 @@ impl Dao<ZeroizeWrapper> for EncryptedDao {
                 let decrypted = self.secrets_service.decrypt(
                     &bincode::deserialize(payload.get_value())?)?;
 
-                Ok(Some(payload.replace(decrypted)))
+                Ok(Some(payload.with_new_value(decrypted)))
             },
             Ok(None) => Ok(None),
             Err(err) => Err(err)
@@ -169,9 +169,9 @@ impl Dao<ZeroizeWrapper> for EncryptedDao {
 
     fn create(&self,
               id: &str,
-              payload: ZeroizeWrapper) -> Result<(), StorageError> {
+              payload: &ZeroizeWrapper) -> Result<(), StorageError> {
         self.dao.create(id,
-                        bincode::serialize(
+                        &bincode::serialize(
                                      &self.secrets_service.encrypt(payload.get_value())?
                                  )?
         )
@@ -179,12 +179,12 @@ impl Dao<ZeroizeWrapper> for EncryptedDao {
 
     fn update(&self,
               id: &str,
-              new: Versioned<ZeroizeWrapper>) -> Result<(), StorageError> {
+              new: &Versioned<ZeroizeWrapper>) -> Result<(), StorageError> {
         let encrypted = bincode::serialize(
             &self.secrets_service.encrypt(new.get_value().get_value())?
         )?;
 
-        self.dao.update(id, new.replace(encrypted))
+        self.dao.update(id, &new.with_new_value(encrypted))
     }
 
     fn delete(&self, id: &str) -> Result<(), StorageError> {
@@ -223,7 +223,7 @@ impl<T: Serialize + for<'de> Deserialize<'de>> Dao<T> for TypedDao<T> {
                 let versioned: T =
                     bincode::deserialize(decrypted.get_value().get_value())?;
 
-                Ok(Some(decrypted.replace(versioned)))
+                Ok(Some(decrypted.with_new_value(versioned)))
             },
             None => Ok(None)
         }
@@ -235,20 +235,20 @@ impl<T: Serialize + for<'de> Deserialize<'de>> Dao<T> for TypedDao<T> {
 
     fn create(&self,
               id: &str,
-              payload: T) -> Result<(), StorageError> {
-        let serialized = bincode::serialize(&payload)?;
+              payload: &T) -> Result<(), StorageError> {
+        let serialized = bincode::serialize(payload)?;
 
-        self.dao.create(id, ZeroizeWrapper::new(serialized))?;
+        self.dao.create(id, &ZeroizeWrapper::new(serialized))?;
 
         Ok(())
     }
 
     fn update(&self,
               id: &str,
-              new: Versioned<T>) -> Result<(), StorageError> {
+              new: &Versioned<T>) -> Result<(), StorageError> {
         let serialized = bincode::serialize(new.get_value())?;
 
-        self.dao.update(id, new.replace(ZeroizeWrapper::new(serialized)))?;
+        self.dao.update(id, &new.with_new_value(ZeroizeWrapper::new(serialized)))?;
 
         Ok(())
     }

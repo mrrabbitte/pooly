@@ -65,7 +65,12 @@ pub enum StorageError {
 
     AlreadyExistsError,
     CouldNotFindValueToUpdate,
-    OptimisticLockingError(u32, u32),
+    OptimisticLockingError {
+        old_created_at: u128,
+        new_created_at: u128,
+        old_version: u32,
+        new_version: u32
+    },
     RetrievalError(String),
     SerdeError(String),
     SecretsError(SecretsError),
