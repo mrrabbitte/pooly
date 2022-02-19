@@ -18,7 +18,7 @@ const CONNECTION_ID_PATTERNS_KEYSPACE: &str = "connection_id_patterns_v1";
 
 pub struct AccessControlService {
 
-    cache: DashMap<String, ConnectionAccessControlEntry>,
+    aces: DashMap<String, ConnectionAccessControlEntry>,
     connection_ids: TypedDao<HashSet<String>>,
     connection_id_patters: TypedDao<HashSet<WildcardPattern>>
 
@@ -28,8 +28,8 @@ impl AccessControlService {
 
     pub fn new(db: Arc<Db>,
                secrets_service: Arc<LocalSecretsService>) -> AccessControlService {
-        AccessControlService {
-            cache: DashMap::new(),
+        let service = AccessControlService {
+            aces: DashMap::new(),
             connection_ids: TypedDao::new(
                 EncryptedDao::new(
                     SimpleDao::new(
@@ -44,20 +44,82 @@ impl AccessControlService {
                         db.clone())
                         .unwrap(),
                     secrets_service.clone()))
-        }
+        };
+
+        service.initialize()?;
+
+        service
     }
 
     pub fn is_allowed(&self,
                       client_id: &str,
                       connection_id: &str) -> Result<bool, StorageError> {
         Ok(
-            match self.cache.get(client_id) {
+            match self.aces.get(client_id) {
                 None =>
-                    self.retrieve_ace(client_id)?.matches(client_id, connection_id),
+                    self.retrieve_and_insert(client_id)?.matches(client_id, connection_id),
                 Some(cached) =>
                     cached.value().matches(client_id, connection_id)
             }
         )
+    }
+
+    pub fn add_connection_ids(&self,
+                              client_id: &str,
+                              connection_ids: HashSet<String>) -> Result<(), StorageError> {
+        self.connection_ids.create(client_id, connection_ids)
+    }
+
+    pub fn update_connection_ids(&self,
+                                 client_id: &str,
+                                 connection_ids: Versioned<HashSet<String>>) -> Result<(), StorageError> {
+        self.connection_ids.update(client_id, connection_ids)
+    }
+
+    pub fn delete_connection_ids(&self, client_id: &str) -> Result<(), StorageError> {
+        self.connection_ids.delete(client_id)
+    }
+
+    pub fn add_patterns(&self,
+                        client_id: &str,
+                        patterns: HashSet<WildcardPattern>) -> Result<(), StorageError> {
+        self.connection_id_patters.create(client_id, patterns)?;
+
+        Ok(())
+    }
+
+    pub fn update_patterns(&self,
+                           client_id: &str,
+                           patterns: Versioned<HashSet<WildcardPattern>>) -> Result<(), StorageError> {
+        self.connection_id_patters.update(client_id, patterns)?;
+
+        Ok(())
+    }
+
+    pub fn delete_patterns(&self, client_id: &str) -> Result<(), StorageError> {
+        self.connection_id_patters.delete(client_id)?;
+
+        Ok(())
+    }
+
+    fn initialize(&self) -> Result<(), StorageError> {
+        let mut client_ids = HashSet::new();
+
+        client_ids.extend(self.connection_ids.get_all_keys()?);
+        client_ids.extend(self.connection_id_patters.get_all_keys()?);
+
+        for client_id in client_ids {
+            self.retrieve_and_insert(&client_id)?;
+        }
+
+        Ok(())
+    }
+
+    fn retrieve_and_insert(&self, client_id: &str) -> Result<ConnectionAccessControlEntry, StorageError> {
+        let ace = self.retrieve_ace(client_id)?;
+        self.aces.insert(client_id.into(), ace.clone());
+
+        Ok(ace)
     }
 
     fn retrieve_ace(&self,

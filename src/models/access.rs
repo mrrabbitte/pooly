@@ -1,13 +1,16 @@
 use std::collections::HashSet;
 
+use serde::{Deserialize, Serialize};
+
 use crate::models::versioned::Versioned;
 use crate::models::wildcards::WildcardPattern;
 
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct ConnectionAccessControlEntry {
 
     client_id: String,
     connection_ids: Versioned<HashSet<String>>,
-    connection_id_patters: Versioned<HashSet<WildcardPattern>>
+    connection_id_patterns: Versioned<HashSet<WildcardPattern>>
 
 }
 
@@ -15,11 +18,11 @@ impl ConnectionAccessControlEntry {
 
     pub fn new(client_id: String,
                connection_ids: Versioned<HashSet<String>>,
-               connection_id_patters: Versioned<HashSet<WildcardPattern>>) -> ConnectionAccessControlEntry {
+               connection_id_patterns: Versioned<HashSet<WildcardPattern>>) -> ConnectionAccessControlEntry {
         ConnectionAccessControlEntry {
             client_id,
             connection_ids,
-            connection_id_patters
+            connection_id_patterns
         }
     }
 
@@ -31,7 +34,7 @@ impl ConnectionAccessControlEntry {
         }
 
         let connection_ids = self.connection_ids.get_value();
-        let connection_id_patterns = self.connection_id_patters.get_value();
+        let connection_id_patterns = self.connection_id_patterns.get_value();
 
         if !connection_ids.is_empty() && connection_ids.contains(connection_id) {
             return true;
@@ -44,6 +47,24 @@ impl ConnectionAccessControlEntry {
         }
 
         false
+    }
+
+    pub fn with_connection_ids(self,
+                               connection_ids: Versioned<HashSet<String>>) -> ConnectionAccessControlEntry {
+        ConnectionAccessControlEntry {
+            client_id: self.client_id,
+            connection_ids,
+            connection_id_patterns: self.connection_id_patterns
+        }
+    }
+
+    pub fn with_connection_id_patterns(self,
+                                       connection_id_patterns: Versioned<HashSet<WildcardPattern>>) -> ConnectionAccessControlEntry {
+        ConnectionAccessControlEntry {
+            client_id: self.client_id,
+            connection_ids: self.connection_ids,
+            connection_id_patterns
+        }
     }
 
 }

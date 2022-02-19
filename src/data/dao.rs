@@ -1,8 +1,9 @@
+use std::collections::HashSet;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
-use sled::{Db, IVec, Tree};
+use sled::{Db, IVec, Subscriber, Tree};
 use sled::transaction::{abort, ConflictableTransactionError};
 
 use crate::LocalSecretsService;
@@ -14,9 +15,13 @@ pub trait Dao<T> {
 
     fn get(&self, id: &str) -> Result<Option<Versioned<T>>, StorageError>;
 
+    fn get_all_keys(&self) -> Result<HashSet<String>, StorageError>;
+
     fn create(&self, id: &str, payload: T) -> Result<(), StorageError>;
 
     fn update(&self, id: &str, new: Versioned<T>) -> Result<(), StorageError>;
+
+    fn delete(&self, id: &str) -> Result<(), StorageError>;
 
     fn clear(&self) -> Result<(), ()>;
 
@@ -54,6 +59,18 @@ impl Dao<Vec<u8>> for SimpleDao {
             },
             Err(err) => Err(StorageError::RetrievalError(err.to_string()))
         }
+    }
+
+    fn get_all_keys(&self) -> Result<HashSet<String>, StorageError> {
+        let mut keys: HashSet<String> = HashSet::new();
+
+        for key_result in self.tree.iter().keys() {
+            let key: IVec = key_result?;
+
+            keys.insert(String::from_utf8(key.to_vec())?);
+        }
+
+        Ok( keys )
     }
 
     fn create(&self,
@@ -99,6 +116,12 @@ impl Dao<Vec<u8>> for SimpleDao {
         Ok(())
     }
 
+    fn delete(&self, id: &str) -> Result<(), StorageError> {
+        self.tree.remove(id)?;
+
+        Ok(())
+    }
+
     fn clear(&self) -> Result<(), ()> {
         self.tree.clear().map_err(|_| ())
     }
@@ -107,17 +130,17 @@ impl Dao<Vec<u8>> for SimpleDao {
 
 pub struct EncryptedDao {
 
-    delegate_dao: SimpleDao,
+    dao: SimpleDao,
     secrets_service: Arc<LocalSecretsService>
 
 }
 
 impl EncryptedDao {
 
-    pub fn new(delegate_dao: SimpleDao,
+    pub fn new(dao: SimpleDao,
                secrets_service: Arc<LocalSecretsService>) -> Self {
         EncryptedDao {
-            delegate_dao,
+            dao,
             secrets_service
         }
     }
@@ -128,7 +151,7 @@ impl Dao<ZeroizeWrapper> for EncryptedDao {
 
     fn get(&self,
            id: &str) -> Result<Option<Versioned<ZeroizeWrapper>>, StorageError> {
-        match self.delegate_dao.get(id) {
+        match self.dao.get(id) {
             Ok(Some(payload)) => {
                 let decrypted = self.secrets_service.decrypt(
                     &bincode::deserialize(payload.get_value())?)?;
@@ -140,11 +163,15 @@ impl Dao<ZeroizeWrapper> for EncryptedDao {
         }
     }
 
+    fn get_all_keys(&self) -> Result<HashSet<String>, StorageError> {
+        self.dao.get_all_keys()
+    }
+
     fn create(&self,
               id: &str,
               payload: ZeroizeWrapper) -> Result<(), StorageError> {
-        self.delegate_dao.create(id,
-                                 bincode::serialize(
+        self.dao.create(id,
+                        bincode::serialize(
                                      &self.secrets_service.encrypt(payload.get_value())?
                                  )?
         )
@@ -157,11 +184,15 @@ impl Dao<ZeroizeWrapper> for EncryptedDao {
             &self.secrets_service.encrypt(new.get_value().get_value())?
         )?;
 
-        self.delegate_dao.update(id,new.replace(encrypted))
+        self.dao.update(id, new.replace(encrypted))
+    }
+
+    fn delete(&self, id: &str) -> Result<(), StorageError> {
+        self.dao.delete(id)
     }
 
     fn clear(&self) -> Result<(), ()> {
-        self.delegate_dao.clear()
+        self.dao.clear()
     }
 }
 
@@ -198,6 +229,10 @@ impl<T: Serialize + for<'de> Deserialize<'de>> Dao<T> for TypedDao<T> {
         }
     }
 
+    fn get_all_keys(&self) -> Result<HashSet<String>, StorageError> {
+        self.dao.get_all_keys()
+    }
+
     fn create(&self,
               id: &str,
               payload: T) -> Result<(), StorageError> {
@@ -216,6 +251,10 @@ impl<T: Serialize + for<'de> Deserialize<'de>> Dao<T> for TypedDao<T> {
         self.dao.update(id, new.replace(ZeroizeWrapper::new(serialized)))?;
 
         Ok(())
+    }
+
+    fn delete(&self, id: &str) -> Result<(), StorageError> {
+        self.dao.delete(id)
     }
 
     fn clear(&self) -> Result<(), ()> {

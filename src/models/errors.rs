@@ -1,5 +1,6 @@
 use std::fmt;
 use std::fmt::Debug;
+use std::string::FromUtf8Error;
 use std::sync::PoisonError;
 
 use bincode::ErrorKind;
@@ -69,7 +70,8 @@ pub enum StorageError {
     SerdeError(String),
     SecretsError(SecretsError),
     SledError(String),
-    TransactionError(String)
+    TransactionError(String),
+    Utf8Error
 
 }
 
@@ -262,6 +264,12 @@ impl From<Box<bincode::ErrorKind>> for StorageError {
 impl From<SecretsError> for StorageError {
     fn from(err: SecretsError) -> Self {
         StorageError::SecretsError(err)
+    }
+}
+
+impl From<FromUtf8Error> for StorageError {
+    fn from(_: FromUtf8Error) -> Self {
+        StorageError::Utf8Error
     }
 }
 

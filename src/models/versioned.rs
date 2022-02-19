@@ -18,7 +18,7 @@ impl<T> Versioned<T> {
         Versioned { version: 0, value }
     }
 
-    pub fn replace<U>(self, value: U) -> Versioned<U> {
+    pub fn replace<U>(&self, value: U) -> Versioned<U> {
         Versioned { version: self.version, value }
     }
 
