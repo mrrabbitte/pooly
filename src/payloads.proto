@@ -47,11 +47,13 @@ message ErrorResponse {
   enum ErrorType {
     CONNECTION_CONFIG_ERROR = 0;
     CREATE_POOL_ERROR = 1;
-    MISSING_CONNECTION = 2;
-    POOL_ERROR = 3;
-    POSTGRES_ERROR = 4;
-    WRONG_NUM_OF_PARAMS = 5;
-    UNKNOWN_PG_VALUE_TYPE = 6;
+    FORBIDDEN_CONNECTION_ID = 2;
+    MISSING_CONNECTION = 3;
+    POOL_ERROR = 4;
+    POSTGRES_ERROR = 5;
+    STORAGE_ERROR = 6;
+    WRONG_NUM_OF_PARAMS = 7;
+    UNKNOWN_PG_VALUE_TYPE = 8;
   }
 
   ErrorType error_type = 3;

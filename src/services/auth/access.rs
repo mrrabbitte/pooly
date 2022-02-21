@@ -56,8 +56,7 @@ impl AccessControlService {
                       connection_id: &str) -> Result<bool, StorageError> {
         Ok(
             match self.aces.get(client_id) {
-                None =>
-                    self.retrieve_and_insert(client_id)?.matches(client_id, connection_id),
+                None => self.retrieve_and_insert(client_id)?.matches(client_id, connection_id),
                 Some(cached) =>
                     cached.value().matches(client_id, connection_id)
             }
@@ -102,6 +101,14 @@ impl AccessControlService {
         Ok(())
     }
 
+    pub fn has_client_id(&self, client_id: &str) -> Result<bool, StorageError> {
+        Ok(self.aces.contains_key(client_id) || !self.retrieve_ace(client_id)?.is_empty())
+    }
+
+    pub fn clear(&self) -> Result<(), ()> {
+        self.connection_ids.clear().and(self.connection_id_patters.clear())
+    }
+
     fn initialize(&self) -> Result<(), StorageError> {
         let mut client_ids = HashSet::new();
 
@@ -115,9 +122,13 @@ impl AccessControlService {
         Ok(())
     }
 
-    fn retrieve_and_insert(&self, client_id: &str) -> Result<ConnectionAccessControlEntry, StorageError> {
+    fn retrieve_and_insert(&self,
+                           client_id: &str) -> Result<ConnectionAccessControlEntry, StorageError> {
         let ace = self.retrieve_ace(client_id)?;
-        self.aces.insert(client_id.into(), ace.clone());
+
+        if !ace.is_empty() {
+            self.aces.insert(client_id.into(), ace.clone());
+        }
 
         Ok(ace)
     }

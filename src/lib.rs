@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
 use ring::rand::SystemRandom;
-use crate::data::db::DbBuilder;
 
+use crate::data::db::DbBuilder;
+use crate::services::auth::access::AccessControlService;
 use crate::services::connections::config::ConnectionConfigService;
 use crate::services::connections::ConnectionService;
 use crate::services::queries::QueryService;
@@ -17,6 +18,7 @@ pub mod services;
 
 pub struct AppContext {
 
+    pub access_control_service: Arc<AccessControlService>,
     pub connection_config_service: Arc<ConnectionConfigService>,
     pub secrets_service: Arc<LocalSecretsService>,
     pub shares_service: Arc<MasterKeySharesService>,
@@ -47,12 +49,18 @@ impl AppContext {
                 ConnectionConfigService::new(
                     db.clone(), secrets_service.clone()));
 
+        let access_control_service =
+            Arc::new(AccessControlService::new(
+                db.clone(), secrets_service.clone()).unwrap());
+
         let query_service =
             Arc::new(QueryService::new(
+                access_control_service.clone(),
                 ConnectionService::new(
                     connection_config_service.clone())));
 
         AppContext {
+            access_control_service,
             connection_config_service,
             secrets_service,
             shares_service,

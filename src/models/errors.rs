@@ -20,11 +20,13 @@ pub enum QueryError {
 
     ConnectionConfigError(String, u16),
     CreatePoolError(String),
+    ForbiddenConnectionId,
     UnknownDatabaseConnection(String),
     PoolError(String),
     PostgresError(String),
-    WrongNumParams(usize, usize),
-    UnknownPostgresValueType(String)
+    StorageError,
+    UnknownPostgresValueType(String),
+    WrongNumParams(usize, usize)
 
 }
 
@@ -128,11 +130,13 @@ impl QueryError {
         match self {
             QueryError::ConnectionConfigError(_, code) => *code,
             QueryError::CreatePoolError(_) => 500,
+            QueryError::ForbiddenConnectionId => 403,
             QueryError::UnknownDatabaseConnection(_) => 400,
             QueryError::PoolError(_) => 500,
             QueryError::PostgresError(_) => 500,
             QueryError::WrongNumParams(_, _) => 400,
-            QueryError::UnknownPostgresValueType(_) => 500
+            QueryError::UnknownPostgresValueType(_) => 500,
+            QueryError::StorageError => 500,
         }
     }
 
@@ -144,7 +148,9 @@ impl QueryError {
             QueryError::WrongNumParams(_, _) => ErrorType::WrongNumOfParams,
             QueryError::UnknownPostgresValueType(_) => ErrorType::UnknownPgValueType,
             QueryError::CreatePoolError(_) => ErrorType::CreatePoolError,
-            QueryError::ConnectionConfigError(_, _) => ErrorType::ConnectionConfigError
+            QueryError::ConnectionConfigError(_, _) => ErrorType::ConnectionConfigError,
+            QueryError::ForbiddenConnectionId => ErrorType::ForbiddenConnectionId,
+            QueryError::StorageError => ErrorType::StorageError
         }
     }
 
@@ -159,7 +165,11 @@ impl QueryError {
             QueryError::UnknownPostgresValueType(pg_type) =>
                 format!("Unknown pg type: {}", pg_type),
             QueryError::CreatePoolError(message) => message,
-            QueryError::ConnectionConfigError(message, _) => message
+            QueryError::ConnectionConfigError(message, _) => message,
+            QueryError::ForbiddenConnectionId =>
+                "The connection of the requested id is forbidden.".into(),
+            QueryError::StorageError =>
+                "Underlying storage error.".into(),
         }
     }
 
@@ -281,5 +291,11 @@ impl From<FromUtf8Error> for StorageError {
 impl From<StorageError> for ConnectionConfigError {
     fn from(err: StorageError) -> Self {
         ConnectionConfigError::ConfigStorageError(err)
+    }
+}
+
+impl From<StorageError> for QueryError {
+    fn from(_: StorageError) -> Self {
+        QueryError::StorageError
     }
 }

@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use testcontainers::{clients, Docker};
 use testcontainers::images::postgres::Postgres;
@@ -8,6 +8,7 @@ use pooly::models::connections::ConnectionConfig;
 use pooly::models::payloads::query_response::Payload;
 use pooly::models::payloads::QueryRequest;
 
+const CLIENT_ID: &str = "client-id-1";
 const CONNECTION_ID: &str = "connection-id-1";
 
 const PG_TEST_DB: &str = "pooly_test_db";
@@ -31,6 +32,7 @@ async fn test_simple_query() {
     app_context.connection_config_service.create(build_config(pg_host)).unwrap();
 
     let response = app_context.query_service.query(
+        CLIENT_ID,
         &QueryRequest{
             connection_id: CONNECTION_ID.to_string(),
             query: "SELECT 1 as int8;".to_string(),
@@ -61,6 +63,14 @@ fn build_and_initialize_services() -> AppContext {
     }
 
     secrets_service.unseal().unwrap();
+
+    let access_control_service = &context.access_control_service;
+
+    let mut connection_ids = HashSet::new();
+
+    connection_ids.insert(CONNECTION_ID.into());
+
+    access_control_service.add_connection_ids(CLIENT_ID, connection_ids).unwrap();
 
     context
 }

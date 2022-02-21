@@ -67,6 +67,11 @@ impl ConnectionAccessControlEntry {
         }
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.connection_ids.get_value().is_empty()
+            && self.connection_id_patterns.get_value().is_empty()
+    }
+
 }
 
 #[cfg(test)]

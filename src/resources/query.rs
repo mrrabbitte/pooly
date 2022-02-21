@@ -17,7 +17,7 @@ pub async fn bulk(service: Data<Arc<QueryService>>,
                   request: ProtoBuf<TxBulkQueryRequest>) -> Result<HttpResponse> {
     let correlation_id = Uuid::new_v4().to_string();
 
-    let response = service.bulk_tx(&request.0, &correlation_id).await;
+    let response = service.bulk_tx("client-id-1", &request.0, &correlation_id).await;
 
     build_response(response)
 }
@@ -27,7 +27,7 @@ pub async fn query(service: Data<Arc<QueryService>>,
                    request: ProtoBuf<QueryRequest>) -> Result<HttpResponse> {
     let correlation_id = Uuid::new_v4().to_string();
 
-    let response = service.query(&request.0, &correlation_id).await;
+    let response = service.query("client-id-1", &request.0, &correlation_id).await;
 
     build_response(response)
 }
