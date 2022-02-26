@@ -46,8 +46,6 @@ impl AccessControlService {
                     secrets_service.clone()))
         };
 
-        service.initialize()?;
-
         Ok(service)
     }
 
@@ -66,13 +64,20 @@ impl AccessControlService {
     pub fn add_connection_ids(&self,
                               client_id: &str,
                               connection_ids: HashSet<String>) -> Result<(), StorageError> {
-        self.connection_ids.create(client_id, &connection_ids)
+        self.connection_ids.create(client_id, &connection_ids)?;
+        self.retrieve_and_insert(client_id)?;
+        Ok(())
     }
 
     pub fn update_connection_ids(&self,
                                  client_id: &str,
                                  connection_ids: Versioned<HashSet<String>>) -> Result<(), StorageError> {
-        self.connection_ids.update(client_id, &connection_ids)
+        self.connection_ids.update(client_id, &connection_ids)?;
+        self.aces.alter(client_id,
+                        |client_id, ace|
+                            ace.with_connection_ids(connection_ids));
+
+        Ok(())
     }
 
     pub fn delete_connection_ids(&self, client_id: &str) -> Result<(), StorageError> {
@@ -83,7 +88,7 @@ impl AccessControlService {
                         client_id: &str,
                         patterns: HashSet<WildcardPattern>) -> Result<(), StorageError> {
         self.connection_id_patters.create(client_id, &patterns)?;
-
+        self.retrieve_and_insert(client_id)?;
         Ok(())
     }
 
@@ -109,19 +114,6 @@ impl AccessControlService {
         self.connection_ids.clear().and(self.connection_id_patters.clear())
     }
 
-    fn initialize(&self) -> Result<(), StorageError> {
-        let mut client_ids = HashSet::new();
-
-        client_ids.extend(self.connection_ids.get_all_keys()?);
-        client_ids.extend(self.connection_id_patters.get_all_keys()?);
-
-        for client_id in client_ids {
-            self.retrieve_and_insert(&client_id)?;
-        }
-
-        Ok(())
-    }
-
     fn retrieve_and_insert(&self,
                            client_id: &str) -> Result<ConnectionAccessControlEntry, StorageError> {
         let ace = self.retrieve_ace(client_id)?;
@@ -137,11 +129,11 @@ impl AccessControlService {
                     client_id: &str) -> Result<ConnectionAccessControlEntry, StorageError> {
         let connection_ids =
             self.connection_ids.get(client_id)?
-                .unwrap_or(Versioned::new(HashSet::new()));
+                .unwrap_or(Versioned::zero_version(HashSet::new()));
 
         let connection_pattern_ids =
             self.connection_id_patters.get(client_id)?
-                .unwrap_or(Versioned::new(HashSet::new()));
+                .unwrap_or(Versioned::zero_version(HashSet::new()));
 
         Ok(
             ConnectionAccessControlEntry::new(

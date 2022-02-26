@@ -76,7 +76,7 @@ impl Dao<Vec<u8>> for SimpleDao {
     fn create(&self,
               id: &str,
               payload: &Vec<u8>) -> Result<(), StorageError> {
-        let new = bincode::serialize(&Versioned::new(payload.clone()))?;
+        let new = bincode::serialize(&Versioned::zero_version(payload.clone()))?;
 
         self.tree.compare_and_swap(
             id,

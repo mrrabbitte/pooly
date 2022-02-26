@@ -2,7 +2,8 @@ use std::collections::HashSet;
 
 use serde::{Deserialize, Serialize};
 
-use crate::models::versioned::Versioned;
+use crate::models::updatable::{StringSetCommand, Updatable, WildcardPatternSetCommand};
+use crate::models::versioned::{Versioned, VersionHeader};
 use crate::models::wildcards::WildcardPattern;
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -50,21 +51,31 @@ impl ConnectionAccessControlEntry {
     }
 
     pub fn with_connection_ids(self,
-                               connection_ids: Versioned<HashSet<String>>) -> ConnectionAccessControlEntry {
-        ConnectionAccessControlEntry {
-            client_id: self.client_id,
-            connection_ids,
-            connection_id_patterns: self.connection_id_patterns
+                               connection_ids: Versioned<HashSet<String>>)
+        -> ConnectionAccessControlEntry {
+        if self.connection_ids.should_replace(&connection_ids) {
+            return ConnectionAccessControlEntry {
+                client_id: self.client_id,
+                connection_ids,
+                connection_id_patterns: self.connection_id_patterns
+            };
         }
+
+        self
     }
 
     pub fn with_connection_id_patterns(self,
-                                       connection_id_patterns: Versioned<HashSet<WildcardPattern>>) -> ConnectionAccessControlEntry {
-        ConnectionAccessControlEntry {
-            client_id: self.client_id,
-            connection_ids: self.connection_ids,
-            connection_id_patterns
+                                       connection_id_patterns: Versioned<HashSet<WildcardPattern>>)
+        -> ConnectionAccessControlEntry {
+        if self.connection_id_patterns.should_replace(&connection_id_patterns) {
+            return ConnectionAccessControlEntry {
+                client_id: self.client_id,
+                connection_ids: self.connection_ids,
+                connection_id_patterns
+            };
         }
+
+        self
     }
 
     pub fn is_empty(&self) -> bool {
@@ -73,6 +84,75 @@ impl ConnectionAccessControlEntry {
     }
 
 }
+
+pub trait ConnectionIdAccessEntry {
+
+    fn matches(&self,
+               client_id: &str,
+               connection_id: &str) -> bool;
+
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug)]
+pub struct LiteralConnectionIdAccessEntry {
+
+    client_id: String,
+    connection_ids: HashSet<String>
+
+}
+
+impl ConnectionIdAccessEntry for LiteralConnectionIdAccessEntry {
+    fn matches(&self, client_id: &str, connection_id: &str) -> bool {
+        if !client_id.eq(&self.client_id) {
+            return false;
+        }
+
+        !self.connection_ids.is_empty() && self.connection_ids.contains(connection_id)
+    }
+}
+
+impl Updatable<StringSetCommand> for LiteralConnectionIdAccessEntry {
+    fn accept(&self, update: StringSetCommand) -> Self {
+        LiteralConnectionIdAccessEntry {
+            client_id: self.client_id.clone(),
+            connection_ids: update.apply(&self.connection_ids)
+        }
+    }
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug)]
+pub struct PatternConnectionIdAccessEntry {
+
+    client_id: String,
+    patterns: HashSet<WildcardPattern>
+
+}
+
+impl ConnectionIdAccessEntry for PatternConnectionIdAccessEntry {
+    fn matches(&self, client_id: &str, connection_id: &str) -> bool {
+        if !client_id.eq(&self.client_id) {
+            return false;
+        }
+
+        for pattern in &self.patterns {
+            if pattern.matches(connection_id) {
+                return true;
+            }
+        }
+
+        false
+    }
+}
+
+impl Updatable<WildcardPatternSetCommand> for PatternConnectionIdAccessEntry {
+    fn accept(&self, update: WildcardPatternSetCommand) -> Self {
+        PatternConnectionIdAccessEntry {
+            client_id: self.client_id.clone(),
+            patterns: update.apply(&self.patterns)
+        }
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
@@ -97,8 +177,8 @@ mod tests {
 
         let ace = ConnectionAccessControlEntry::new(
             CLIENT_ID.to_string(),
-            Versioned::new(should_match.clone()),
-            Versioned::new(HashSet::new()));
+            Versioned::zero_version(should_match.clone()),
+            Versioned::zero_version(HashSet::new()));
 
         for connection_id in &should_match {
             assert!(ace.matches(CLIENT_ID, &connection_id));
@@ -108,8 +188,8 @@ mod tests {
 
         let ace = ConnectionAccessControlEntry::new(
             CLIENT_ID.to_string(),
-            Versioned::new(should_match.clone()),
-            Versioned::new(HashSet::new()));
+            Versioned::zero_version(should_match.clone()),
+            Versioned::zero_version(HashSet::new()));
 
         for connection_id in should_match {
             assert_eq!(ace.matches(CLIENT_ID, &connection_id),
@@ -127,8 +207,8 @@ mod tests {
 
         let ace = ConnectionAccessControlEntry::new(
             CLIENT_ID.to_string(),
-            Versioned::new(HashSet::new()),
-            Versioned::new(patterns));
+            Versioned::zero_version(HashSet::new()),
+            Versioned::zero_version(patterns));
 
         for connection_id in get_should_match() {
             assert!(ace.matches(CLIENT_ID, &connection_id));
@@ -141,8 +221,8 @@ mod tests {
 
         let ace = ConnectionAccessControlEntry::new(
             "not".to_string() + CLIENT_ID,
-            Versioned::new(should_match.clone()),
-            Versioned::new(HashSet::new()));
+            Versioned::zero_version(should_match.clone()),
+            Versioned::zero_version(HashSet::new()));
 
         for connection_id in &should_match {
             assert!(!ace.matches(CLIENT_ID, &connection_id));
@@ -153,8 +233,8 @@ mod tests {
     fn empty_never_matches() {
         let ace = ConnectionAccessControlEntry::new(
             CLIENT_ID.to_string(),
-            Versioned::new(HashSet::new()),
-            Versioned::new(HashSet::new()));
+            Versioned::zero_version(HashSet::new()),
+            Versioned::zero_version(HashSet::new()));
 
         for connection_id in get_should_match() {
             assert!(!ace.matches(CLIENT_ID, &connection_id));

@@ -16,6 +16,7 @@ const PG_TEST_USER: &str = "pooly_test";
 const PG_TEST_PD: &str = "hnaKzVVx1qMdKvmS647ps6tjZ3Jh8p98iwpDV2l";
 const INTERNAL_PG_PORT: u16 = 5432;
 
+
 #[tokio::test]
 async fn test_simple_query() {
     let _ = pretty_env_logger::try_init().unwrap();
@@ -29,7 +30,8 @@ async fn test_simple_query() {
 
     let pg_host = container.get_host_port(INTERNAL_PG_PORT).unwrap();
 
-    app_context.connection_config_service.create(build_config(pg_host)).unwrap();
+    app_context.connection_config_service.create(build_config(pg_host))
+        .expect("Could not create config.");
 
     let response = app_context.query_service.query(
         CLIENT_ID,
@@ -40,12 +42,12 @@ async fn test_simple_query() {
         },
         "corr-id-1").await;
 
-    app_context.secrets_service.clear().unwrap();
-    app_context.connection_config_service.clear().unwrap();
-
     println!("{:?}", &response.0);
 
-    assert!(matches!(response.0.payload, Some(Payload::Success(_))))
+    assert!(matches!(response.0.payload, Some(Payload::Success(_))));
+
+    app_context.secrets_service.clear().expect("Could not clear secrets.");
+    app_context.connection_config_service.clear().expect("Could not clear configs.");
 }
 
 fn build_and_initialize_services() -> AppContext {
@@ -53,24 +55,29 @@ fn build_and_initialize_services() -> AppContext {
 
     let secrets_service = &context.secrets_service;
 
-    secrets_service.clear().unwrap();
+    secrets_service.clear().expect("Could not clear secrets.");
 
-    let shares = secrets_service.initialize().unwrap();
+    let shares = secrets_service.initialize()
+        .expect("Could not initialize.");
 
     let shares_service = &context.shares_service;
     for share in shares {
         shares_service.add(share.try_into().unwrap());
     }
 
-    secrets_service.unseal().unwrap();
+    secrets_service.unseal().expect("Could not unseal.");
 
     let access_control_service = &context.access_control_service;
+
+    access_control_service.clear().expect("Could not clear access control service");
 
     let mut connection_ids = HashSet::new();
 
     connection_ids.insert(CONNECTION_ID.into());
 
-    access_control_service.add_connection_ids(CLIENT_ID, connection_ids).unwrap();
+    access_control_service
+        .add_connection_ids(CLIENT_ID, connection_ids)
+        .expect("Could not add connection ids.");
 
     context
 }
