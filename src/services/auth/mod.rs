@@ -1,4 +1,4 @@
 pub mod access;
-pub mod connections;
+pub mod connection_ids;
 pub mod request;
 pub mod tokens;

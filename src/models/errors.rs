@@ -36,6 +36,7 @@ pub enum ConnectionError {
     CreatePoolError(CreatePoolError),
     ConnectionConfigError(ConnectionConfigError),
     PoolError(PoolError<Error>),
+    StorageError(StorageError)
 
 }
 
@@ -205,7 +206,8 @@ impl From<ConnectionError> for QueryError {
             ConnectionError::CreatePoolError(err) =>
                 QueryError::CreatePoolError(err.to_string()),
             ConnectionError::PoolError(err) => err.into(),
-            ConnectionError::ConnectionConfigError(err) => err.into()
+            ConnectionError::ConnectionConfigError(err) => err.into(),
+            ConnectionError::StorageError(err) => err.into()
         }
     }
 }

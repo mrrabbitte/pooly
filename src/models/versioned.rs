@@ -1,6 +1,7 @@
 use std::time::Instant;
 
 use serde::{Deserialize, Serialize};
+use zeroize::Zeroize;
 
 use crate::models::errors::StorageError;
 use crate::models::time;
@@ -8,6 +9,8 @@ use crate::models::updatable::{Updatable, UpdateCommand};
 
 pub type VersionedVec = Versioned<Vec<u8>>;
 
+#[derive(Zeroize)]
+#[zeroize(drop)]
 #[derive(Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Debug)]
 pub struct VersionHeader {
 
@@ -73,17 +76,21 @@ impl<T> Versioned<T> {
                                     new: Versioned<T>) -> Result<Versioned<T>, StorageError> {
         self.header.check_next_version(&new.header)?;
 
-        Ok(Versioned { header: self.header.inc_version(), value: new.value } )
+        Ok(self.update_with_value(new.value))
     }
 
-    pub fn update_with_value(&self,
-                             new: T) -> Versioned<T> {
+    fn update_with_value(&self,
+                         new: T) -> Versioned<T> {
         Versioned { header: self.header.inc_version(), value: new }
     }
 
     pub fn should_replace(&self,
                           new_candidate: &Versioned<T>) -> bool {
         self.header.should_replace(&new_candidate.header)
+    }
+
+    pub fn get_header(&self) -> &VersionHeader {
+        &self.header
     }
 
     pub fn get_value(&self) -> &T {

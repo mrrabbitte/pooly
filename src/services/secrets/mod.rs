@@ -6,11 +6,11 @@ use chacha20poly1305::aead::generic_array::GenericArray;
 use chacha20poly1305::XChaCha20Poly1305;
 use sharks::{Share, Sharks};
 
-use crate::models::connections::ZeroizeWrapper;
+use crate::data::files::{FilesService, SimpleFilesService};
 use crate::models::errors::SecretsError;
 use crate::models::secrets::{EncryptedPayload, EncryptionKey, KEY_LENGTH, MasterKey, MasterKeyShare, MasterKeySharePayload};
+use crate::models::zeroize::ZeroizeWrapper;
 use crate::services::secrets::encryption::EncryptionService;
-use crate::data::files::{FilesService, SimpleFilesService};
 use crate::services::secrets::random::VecGenerator;
 use crate::services::secrets::shares::MasterKeySharesService;
 
@@ -178,9 +178,9 @@ mod tests {
 
     use ring::rand::SystemRandom;
 
+    use crate::data::files::MockFilesService;
     use crate::models::errors::SecretsError;
     use crate::models::secrets::EncryptedPayload;
-    use crate::data::files::MockFilesService;
     use crate::services::secrets::random::VecGenerator;
     use crate::services::secrets::SecretsService;
     use crate::services::secrets::shares::MasterKeySharesService;

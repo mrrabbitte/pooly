@@ -8,6 +8,7 @@ use tokio_postgres::NoTls;
 use crate::models::connections::ConnectionConfig;
 use crate::models::errors::ConnectionError;
 use crate::services::connections::config::ConnectionConfigService;
+use crate::services::updatable::UpdatableService;
 
 pub mod config;
 
@@ -42,10 +43,10 @@ impl ConnectionService {
     async fn create_or_empty(&self,
                              connection_id: &str) -> Option<Result<Connection, ConnectionError>> {
         match self.config_service.get(connection_id) {
-            Ok(None) => Option::None,
             Ok(Some(config)) =>
                 self.add_connection_pool(config.get_value()).await,
-            Err(err) => Some(Err(ConnectionError::ConnectionConfigError(err)))
+            Ok(None) => Option::None,
+            Err(err) => Some(Err(ConnectionError::StorageError(err)))
         }
     }
 

@@ -1,12 +1,14 @@
 use serde::{Deserialize, Serialize};
 use zeroize::Zeroize;
-use crate::models::versioned::Versioned;
+
+use crate::models::updatable::{Updatable, UpdateCommand};
+use crate::models::versioned::{Versioned, VersionHeader};
 
 pub type VersionedConnectionConfig = Versioned<ConnectionConfig>;
 
 #[derive(Zeroize)]
 #[zeroize(drop)]
-#[derive(PartialEq, Hash, Serialize, Deserialize, Debug)]
+#[derive(Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Debug)]
 pub struct ConnectionConfig {
 
     pub id: String,
@@ -21,23 +23,39 @@ pub struct ConnectionConfig {
 
 #[derive(Zeroize)]
 #[zeroize(drop)]
-#[derive(Clone)]
-pub struct ZeroizeWrapper {
+#[derive(Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Debug)]
+pub struct ConnectionConfigUpdateCommand {
 
-    value: Vec<u8>
+    header: VersionHeader,
+    hosts: Vec<String>,
+    ports: Vec<u16>,
+    db_name: String,
+    user: String,
+    password: String,
+    max_connections: i32
 
 }
 
-impl ZeroizeWrapper {
+impl UpdateCommand for ConnectionConfigUpdateCommand {
+    fn get_version_header(&self) -> &VersionHeader {
+        &self.header
+    }
+}
 
-    pub fn new(value: Vec<u8>) -> ZeroizeWrapper {
-        ZeroizeWrapper {
-            value
+impl Updatable<ConnectionConfigUpdateCommand> for ConnectionConfig {
+    fn get_id(&self) -> &str {
+        &self.id
+    }
+
+    fn accept(&self, update: ConnectionConfigUpdateCommand) -> Self {
+        ConnectionConfig {
+            id: self.id.clone(),
+            hosts: update.hosts.clone(),
+            ports: update.ports.clone(),
+            db_name: update.db_name.clone(),
+            user: update.user.clone(),
+            password: update.password.clone(),
+            max_connections: update.max_connections.clone()
         }
     }
-
-    pub fn get_value(&self) -> &Vec<u8> {
-        &self.value
-    }
-
 }

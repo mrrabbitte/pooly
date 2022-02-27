@@ -1,19 +1,22 @@
+use std::collections::HashSet;
 use std::sync::Arc;
 
+use dashmap::mapref::one::Ref;
 use sled;
 use sled::Db;
 
-use crate::data::dao::{Dao, EncryptedDao, SimpleDao, TypedDao};
-use crate::models::connections::{ConnectionConfig, VersionedConnectionConfig, ZeroizeWrapper};
-use crate::models::errors::ConnectionConfigError;
+use crate::data::dao::{Dao, EncryptedDao, SimpleDao, TypedDao, UpdatableDao};
+use crate::models::connections::{ConnectionConfig, ConnectionConfigUpdateCommand, VersionedConnectionConfig};
+use crate::models::errors::{ConnectionConfigError, StorageError};
 use crate::models::versioned::Versioned;
 use crate::services::secrets::LocalSecretsService;
+use crate::services::updatable::{CachedService, UpdatableService};
 
 const CONNECTION_CONFIGS_KEYSPACE: &str = "connection_configs_v1";
 
 pub struct ConnectionConfigService {
 
-    dao: TypedDao<ConnectionConfig>
+    delegate: CachedService<ConnectionConfigUpdateCommand, ConnectionConfig>
 
 }
 
@@ -22,33 +25,45 @@ impl ConnectionConfigService {
     pub fn new(db: Arc<Db>,
                secrets_service: Arc<LocalSecretsService>) -> Self {
         ConnectionConfigService {
-            dao: TypedDao::new(
-                EncryptedDao::new(
-                    SimpleDao::new(CONNECTION_CONFIGS_KEYSPACE, db)
-                        .unwrap(),
-                    secrets_service)
+            delegate: CachedService::new(
+                UpdatableDao::new(
+                    TypedDao::new(
+                        EncryptedDao::new(
+                            SimpleDao::new(CONNECTION_CONFIGS_KEYSPACE, db)
+                                .unwrap(),
+                            secrets_service)
+                    )
+                )
             )
         }
     }
 
-    pub fn get(&self,
-               connection_id: &str) -> Result<Option<VersionedConnectionConfig>, ConnectionConfigError> {
-        Ok(self.dao.get(connection_id)?)
+}
+
+impl UpdatableService<ConnectionConfigUpdateCommand, ConnectionConfig> for ConnectionConfigService {
+    fn get(&self, id: &str) -> Result<Option<Ref<String, Versioned<ConnectionConfig>>>, StorageError> {
+        self.delegate.get(id)
     }
 
-    pub fn create(&self,
-                  config: ConnectionConfig) -> Result<Versioned<ConnectionConfig>, ConnectionConfigError> {
-        let config_id = config.id.clone();
-
-        let created = Versioned::zero_version(config);
-
-        self.dao.create(&config_id, &created)?;
-
-        Ok(created)
+    fn get_all_keys(&self) -> Result<HashSet<String>, StorageError> {
+        self.delegate.get_all_keys()
     }
 
-    pub fn clear(&self) -> Result<(), ()> {
-        self.dao.clear()
+    fn create(&self, payload: ConnectionConfig)
+        -> Result<Versioned<ConnectionConfig>, StorageError> {
+        self.delegate.create(payload)
     }
 
+    fn update(&self, id: &str, command: ConnectionConfigUpdateCommand)
+        -> Result<Versioned<ConnectionConfig>, StorageError> {
+        self.delegate.update(id, command)
+    }
+
+    fn delete(&self, id: &str) -> Result<(), StorageError> {
+        self.delegate.delete(id)
+    }
+
+    fn clear(&self) -> Result<(), ()> {
+        self.delegate.clear()
+    }
 }

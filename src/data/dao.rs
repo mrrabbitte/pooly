@@ -7,11 +7,11 @@ use sled::{Db, IVec, Subscriber, Tree};
 use sled::transaction::{abort, ConflictableTransactionError};
 
 use crate::LocalSecretsService;
-use crate::models::connections::ZeroizeWrapper;
 use crate::models::errors::StorageError;
 use crate::models::updatable::{Updatable, UpdateCommand};
 use crate::models::versioned;
 use crate::models::versioned::{Versioned, VersionedVec};
+use crate::models::zeroize::ZeroizeWrapper;
 
 pub trait Dao<T> {
 
@@ -293,7 +293,7 @@ impl<T: Serialize + for<'de> Deserialize<'de>> Dao<T> for TypedDao<T> {
     }
 }
 
-pub struct UpdatableTypedDao<U: UpdateCommand, T: Updatable<U>> {
+pub struct UpdatableDao<U: UpdateCommand, T: Updatable<U>> {
 
     dao_type: PhantomData<U>,
     dao: TypedDao<T>
@@ -301,7 +301,7 @@ pub struct UpdatableTypedDao<U: UpdateCommand, T: Updatable<U>> {
 }
 
 impl<U: UpdateCommand, T: Updatable<U> + Serialize + for<'de> Deserialize<'de>> Dao<T>
-for UpdatableTypedDao<U, T> {
+for UpdatableDao<U, T> {
     fn get(&self, id: &str) -> Result<Option<Versioned<T>>, StorageError> {
         self.dao.get(id)
     }
@@ -327,7 +327,14 @@ for UpdatableTypedDao<U, T> {
     }
 }
 
-impl<U: UpdateCommand, T: Updatable<U> + Serialize + for<'de> Deserialize<'de>> UpdatableTypedDao<U, T> {
+impl<U: UpdateCommand, T: Updatable<U> + Serialize + for<'de> Deserialize<'de>> UpdatableDao<U, T> {
+
+    pub fn new(dao: TypedDao<T>) -> UpdatableDao<U, T> {
+        UpdatableDao {
+            dao_type: PhantomData,
+            dao
+        }
+    }
 
     pub fn accept(&self,
                   id: &str,

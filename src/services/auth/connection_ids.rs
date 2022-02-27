@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use dashmap::DashMap;
 use dashmap::mapref::one::Ref;
 
-use crate::data::dao::{Dao, UpdatableTypedDao};
+use crate::data::dao::{Dao, UpdatableDao};
 use crate::models::access::{LiteralConnectionIdAccessEntry, WildcardPatternConnectionIdAccessEntry};
 use crate::models::errors::StorageError;
 use crate::models::updatable::{StringSetCommand, WildcardPatternSetCommand};
@@ -13,14 +13,14 @@ use crate::services::updatable::UpdatableService;
 pub struct LiteralConnectionIdAccessEntryService {
 
     cache: DashMap<String, LiteralConnectionIdAccessEntry>,
-    dao: UpdatableTypedDao<StringSetCommand, LiteralConnectionIdAccessEntry>
+    dao: UpdatableDao<StringSetCommand, LiteralConnectionIdAccessEntry>
 
 }
 
 pub struct WildcardPatternConnectionIdAccessEntryService {
 
     cache: DashMap<String, WildcardPatternConnectionIdAccessEntry>,
-    dao: UpdatableTypedDao<WildcardPatternSetCommand, WildcardPatternConnectionIdAccessEntry>
+    dao: UpdatableDao<WildcardPatternSetCommand, WildcardPatternConnectionIdAccessEntry>
 
 }
 
@@ -60,5 +60,8 @@ impl UpdatableService<StringSetCommand, LiteralConnectionIdAccessEntry> for Lite
 
         Ok(())
     }
-
+    
+    fn clear(&self) -> Result<(), ()> {
+        self.dao.clear()
+    }
 }

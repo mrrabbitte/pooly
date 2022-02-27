@@ -10,6 +10,7 @@ use crate::services::queries::QueryService;
 use crate::services::secrets::{LocalSecretsService, SecretServiceFactory};
 use crate::services::secrets::random::VecGenerator;
 use crate::services::secrets::shares::MasterKeySharesService;
+use crate::services::updatable::UpdatableService;
 
 pub mod data;
 pub mod resources;

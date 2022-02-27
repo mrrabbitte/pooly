@@ -4,7 +4,7 @@ use dashmap::DashMap;
 use dashmap::mapref::one::Ref;
 use serde::{Deserialize, Serialize};
 
-use crate::data::dao::{Dao, UpdatableTypedDao};
+use crate::data::dao::{Dao, UpdatableDao};
 use crate::models::errors::StorageError;
 use crate::models::updatable::{Updatable, UpdateCommand};
 use crate::models::versioned::Versioned;
@@ -22,18 +22,26 @@ pub trait UpdatableService<U: UpdateCommand, T: Updatable<U>> {
               command: U) -> Result<Versioned<T>, StorageError>;
 
     fn delete(&self, id: &str) -> Result<(), StorageError>;
-
+    
+    fn clear(&self) -> Result<(), ()>;
 }
 
-pub struct CachedUpdatableService<U: UpdateCommand, T: Updatable<U>> {
+pub struct CachedService<U: UpdateCommand, T: Updatable<U>> {
 
     cache: DashMap<String, Versioned<T>>,
-    dao: UpdatableTypedDao<U, T>
+    dao: UpdatableDao<U, T>
 
 }
 
 impl<U: UpdateCommand, T: Updatable<U> + Serialize + for<'de> Deserialize<'de> + Clone>
-    CachedUpdatableService<U, T> {
+CachedService<U, T> {
+
+    pub fn new(dao: UpdatableDao<U, T>) -> CachedService<U, T> {
+        CachedService {
+            cache: DashMap::new(),
+            dao
+        }
+    }
 
     fn upsert(&self,
               id: &str,
@@ -45,13 +53,21 @@ impl<U: UpdateCommand, T: Updatable<U> + Serialize + for<'de> Deserialize<'de> +
                     *old = new.clone();
                 }
             })
-            .or_insert(new.clone());
+            .or_insert_with(|| new.clone());
+    }
+
+    fn remove(&self,
+              id: &str,
+              removed: &Versioned<T>) {
+        self.cache
+            .remove_if(id,
+                       |k, v| v.get_header().eq(removed.get_header()));
     }
 
 }
 
 impl<U: UpdateCommand, T: Updatable<U> + Serialize + for<'de> Deserialize<'de> + Clone>
-    UpdatableService<U, T> for CachedUpdatableService<U, T> {
+UpdatableService<U, T> for CachedService<U, T> {
 
     fn get(&self, id: &str) -> Result<Option<Ref<String, Versioned<T>>>, StorageError> {
         match self.cache.get(id) {
@@ -90,9 +106,19 @@ impl<U: UpdateCommand, T: Updatable<U> + Serialize + for<'de> Deserialize<'de> +
     }
 
     fn delete(&self, id: &str) -> Result<(), StorageError> {
-        self.dao.delete(id)?;
+        match self.dao.delete(id)? {
+            None => Ok(()),
+            Some(removed) => {
+                self.remove(id, &removed);
 
-        self.cache.remove(id);
+                Ok(())
+            }
+        }
+    }
+
+    fn clear(&self) -> Result<(), ()> {
+        self.dao.clear()?;
+        self.cache.clear();
 
         Ok(())
     }

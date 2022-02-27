@@ -12,3 +12,4 @@ pub mod updatable;
 pub mod versioned;
 pub mod time;
 pub mod wildcards;
+pub mod zeroize;
