@@ -9,6 +9,8 @@ use sled::transaction::{abort, ConflictableTransactionError};
 use crate::LocalSecretsService;
 use crate::models::connections::ZeroizeWrapper;
 use crate::models::errors::StorageError;
+use crate::models::updatable::{Updatable, UpdateCommand};
+use crate::models::versioned;
 use crate::models::versioned::{Versioned, VersionedVec};
 
 pub trait Dao<T> {
@@ -17,11 +19,11 @@ pub trait Dao<T> {
 
     fn get_all_keys(&self) -> Result<HashSet<String>, StorageError>;
 
-    fn create(&self, id: &str, payload: &T) -> Result<(), StorageError>;
+    fn create(&self, id: &str, payload: &Versioned<T>) -> Result<(), StorageError>;
 
     fn update(&self, id: &str, new: &Versioned<T>) -> Result<(), StorageError>;
 
-    fn delete(&self, id: &str) -> Result<(), StorageError>;
+    fn delete(&self, id: &str) -> Result<Option<Versioned<T>>, StorageError>;
 
     fn clear(&self) -> Result<(), ()>;
 
@@ -46,6 +48,10 @@ impl SimpleDao {
         )
     }
 
+    fn ivec_to_versioned_vec(ivec: &IVec) -> Result<VersionedVec, StorageError> {
+        Ok(bincode::deserialize(&ivec.to_vec())?)
+    }
+
 }
 
 impl Dao<Vec<u8>> for SimpleDao {
@@ -54,9 +60,9 @@ impl Dao<Vec<u8>> for SimpleDao {
            id: &str) -> Result<Option<VersionedVec>, StorageError> {
         match self.tree.get(id) {
             Ok(None) => Ok(None),
-            Ok(Some(i_vec)) => {
-                Ok( Some(bincode::deserialize(&i_vec.to_vec())? ) )
-            },
+            Ok(Some(ivec)) => {
+                Ok( Some( SimpleDao::ivec_to_versioned_vec(&ivec)? ) )
+            }
             Err(err) => Err(StorageError::RetrievalError(err.to_string()))
         }
     }
@@ -75,8 +81,8 @@ impl Dao<Vec<u8>> for SimpleDao {
 
     fn create(&self,
               id: &str,
-              payload: &Vec<u8>) -> Result<(), StorageError> {
-        let new = bincode::serialize(&Versioned::zero_version(payload.clone()))?;
+              payload: &VersionedVec) -> Result<(), StorageError> {
+        let new = bincode::serialize(payload)?;
 
         self.tree.compare_and_swap(
             id,
@@ -99,7 +105,8 @@ impl Dao<Vec<u8>> for SimpleDao {
                     let old: VersionedVec = bincode::deserialize(&old_payload.to_vec())
                         .map_err(map_to_storage_err)?;
 
-                    let updated = old.update(new.clone())
+                    let updated = old
+                        .update_with_next_version(new.clone())
                         .map_err(wrap_storage_err)?;
 
                     tx.insert(id,
@@ -116,10 +123,14 @@ impl Dao<Vec<u8>> for SimpleDao {
         Ok(())
     }
 
-    fn delete(&self, id: &str) -> Result<(), StorageError> {
-        self.tree.remove(id)?;
+    fn delete(&self, id: &str) -> Result<Option<VersionedVec>, StorageError> {
+        let removed_maybe = self.tree.remove(id)?;
 
-        Ok(())
+        match removed_maybe {
+            None => Ok(None),
+            Some(removed) =>
+                Ok(Some(SimpleDao::ivec_to_versioned_vec(&removed)?))
+        }
     }
 
     fn clear(&self) -> Result<(), ()> {
@@ -145,6 +156,14 @@ impl EncryptedDao {
         }
     }
 
+    fn decrypt(&self,
+               payload: VersionedVec) -> Result<Versioned<ZeroizeWrapper>, StorageError> {
+        let decrypted = self.secrets_service.decrypt(
+            &bincode::deserialize(payload.get_value())?)?;
+
+        Ok(payload.with_new_value(decrypted))
+    }
+
 }
 
 impl Dao<ZeroizeWrapper> for EncryptedDao {
@@ -152,12 +171,7 @@ impl Dao<ZeroizeWrapper> for EncryptedDao {
     fn get(&self,
            id: &str) -> Result<Option<Versioned<ZeroizeWrapper>>, StorageError> {
         match self.dao.get(id) {
-            Ok(Some(payload)) => {
-                let decrypted = self.secrets_service.decrypt(
-                    &bincode::deserialize(payload.get_value())?)?;
-
-                Ok(Some(payload.with_new_value(decrypted)))
-            },
+            Ok(Some(payload)) => Ok(Some(self.decrypt(payload)?)),
             Ok(None) => Ok(None),
             Err(err) => Err(err)
         }
@@ -169,11 +183,14 @@ impl Dao<ZeroizeWrapper> for EncryptedDao {
 
     fn create(&self,
               id: &str,
-              payload: &ZeroizeWrapper) -> Result<(), StorageError> {
+              payload: &Versioned<ZeroizeWrapper>) -> Result<(), StorageError> {
         self.dao.create(id,
-                        &bincode::serialize(
-                                     &self.secrets_service.encrypt(payload.get_value())?
-                                 )?
+                        &payload.with_new_value(
+                            bincode::serialize(
+                                &self.secrets_service.encrypt(
+                                    payload.get_value().get_value())?
+                            )?
+                        )
         )
     }
 
@@ -187,8 +204,12 @@ impl Dao<ZeroizeWrapper> for EncryptedDao {
         self.dao.update(id, &new.with_new_value(encrypted))
     }
 
-    fn delete(&self, id: &str) -> Result<(), StorageError> {
-        self.dao.delete(id)
+    fn delete(&self, id: &str) -> Result<Option<Versioned<ZeroizeWrapper>>, StorageError> {
+        match self.dao.delete(id)? {
+            None => Ok(None),
+            Some(removed) =>
+                Ok(Some(self.decrypt(removed)?))
+        }
     }
 
     fn clear(&self) -> Result<(), ()> {
@@ -212,6 +233,12 @@ impl<T: Serialize + for<'de> Deserialize<'de>> TypedDao<T> {
         }
     }
 
+    fn deserialize(decrypted: Versioned<ZeroizeWrapper>) -> Result<Versioned<T>, StorageError> {
+        let versioned: Versioned<T> = bincode::deserialize(decrypted.get_value().get_value())?;
+
+        Ok( versioned )
+    }
+
 }
 
 impl<T: Serialize + for<'de> Deserialize<'de>> Dao<T> for TypedDao<T> {
@@ -220,10 +247,9 @@ impl<T: Serialize + for<'de> Deserialize<'de>> Dao<T> for TypedDao<T> {
            id: &str) -> Result<Option<Versioned<T>>, StorageError> {
         match self.dao.get(id)? {
             Some(decrypted) => {
-                let versioned: T =
-                    bincode::deserialize(decrypted.get_value().get_value())?;
+                let versioned: Versioned<T> = TypedDao::deserialize(decrypted)?;
 
-                Ok(Some(decrypted.with_new_value(versioned)))
+                Ok(Some(versioned))
             },
             None => Ok(None)
         }
@@ -235,10 +261,11 @@ impl<T: Serialize + for<'de> Deserialize<'de>> Dao<T> for TypedDao<T> {
 
     fn create(&self,
               id: &str,
-              payload: &T) -> Result<(), StorageError> {
+              payload: &Versioned<T>) -> Result<(), StorageError> {
         let serialized = bincode::serialize(payload)?;
 
-        self.dao.create(id, &ZeroizeWrapper::new(serialized))?;
+        self.dao.create(id,
+                        &payload.with_new_value(ZeroizeWrapper::new(serialized)))?;
 
         Ok(())
     }
@@ -253,13 +280,70 @@ impl<T: Serialize + for<'de> Deserialize<'de>> Dao<T> for TypedDao<T> {
         Ok(())
     }
 
-    fn delete(&self, id: &str) -> Result<(), StorageError> {
+    fn delete(&self, id: &str) -> Result<Option<Versioned<T>>, StorageError> {
+        match self.dao.delete(id)? {
+            None => Ok(None),
+            Some(removed) =>
+                Ok( Some(TypedDao::deserialize(removed)?) )
+        }
+    }
+
+    fn clear(&self) -> Result<(), ()> {
+        self.dao.clear()
+    }
+}
+
+pub struct UpdatableTypedDao<U: UpdateCommand, T: Updatable<U>> {
+
+    dao_type: PhantomData<U>,
+    dao: TypedDao<T>
+
+}
+
+impl<U: UpdateCommand, T: Updatable<U> + Serialize + for<'de> Deserialize<'de>> Dao<T>
+for UpdatableTypedDao<U, T> {
+    fn get(&self, id: &str) -> Result<Option<Versioned<T>>, StorageError> {
+        self.dao.get(id)
+    }
+
+    fn get_all_keys(&self) -> Result<HashSet<String>, StorageError> {
+        self.dao.get_all_keys()
+    }
+
+    fn create(&self, id: &str, payload: &Versioned<T>) -> Result<(), StorageError> {
+        self.dao.create(id, payload)
+    }
+
+    fn update(&self, id: &str, new: &Versioned<T>) -> Result<(), StorageError> {
+        self.dao.update(id, new)
+    }
+
+    fn delete(&self, id: &str) -> Result<Option<Versioned<T>>, StorageError> {
         self.dao.delete(id)
     }
 
     fn clear(&self) -> Result<(), ()> {
         self.dao.clear()
     }
+}
+
+impl<U: UpdateCommand, T: Updatable<U> + Serialize + for<'de> Deserialize<'de>> UpdatableTypedDao<U, T> {
+
+    pub fn accept(&self,
+                  id: &str,
+                  command: U) -> Result<Versioned<T>, StorageError> {
+        match self.dao.get(id)? {
+            None => Err(StorageError::CouldNotFindValueToUpdate),
+            Some(old) => {
+                let new = versioned::update(old, command)?;
+
+                self.dao.update(id, &new)?;
+
+                Ok(new)
+            }
+        }
+    }
+
 }
 
 fn map_to_storage_err<E>(err: E) -> ConflictableTransactionError<StorageError>

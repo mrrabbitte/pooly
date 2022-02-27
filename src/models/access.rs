@@ -96,7 +96,7 @@ pub trait ConnectionIdAccessEntry {
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct LiteralConnectionIdAccessEntry {
 
-    client_id: String,
+    pub client_id: String,
     connection_ids: HashSet<String>
 
 }
@@ -112,6 +112,10 @@ impl ConnectionIdAccessEntry for LiteralConnectionIdAccessEntry {
 }
 
 impl Updatable<StringSetCommand> for LiteralConnectionIdAccessEntry {
+    fn get_id(&self) -> &str {
+        &self.client_id
+    }
+
     fn accept(&self, update: StringSetCommand) -> Self {
         LiteralConnectionIdAccessEntry {
             client_id: self.client_id.clone(),
@@ -121,14 +125,14 @@ impl Updatable<StringSetCommand> for LiteralConnectionIdAccessEntry {
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
-pub struct PatternConnectionIdAccessEntry {
+pub struct WildcardPatternConnectionIdAccessEntry {
 
     client_id: String,
     patterns: HashSet<WildcardPattern>
 
 }
 
-impl ConnectionIdAccessEntry for PatternConnectionIdAccessEntry {
+impl ConnectionIdAccessEntry for WildcardPatternConnectionIdAccessEntry {
     fn matches(&self, client_id: &str, connection_id: &str) -> bool {
         if !client_id.eq(&self.client_id) {
             return false;
@@ -144,9 +148,13 @@ impl ConnectionIdAccessEntry for PatternConnectionIdAccessEntry {
     }
 }
 
-impl Updatable<WildcardPatternSetCommand> for PatternConnectionIdAccessEntry {
+impl Updatable<WildcardPatternSetCommand> for WildcardPatternConnectionIdAccessEntry {
+    fn get_id(&self) -> &str {
+        &self.client_id
+    }
+
     fn accept(&self, update: WildcardPatternSetCommand) -> Self {
-        PatternConnectionIdAccessEntry {
+        WildcardPatternConnectionIdAccessEntry {
             client_id: self.client_id.clone(),
             patterns: update.apply(&self.patterns)
         }

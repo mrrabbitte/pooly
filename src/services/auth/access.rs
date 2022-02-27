@@ -64,8 +64,18 @@ impl AccessControlService {
     pub fn add_connection_ids(&self,
                               client_id: &str,
                               connection_ids: HashSet<String>) -> Result<(), StorageError> {
-        self.connection_ids.create(client_id, &connection_ids)?;
+        println!("STARTED");
+
+        self.connection_ids.create(
+            client_id,
+            &Versioned::zero_version(connection_ids))?;
+
+        println!("HERE");
+
         self.retrieve_and_insert(client_id)?;
+
+        println!("Aaand here!");
+
         Ok(())
     }
 
@@ -81,13 +91,15 @@ impl AccessControlService {
     }
 
     pub fn delete_connection_ids(&self, client_id: &str) -> Result<(), StorageError> {
-        self.connection_ids.delete(client_id)
+        self.connection_ids.delete(client_id)?;
+
+        Ok(())
     }
 
     pub fn add_patterns(&self,
                         client_id: &str,
                         patterns: HashSet<WildcardPattern>) -> Result<(), StorageError> {
-        self.connection_id_patters.create(client_id, &patterns)?;
+        self.connection_id_patters.create(client_id, &Versioned::zero_version(patterns))?;
         self.retrieve_and_insert(client_id)?;
         Ok(())
     }

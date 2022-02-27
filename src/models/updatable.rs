@@ -1,10 +1,17 @@
 use std::collections::HashSet;
 use std::hash::Hash;
-use crate::models::versioned::VersionHeader;
+use crate::models::errors::StorageError;
+use crate::models::versioned::{Versioned, VersionHeader};
 use crate::models::wildcards::WildcardPattern;
 
+pub type StringSetCommand = SetCommand<String>;
+pub type WildcardPatternSetCommand = SetCommand<WildcardPattern>;
+
 pub trait Updatable<U: UpdateCommand> {
+
+    fn get_id(&self) -> &str;
     fn accept(&self, update: U) -> Self;
+
 }
 
 pub trait UpdateCommand {
@@ -12,9 +19,6 @@ pub trait UpdateCommand {
     fn get_version_header(&self) -> &VersionHeader;
 
 }
-
-pub type StringSetCommand = SetCommand<String>;
-pub type WildcardPatternSetCommand = SetCommand<WildcardPattern>;
 
 pub struct SetCommand<T: Eq + Hash + Clone> {
 

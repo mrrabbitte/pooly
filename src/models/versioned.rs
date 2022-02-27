@@ -26,9 +26,17 @@ impl VersionHeader {
         VersionHeader { created_at: self.created_at, version: self.version + 1 }
     }
 
-    fn matches(&self,
-               other: &VersionHeader) -> Result<(), StorageError> {
+    fn check_current_version(&self,
+                             other: &VersionHeader) -> Result<(), StorageError> {
         if self.version != other.version || self.created_at != other.created_at {
+            return Err(create_err(&self, &other));
+        }
+
+        Ok(())
+    }
+
+    fn check_next_version(&self, other: &VersionHeader) -> Result<(), StorageError> {
+        if self.created_at != other.created_at || self.version + 1 != other.version {
             return Err(create_err(&self, &other));
         }
 
@@ -61,9 +69,9 @@ impl<T> Versioned<T> {
         Versioned { header: self.header.clone(), value }
     }
 
-    pub fn update(&self,
-                  new: Versioned<T>) -> Result<Versioned<T>, StorageError> {
-        self.header.matches(&new.header)?;
+    pub fn update_with_next_version(&self,
+                                    new: Versioned<T>) -> Result<Versioned<T>, StorageError> {
+        self.header.check_next_version(&new.header)?;
 
         Ok(Versioned { header: self.header.inc_version(), value: new.value } )
     }
@@ -86,7 +94,7 @@ impl<T> Versioned<T> {
 
 pub fn update<U: UpdateCommand, T: Updatable<U>>(old: Versioned<T>,
                                                  command: U) -> Result<Versioned<T>, StorageError> {
-    old.header.matches(command.get_version_header())?;
+    old.header.check_current_version(command.get_version_header())?;
 
     let new = old.get_value().accept(command);
 

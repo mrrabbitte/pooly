@@ -6,6 +6,7 @@ use sled::Db;
 use crate::data::dao::{Dao, EncryptedDao, SimpleDao, TypedDao};
 use crate::models::connections::{ConnectionConfig, VersionedConnectionConfig, ZeroizeWrapper};
 use crate::models::errors::ConnectionConfigError;
+use crate::models::versioned::Versioned;
 use crate::services::secrets::LocalSecretsService;
 
 const CONNECTION_CONFIGS_KEYSPACE: &str = "connection_configs_v1";
@@ -36,12 +37,14 @@ impl ConnectionConfigService {
     }
 
     pub fn create(&self,
-                  config: ConnectionConfig) -> Result<(), ConnectionConfigError> {
+                  config: ConnectionConfig) -> Result<Versioned<ConnectionConfig>, ConnectionConfigError> {
         let config_id = config.id.clone();
 
-        self.dao.create(&config_id, &config)?;
+        let created = Versioned::zero_version(config);
 
-        Ok(())
+        self.dao.create(&config_id, &created)?;
+
+        Ok(created)
     }
 
     pub fn clear(&self) -> Result<(), ()> {
