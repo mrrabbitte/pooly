@@ -8,6 +8,7 @@ mod tests {
     use testcontainers::images::postgres::Postgres;
 
     use pooly::AppContext;
+    use pooly::models::access::LiteralConnectionIdAccessEntry;
     use pooly::models::connections::ConnectionConfig;
     use pooly::models::payloads::query_response::Payload;
     use pooly::models::payloads::QueryRequest;
@@ -65,23 +66,21 @@ mod tests {
             .expect("Could not initialize.");
 
         let shares_service = &context.shares_service;
+
         for share in shares {
             shares_service.add(share.try_into().unwrap());
         }
 
         secrets_service.unseal().expect("Could not unseal.");
 
-        let access_control_service = &context.access_control_service;
+        let literal_ids_service = &context.literal_ids_service;
 
-        access_control_service.clear().expect("Could not clear access control service");
+        literal_ids_service.clear().expect("Could not clear access control service");
 
-        let mut connection_ids = HashSet::new();
-
-        connection_ids.insert(CONNECTION_ID.into());
-
-        access_control_service
-            .add_connection_ids(CLIENT_ID, connection_ids)
-            .expect("Could not add connection ids.");
+        literal_ids_service.create(
+            LiteralConnectionIdAccessEntry::one(
+                CLIENT_ID, CONNECTION_ID))
+            .unwrap();
 
         context
     }

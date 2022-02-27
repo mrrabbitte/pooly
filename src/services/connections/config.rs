@@ -10,32 +10,26 @@ use crate::models::connections::{ConnectionConfig, ConnectionConfigUpdateCommand
 use crate::models::errors::{ConnectionConfigError, StorageError};
 use crate::models::versioned::Versioned;
 use crate::services::secrets::LocalSecretsService;
-use crate::services::updatable::{CachedService, UpdatableService};
+use crate::services::updatable::{CacheBackedService, UpdatableService};
 
 const CONNECTION_CONFIGS_KEYSPACE: &str = "connection_configs_v1";
 
 pub struct ConnectionConfigService {
 
-    delegate: CachedService<ConnectionConfigUpdateCommand, ConnectionConfig>
+    delegate: CacheBackedService<ConnectionConfigUpdateCommand, ConnectionConfig>
 
 }
 
 impl ConnectionConfigService {
 
     pub fn new(db: Arc<Db>,
-               secrets_service: Arc<LocalSecretsService>) -> Self {
-        ConnectionConfigService {
-            delegate: CachedService::new(
-                UpdatableDao::new(
-                    TypedDao::new(
-                        EncryptedDao::new(
-                            SimpleDao::new(CONNECTION_CONFIGS_KEYSPACE, db)
-                                .unwrap(),
-                            secrets_service)
-                    )
-                )
-            )
-        }
+               secrets_service: Arc<LocalSecretsService>) -> Result<Self, StorageError> {
+        Ok(
+            ConnectionConfigService {
+                delegate:
+                CacheBackedService::new(db, CONNECTION_CONFIGS_KEYSPACE, secrets_service)?
+            }
+        )
     }
 
 }
@@ -50,12 +44,12 @@ impl UpdatableService<ConnectionConfigUpdateCommand, ConnectionConfig> for Conne
     }
 
     fn create(&self, payload: ConnectionConfig)
-        -> Result<Versioned<ConnectionConfig>, StorageError> {
+              -> Result<Versioned<ConnectionConfig>, StorageError> {
         self.delegate.create(payload)
     }
 
     fn update(&self, id: &str, command: ConnectionConfigUpdateCommand)
-        -> Result<Versioned<ConnectionConfig>, StorageError> {
+              -> Result<Versioned<ConnectionConfig>, StorageError> {
         self.delegate.update(id, command)
     }
 

@@ -6,152 +6,51 @@ use dashmap::mapref::one::Ref;
 use sled::Db;
 
 use crate::data::dao::{Dao, EncryptedDao, SimpleDao, TypedDao};
-use crate::models::access::ConnectionAccessControlEntry;
+use crate::models::access::{ConnectionAccessControlEntry, LiteralConnectionIdAccessEntry, WildcardPatternConnectionIdAccessEntry};
+use crate::models::access::ConnectionIdAccessEntry;
 use crate::models::errors::StorageError;
 use crate::models::versioned::Versioned;
 use crate::models::wildcards::WildcardPattern;
+use crate::services::auth::connection_ids::{LiteralConnectionIdAccessEntryService, WildcardPatternConnectionIdAccessEntryService};
 use crate::services::secrets::LocalSecretsService;
 use crate::services::secrets::SecretsService;
+use crate::UpdatableService;
 
 const CONNECTION_IDS_KEYSPACE: &str = "connection_ids_v1";
 const CONNECTION_ID_PATTERNS_KEYSPACE: &str = "connection_id_patterns_v1";
 
 pub struct AccessControlService {
 
-    aces: DashMap<String, ConnectionAccessControlEntry>,
-    connection_ids: TypedDao<HashSet<String>>,
-    connection_id_patters: TypedDao<HashSet<WildcardPattern>>
+    literal_ids_service: Arc<LiteralConnectionIdAccessEntryService>,
+    patterns_service: Arc<WildcardPatternConnectionIdAccessEntryService>
 
 }
 
 impl AccessControlService {
 
-    pub fn new(db: Arc<Db>,
-               secrets_service: Arc<LocalSecretsService>) -> Result<AccessControlService, StorageError> {
-        let service = AccessControlService {
-            aces: DashMap::new(),
-            connection_ids: TypedDao::new(
-                EncryptedDao::new(
-                    SimpleDao::new(
-                        CONNECTION_IDS_KEYSPACE,
-                        db.clone())
-                        .unwrap(),
-                    secrets_service.clone())),
-            connection_id_patters: TypedDao::new(
-                EncryptedDao::new(
-                    SimpleDao::new(
-                        CONNECTION_ID_PATTERNS_KEYSPACE,
-                        db.clone())
-                        .unwrap(),
-                    secrets_service.clone()))
-        };
-
-        Ok(service)
+    pub fn new(literal_ids_service: Arc<LiteralConnectionIdAccessEntryService>,
+               patterns_service: Arc<WildcardPatternConnectionIdAccessEntryService>) -> AccessControlService {
+        AccessControlService {
+            literal_ids_service,
+            patterns_service
+        }
     }
 
     pub fn is_allowed(&self,
                       client_id: &str,
                       connection_id: &str) -> Result<bool, StorageError> {
         Ok(
-            match self.aces.get(client_id) {
-                None => self.retrieve_and_insert(client_id)?.matches(client_id, connection_id),
-                Some(cached) =>
-                    cached.value().matches(client_id, connection_id)
-            }
-        )
-    }
-
-    pub fn add_connection_ids(&self,
-                              client_id: &str,
-                              connection_ids: HashSet<String>) -> Result<(), StorageError> {
-        println!("STARTED");
-
-        self.connection_ids.create(
-            client_id,
-            &Versioned::zero_version(connection_ids))?;
-
-        println!("HERE");
-
-        self.retrieve_and_insert(client_id)?;
-
-        println!("Aaand here!");
-
-        Ok(())
-    }
-
-    pub fn update_connection_ids(&self,
-                                 client_id: &str,
-                                 connection_ids: Versioned<HashSet<String>>) -> Result<(), StorageError> {
-        self.connection_ids.update(client_id, &connection_ids)?;
-        self.aces.alter(client_id,
-                        |client_id, ace|
-                            ace.with_connection_ids(connection_ids));
-
-        Ok(())
-    }
-
-    pub fn delete_connection_ids(&self, client_id: &str) -> Result<(), StorageError> {
-        self.connection_ids.delete(client_id)?;
-
-        Ok(())
-    }
-
-    pub fn add_patterns(&self,
-                        client_id: &str,
-                        patterns: HashSet<WildcardPattern>) -> Result<(), StorageError> {
-        self.connection_id_patters.create(client_id, &Versioned::zero_version(patterns))?;
-        self.retrieve_and_insert(client_id)?;
-        Ok(())
-    }
-
-    pub fn update_patterns(&self,
-                           client_id: &str,
-                           patterns: Versioned<HashSet<WildcardPattern>>) -> Result<(), StorageError> {
-        self.connection_id_patters.update(client_id, &patterns)?;
-
-        Ok(())
-    }
-
-    pub fn delete_patterns(&self, client_id: &str) -> Result<(), StorageError> {
-        self.connection_id_patters.delete(client_id)?;
-
-        Ok(())
-    }
-
-    pub fn has_client_id(&self, client_id: &str) -> Result<bool, StorageError> {
-        Ok(self.aces.contains_key(client_id) || !self.retrieve_ace(client_id)?.is_empty())
-    }
-
-    pub fn clear(&self) -> Result<(), ()> {
-        self.connection_ids.clear().and(self.connection_id_patters.clear())
-    }
-
-    fn retrieve_and_insert(&self,
-                           client_id: &str) -> Result<ConnectionAccessControlEntry, StorageError> {
-        let ace = self.retrieve_ace(client_id)?;
-
-        if !ace.is_empty() {
-            self.aces.insert(client_id.into(), ace.clone());
-        }
-
-        Ok(ace)
-    }
-
-    fn retrieve_ace(&self,
-                    client_id: &str) -> Result<ConnectionAccessControlEntry, StorageError> {
-        let connection_ids =
-            self.connection_ids.get(client_id)?
-                .unwrap_or(Versioned::zero_version(HashSet::new()));
-
-        let connection_pattern_ids =
-            self.connection_id_patters.get(client_id)?
-                .unwrap_or(Versioned::zero_version(HashSet::new()));
-
-        Ok(
-            ConnectionAccessControlEntry::new(
-                client_id.into(),
-                connection_ids,
-                connection_pattern_ids)
+          match (self.literal_ids_service.get(client_id)?, self.patterns_service.get(client_id)?) {
+              (None, None) => false,
+              (None, Some(pattern)) =>
+                  pattern.get_value().is_allowed(client_id, connection_id),
+              (Some(literal), None) =>
+                  literal.get_value().is_allowed(client_id, connection_id),
+              (Some(literal),
+                  Some(pattern)) =>
+                  literal.get_value().is_allowed(client_id, connection_id)
+                      || pattern.get_value().is_allowed(client_id, connection_id)
+          }
         )
     }
 

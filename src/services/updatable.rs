@@ -1,13 +1,17 @@
 use std::collections::HashSet;
+use std::sync::Arc;
 
 use dashmap::DashMap;
 use dashmap::mapref::one::Ref;
 use serde::{Deserialize, Serialize};
+use sled::Db;
 
-use crate::data::dao::{Dao, UpdatableDao};
+use crate::data::dao::{Dao, EncryptedDao, SimpleDao, UpdatableDao};
 use crate::models::errors::StorageError;
 use crate::models::updatable::{Updatable, UpdateCommand};
 use crate::models::versioned::Versioned;
+use crate::services::secrets::SecretsService;
+use crate::{LocalSecretsService, TypedDao};
 
 pub trait UpdatableService<U: UpdateCommand, T: Updatable<U>> {
 
@@ -22,11 +26,11 @@ pub trait UpdatableService<U: UpdateCommand, T: Updatable<U>> {
               command: U) -> Result<Versioned<T>, StorageError>;
 
     fn delete(&self, id: &str) -> Result<(), StorageError>;
-    
+
     fn clear(&self) -> Result<(), ()>;
 }
 
-pub struct CachedService<U: UpdateCommand, T: Updatable<U>> {
+pub struct CacheBackedService<U: UpdateCommand, T: Updatable<U>> {
 
     cache: DashMap<String, Versioned<T>>,
     dao: UpdatableDao<U, T>
@@ -34,13 +38,23 @@ pub struct CachedService<U: UpdateCommand, T: Updatable<U>> {
 }
 
 impl<U: UpdateCommand, T: Updatable<U> + Serialize + for<'de> Deserialize<'de> + Clone>
-CachedService<U, T> {
+CacheBackedService<U, T> {
 
-    pub fn new(dao: UpdatableDao<U, T>) -> CachedService<U, T> {
-        CachedService {
-            cache: DashMap::new(),
-            dao
-        }
+    pub fn new(db: Arc<Db>,
+               keyspace: &str,
+               secrets_service: Arc<LocalSecretsService>)
+               -> Result<CacheBackedService<U, T>, StorageError> {
+        Ok(
+            CacheBackedService {
+                cache: DashMap::new(),
+                dao: UpdatableDao::new(
+                    TypedDao::new(
+                        EncryptedDao::new(
+                            SimpleDao::new(keyspace, db)?, secrets_service)
+                    )
+                )
+            }
+        )
     }
 
     fn upsert(&self,
@@ -67,7 +81,7 @@ CachedService<U, T> {
 }
 
 impl<U: UpdateCommand, T: Updatable<U> + Serialize + for<'de> Deserialize<'de> + Clone>
-UpdatableService<U, T> for CachedService<U, T> {
+UpdatableService<U, T> for CacheBackedService<U, T> {
 
     fn get(&self, id: &str) -> Result<Option<Ref<String, Versioned<T>>>, StorageError> {
         match self.cache.get(id) {

@@ -87,9 +87,9 @@ impl ConnectionAccessControlEntry {
 
 pub trait ConnectionIdAccessEntry {
 
-    fn matches(&self,
-               client_id: &str,
-               connection_id: &str) -> bool;
+    fn is_allowed(&self,
+                  client_id: &str,
+                  connection_id: &str) -> bool;
 
 }
 
@@ -101,8 +101,29 @@ pub struct LiteralConnectionIdAccessEntry {
 
 }
 
+impl LiteralConnectionIdAccessEntry {
+
+    pub fn new(client_id: &str,
+               connection_ids: HashSet<String>) -> LiteralConnectionIdAccessEntry {
+        LiteralConnectionIdAccessEntry {
+            client_id: client_id.into(),
+            connection_ids
+        }
+    }
+
+    pub fn one(client_id: &str,
+               connection_id: &str) -> LiteralConnectionIdAccessEntry {
+        let mut connection_ids = HashSet::new();
+
+        connection_ids.insert(connection_id.into());
+
+        LiteralConnectionIdAccessEntry::new(client_id, connection_ids)
+    }
+
+}
+
 impl ConnectionIdAccessEntry for LiteralConnectionIdAccessEntry {
-    fn matches(&self, client_id: &str, connection_id: &str) -> bool {
+    fn is_allowed(&self, client_id: &str, connection_id: &str) -> bool {
         if !client_id.eq(&self.client_id) {
             return false;
         }
@@ -133,7 +154,7 @@ pub struct WildcardPatternConnectionIdAccessEntry {
 }
 
 impl ConnectionIdAccessEntry for WildcardPatternConnectionIdAccessEntry {
-    fn matches(&self, client_id: &str, connection_id: &str) -> bool {
+    fn is_allowed(&self, client_id: &str, connection_id: &str) -> bool {
         if !client_id.eq(&self.client_id) {
             return false;
         }

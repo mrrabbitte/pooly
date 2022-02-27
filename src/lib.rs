@@ -2,15 +2,17 @@ use std::sync::Arc;
 
 use ring::rand::SystemRandom;
 
+use crate::data::dao::{TypedDao, UpdatableDao};
 use crate::data::db::DbBuilder;
 use crate::services::auth::access::AccessControlService;
+use crate::services::auth::connection_ids::{LiteralConnectionIdAccessEntryService, WildcardPatternConnectionIdAccessEntryService};
 use crate::services::connections::config::ConnectionConfigService;
 use crate::services::connections::ConnectionService;
 use crate::services::queries::QueryService;
 use crate::services::secrets::{LocalSecretsService, SecretServiceFactory};
 use crate::services::secrets::random::VecGenerator;
 use crate::services::secrets::shares::MasterKeySharesService;
-use crate::services::updatable::UpdatableService;
+use crate::services::updatable::{CacheBackedService, UpdatableService};
 
 pub mod data;
 pub mod resources;
@@ -21,9 +23,11 @@ pub struct AppContext {
 
     pub access_control_service: Arc<AccessControlService>,
     pub connection_config_service: Arc<ConnectionConfigService>,
+    pub literal_ids_service: Arc<LiteralConnectionIdAccessEntryService>,
     pub secrets_service: Arc<LocalSecretsService>,
     pub shares_service: Arc<MasterKeySharesService>,
     pub query_service: Arc<QueryService>,
+    pub pattern_ids_service: Arc<WildcardPatternConnectionIdAccessEntryService>,
     pub vec_generator: Arc<VecGenerator>
 
 }
@@ -48,11 +52,27 @@ impl AppContext {
         let connection_config_service =
             Arc::new(
                 ConnectionConfigService::new(
-                    db.clone(), secrets_service.clone()));
+                    db.clone(), secrets_service.clone()).unwrap()
+            );
+
+        let literal_ids_service =
+            Arc::new(
+                LiteralConnectionIdAccessEntryService::new(
+                    db.clone(), secrets_service.clone()).unwrap()
+            );
+
+        let pattern_ids_service =
+            Arc::new(
+                WildcardPatternConnectionIdAccessEntryService::new(
+                    db.clone(), secrets_service.clone()).unwrap()
+            );
 
         let access_control_service =
-            Arc::new(AccessControlService::new(
-                db.clone(), secrets_service.clone()).unwrap());
+            Arc::new(
+                AccessControlService::new(
+                    literal_ids_service.clone(),
+                    pattern_ids_service.clone())
+            );
 
         let query_service =
             Arc::new(QueryService::new(
@@ -63,9 +83,11 @@ impl AppContext {
         AppContext {
             access_control_service,
             connection_config_service,
+            literal_ids_service,
             secrets_service,
             shares_service,
             query_service,
+            pattern_ids_service,
             vec_generator
         }
     }
