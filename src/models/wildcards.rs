@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::models::errors::WildcardPatternError;
 
+
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum WildcardPattern {
 

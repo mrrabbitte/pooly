@@ -22,5 +22,3 @@ pub async fn unseal(service: Data<Arc<LocalSecretsService>>) -> Result<HttpRespo
         Err(err) => Ok(HttpResponse::InternalServerError().json(err))
     }
 }
-
-

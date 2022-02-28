@@ -1,5 +1,8 @@
 use std::collections::HashSet;
 use std::hash::Hash;
+
+use serde::{de, Deserialize, Serialize};
+
 use crate::models::errors::StorageError;
 use crate::models::versioned::{Versioned, VersionHeader};
 use crate::models::wildcards::WildcardPattern;
@@ -20,14 +23,18 @@ pub trait UpdateCommand {
 
 }
 
-pub struct SetCommand<T: Eq + Hash + Clone> {
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize, Debug)]
+pub struct SetCommand<T: Eq + Hash + Clone + Serialize> {
 
     cmd_type: SetCommandType,
     header: VersionHeader,
+
+    #[serde(bound(deserialize = "T: Deserialize<'de>"))]
     elements: HashSet<T>,
 
 }
 
+#[derive(Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Debug)]
 pub enum SetCommandType {
 
     Add,
@@ -36,7 +43,7 @@ pub enum SetCommandType {
 
 }
 
-impl<T: Eq + Hash + Clone> SetCommand<T> {
+impl<T: Eq + Hash + Clone + Serialize + for<'de> Deserialize<'de>> SetCommand<T> {
 
     pub fn apply(self,
                  target: &HashSet<T>) -> HashSet<T> {
@@ -52,7 +59,7 @@ impl<T: Eq + Hash + Clone> SetCommand<T> {
 
 }
 
-impl<T: Eq + Hash + Clone> UpdateCommand for SetCommand<T> {
+impl<T: Eq + Hash + Clone + Serialize + for<'de> Deserialize<'de>> UpdateCommand for SetCommand<T> {
     fn get_version_header(&self) -> &VersionHeader {
         &self.header
     }
