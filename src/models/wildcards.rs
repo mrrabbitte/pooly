@@ -1,16 +1,31 @@
-use serde::{Deserialize, Serialize};
+use std::str::FromStr;
+
+use serde::{de, Deserialize, Deserializer, Serialize};
 
 use crate::models::errors::WildcardPatternError;
 
-
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[serde(try_from = "String", into = "String")]
 pub enum WildcardPattern {
 
     Any,
-    Contains(String),
-    EndsWith(String),
-    StartsWith(String),
-    StartsAndEndsWith(String, String)
+    Contains {
+        pattern: String,
+        contains: String
+    },
+    EndsWith {
+        pattern: String,
+        ends_with: String
+    },
+    StartsWith {
+        pattern: String,
+        starts_with: String
+    },
+    StartsAndEndsWith{
+        pattern: String,
+        starts_with: String,
+        ends_with: String
+    }
 
 }
 
@@ -21,11 +36,14 @@ impl WildcardPattern {
     pub fn matches(&self, target: &str) -> bool {
         match self {
             WildcardPattern::Any => true,
-            WildcardPattern::Contains(val) => target.contains(val),
-            WildcardPattern::EndsWith(val) => target.ends_with(val),
-            WildcardPattern::StartsWith(val) => target.starts_with(val),
-            WildcardPattern::StartsAndEndsWith(first, second) =>
-                target.starts_with(first) && target.ends_with(second)
+            WildcardPattern::Contains { pattern: _, contains } =>
+                target.contains(contains),
+            WildcardPattern::EndsWith { pattern: _, ends_with } =>
+                target.ends_with(ends_with),
+            WildcardPattern::StartsWith { pattern: _, starts_with } =>
+                target.starts_with(starts_with),
+            WildcardPattern::StartsAndEndsWith { pattern: _, starts_with, ends_with } =>
+                target.starts_with(starts_with) && target.ends_with(ends_with)
         }
     }
 
@@ -46,26 +64,61 @@ impl WildcardPattern {
 
     fn parse_one_star(value: &str) -> WildcardPattern {
         if value.ends_with(STAR) {
-            return WildcardPattern::StartsWith(value.replace(STAR, ""));
+            return WildcardPattern::StartsWith {
+                pattern: value.into(),
+                starts_with: value.replace(STAR, "")
+            };
         }
 
         if value.starts_with(STAR) {
-            return WildcardPattern::EndsWith(value.replace(STAR, ""));
+            return WildcardPattern::EndsWith {
+                pattern: value.into(),
+                ends_with: value.replace(STAR, "")
+            };
         }
 
         let split: Vec<&str> = value.split(STAR).collect();
 
-        WildcardPattern::StartsAndEndsWith(split[0].into(), split[1].into())
+        WildcardPattern::StartsAndEndsWith {
+            pattern: value.into(),
+            starts_with: split[0].into(),
+            ends_with: split[1].into()
+        }
     }
 
     fn parse_two_star(value: &str) -> Result<WildcardPattern, WildcardPatternError> {
         if value.starts_with(STAR) && value.ends_with(STAR) {
-            return Ok(WildcardPattern::Contains(value.replacen(STAR, "", 2)));
+            return Ok(
+                WildcardPattern::Contains {
+                    pattern: value.into(),
+                    contains: value.replacen(STAR, "", 2)
+                }
+            );
         }
 
         Err(WildcardPatternError::UnsupportedPattern)
     }
 
+}
+
+impl TryFrom<String> for WildcardPattern {
+    type Error = WildcardPatternError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        WildcardPattern::parse(&value)
+    }
+}
+
+impl Into<String> for WildcardPattern {
+    fn into(self) -> String {
+        match self {
+            WildcardPattern::Any => STAR.into(),
+            WildcardPattern::Contains { pattern, contains: _ } => pattern,
+            WildcardPattern::EndsWith { pattern, ends_with: _ } => pattern,
+            WildcardPattern::StartsWith { pattern, starts_with: _ } => pattern,
+            WildcardPattern::StartsAndEndsWith { pattern, starts_with: _, ends_with: _ } => pattern
+        }
+    }
 }
 
 #[cfg(test)]
@@ -84,7 +137,11 @@ mod tests {
     #[test]
     fn test_matches_starts_and_ends_with_correctly() {
         check(
-            &WildcardPattern::StartsAndEndsWith("alf".into(), "cats".into()),
+            &WildcardPattern::StartsAndEndsWith {
+                pattern: "alf*cats".into(),
+                starts_with: "alf".into(),
+                ends_with: "cats".into()
+            },
             vec!["alf-loves-cats", "alfcats", "alf+cats"],
             vec!["alf_loves_ats", "", "cats", "not-only-alf-loves-cats"]);
     }
@@ -92,7 +149,10 @@ mod tests {
     #[test]
     fn test_matches_ends_with_correctly() {
         check(
-            &WildcardPattern::EndsWith("alf".into()),
+            &WildcardPattern::EndsWith {
+                pattern: "*alf".into(),
+                ends_with: "alf".into()
+            },
             vec!["cats_dont_like_alf", "alf-loves-alf", "alf"],
             vec!["alf_loves_cats", "", "cats", "not-only-alf-loves-cats"]);
     }
@@ -100,7 +160,10 @@ mod tests {
     #[test]
     fn test_matches_starts_with_correctly() {
         check(
-            &WildcardPattern::StartsWith("alf".into()),
+            &WildcardPattern::StartsWith {
+                pattern: "alf*".into(),
+                starts_with: "alf".into()
+            },
             vec!["alf_loves_cats", "alf-loves-eating-cats", "alf"],
             vec!["al", "", "cats", "not-only-alf-loves-cats"]);
     }
@@ -108,7 +171,10 @@ mod tests {
     #[test]
     fn test_matches_contains_correctly() {
         check(
-            &WildcardPattern::Contains("alf".into()),
+            &WildcardPattern::Contains {
+                pattern: "*alf*".into(),
+                contains: "alf".into()
+            },
             vec!["alf_loves_cats", "not-only-alf-loves-cats", "alf"],
             vec!["al", "", "cats"]);
     }
@@ -116,12 +182,23 @@ mod tests {
     #[test]
     fn test_builds_wildcard_patterns_correctly() {
         check_ok("*", WildcardPattern::Any);
-        check_ok("alf_loves*cats",
-                 WildcardPattern::StartsAndEndsWith(
-                     "alf_loves".into(), "cats".into()));
-        check_ok("*alf*", WildcardPattern::Contains("alf".into()));
-        check_ok("alf*", WildcardPattern::StartsWith("alf".into()));
-        check_ok("*alf", WildcardPattern::EndsWith("alf".into()));
+        check_ok("alf_loves*cats", WildcardPattern::StartsAndEndsWith {
+            pattern: "alf_loves*cats".into(),
+            starts_with: "alf_loves".into(),
+            ends_with: "cats".into()
+        });
+        check_ok("*alf*", WildcardPattern::Contains {
+            pattern: "*alf*".into(),
+            contains: "alf".into()
+        });
+        check_ok("alf*", WildcardPattern::StartsWith {
+            pattern: "alf*".into(),
+            starts_with: "alf".into()
+        });
+        check_ok("*alf", WildcardPattern::EndsWith {
+            pattern: "*alf".into(),
+            ends_with: "alf".into()
+        });
     }
 
     #[test]

@@ -1,5 +1,5 @@
 use std::fmt;
-use std::fmt::Debug;
+use std::fmt::{Debug, Display, Formatter};
 use std::string::FromUtf8Error;
 use std::sync::PoisonError;
 
@@ -90,6 +90,12 @@ pub enum WildcardPatternError {
     TooManyStars,
     UnsupportedPattern
 
+}
+
+impl std::fmt::Display for WildcardPatternError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self)
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
