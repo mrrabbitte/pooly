@@ -14,8 +14,8 @@ use crate::models::updatable::{StringSetCommand, WildcardPatternSetCommand};
 use crate::models::versioned::Versioned;
 use crate::services::updatable::{CacheBackedService, UpdatableService};
 
-const LITERAL_CONNECTION_IDS: &str = "literal_connection_id_aces";
-const PATTERN_CONNECTION_IDS: &str = "pattern_connection_id_aces";
+const LITERAL_CONNECTION_IDS: &str = "literal_connection_id_aces_v1";
+const PATTERN_CONNECTION_IDS: &str = "pattern_connection_id_aces_v1";
 
 pub struct LiteralConnectionIdAccessEntryService {
 

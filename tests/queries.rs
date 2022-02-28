@@ -20,6 +20,7 @@ mod tests {
     const PG_TEST_DB: &str = "pooly_test_db";
     const PG_TEST_USER: &str = "pooly_test";
     const PG_TEST_PD: &str = "hnaKzVVx1qMdKvmS647ps6tjZ3Jh8p98iwpDV2l";
+
     const INTERNAL_PG_PORT: u16 = 5432;
 
     #[tokio::test]
@@ -60,7 +61,8 @@ mod tests {
 
         let secrets_service = &context.secrets_service;
 
-        secrets_service.clear().expect("Could not clear secrets.");
+        secrets_service.clear()
+            .expect("Could not clear secrets.");
 
         let shares = secrets_service.initialize()
             .expect("Could not initialize.");
@@ -71,11 +73,13 @@ mod tests {
             shares_service.add(share.try_into().unwrap());
         }
 
-        secrets_service.unseal().expect("Could not unseal.");
+        secrets_service.unseal()
+            .expect("Could not unseal.");
 
         let literal_ids_service = &context.literal_ids_service;
 
-        literal_ids_service.clear().expect("Could not clear access control service");
+        literal_ids_service.clear()
+            .expect("Could not clear access control service");
 
         literal_ids_service.create(
             LiteralConnectionIdAccessEntry::one(

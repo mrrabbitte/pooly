@@ -24,6 +24,7 @@ async fn main() -> std::io::Result<()> {
                 .service(resources::query::bulk)
                 .service(resources::query::query)
                 .service(resources::configs::create)
+                .service(resources::configs::update)
                 .service(resources::secrets::initialize)
                 .service(resources::secrets::unseal)
                 .service(resources::shares::add_share)
