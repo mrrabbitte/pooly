@@ -4,10 +4,11 @@ extern crate rustls;
 extern crate tokio_postgres;
 extern crate tokio_postgres_rustls;
 
-use actix_web::{App, HttpServer, middleware};
+use actix_web::{App, HttpServer, middleware, web};
 use actix_web::web::Data;
 
 use pooly::{AppContext, resources, services};
+use pooly::services::auth::middleware::AuthGuard;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -23,14 +24,22 @@ async fn main() -> std::io::Result<()> {
                 .app_data(Data::new(app_context.shares_service.clone()))
                 .app_data(Data::new(app_context.literal_ids_service.clone()))
                 .app_data(Data::new(app_context.pattern_ids_service.clone()))
-                .service(resources::query::bulk)
-                .service(resources::query::query)
-                .service(resources::connections::create)
-                .service(resources::connections::update)
-                .service(resources::secrets::actions::initialize)
-                .service(resources::secrets::actions::unseal)
-                .service(resources::secrets::shares::add_share)
-                .service(resources::secrets::shares::clear_shares)
+                .service(
+                    web::scope("/client")
+                        .wrap(AuthGuard::client())
+                        .service(resources::query::bulk)
+                        .service(resources::query::query)
+                )
+                .service(
+                    web::scope("/admin")
+                        .wrap(AuthGuard::admin())
+                        .service(resources::connections::create)
+                        .service(resources::connections::update)
+                        .service(resources::secrets::actions::initialize)
+                        .service(resources::secrets::actions::unseal)
+                        .service(resources::secrets::shares::add_share)
+                        .service(resources::secrets::shares::clear_shares)
+                )
         })
         .bind("127.0.0.1:8868")?
         .run();

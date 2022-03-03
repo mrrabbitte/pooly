@@ -19,6 +19,22 @@ pub struct AuthGuard {
 
 }
 
+impl AuthGuard {
+
+    pub fn admin() -> AuthGuard {
+        AuthGuard {
+            role: Role::Admin
+        }
+    }
+
+    pub fn client() -> AuthGuard {
+        AuthGuard {
+            role: Role::ClientService
+        }
+    }
+    
+}
+
 impl<S, B> Transform<S, ServiceRequest> for AuthGuard
     where
         S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
@@ -36,7 +52,7 @@ impl<S, B> Transform<S, ServiceRequest> for AuthGuard
             Ok(
                 AuthGuardMiddleware {
                     service: Rc::new(service),
-                    validator: Rc::new(RequestValidator {role: self.role.clone() })
+                    validator: Rc::new(RequestValidator { role: self.role.clone() })
                 }
             )
         )
