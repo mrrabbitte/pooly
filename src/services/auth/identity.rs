@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::sync::Arc;
 
 use dashmap::mapref::one::Ref;
 use hmac::digest::core_api::CoreProxy;
@@ -8,8 +9,9 @@ use jwt::{AlgorithmType, Claims, Header, PKeyWithDigest, Token, Unverified, Veri
 use openssl::hash::MessageDigest;
 use openssl::pkey::PKey;
 use sha2::{Sha256, Sha384, Sha512};
+use sled::Db;
 
-use crate::{CacheBackedService, UpdatableService};
+use crate::{CacheBackedService, LocalSecretsService, UpdatableService};
 use crate::models::errors::{AuthError, StorageError};
 use crate::models::jwt::{JwtAlg, JwtKey, JwtKeyUpdateCommand};
 use crate::models::tokens::AuthOutcome;
@@ -19,6 +21,8 @@ use crate::services::clock::Clock;
 const BEARER: &str = "Bearer ";
 const SEPARATOR: &str = ".";
 
+const JWT_KEYS: &str = "jwt_keys_v1";
+
 pub struct AuthService {
 
     clock: Clock,
@@ -27,6 +31,17 @@ pub struct AuthService {
 }
 
 impl AuthService {
+
+    pub fn new(clock: Clock,
+               db: Arc<Db>,
+               secrets_service: Arc<LocalSecretsService>) -> Result<AuthService, StorageError> {
+        Ok(
+            AuthService {
+                clock,
+                delegate: CacheBackedService::new(db, JWT_KEYS, secrets_service)?
+            }
+        )
+    }
 
     pub fn extract(&self,
                    auth_header: &str) -> Result<AuthOutcome, AuthError> {
@@ -158,5 +173,31 @@ impl<'a> TryFrom<&'a str> for JwtTokenData<'a> {
             claims,
             signature
         })
+    }
+}
+
+impl UpdatableService<JwtKeyUpdateCommand, JwtKey> for AuthService {
+    fn get(&self, id: &str) -> Result<Option<Ref<String, Versioned<JwtKey>>>, StorageError> {
+        self.get(id)
+    }
+
+    fn get_all_keys(&self) -> Result<HashSet<String>, StorageError> {
+        self.get_all_keys()
+    }
+
+    fn create(&self, payload: JwtKey) -> Result<Versioned<JwtKey>, StorageError> {
+        self.create(payload)
+    }
+
+    fn update(&self, id: &str, command: JwtKeyUpdateCommand) -> Result<Versioned<JwtKey>, StorageError> {
+        self.update(id, command)
+    }
+
+    fn delete(&self, id: &str) -> Result<(), StorageError> {
+        self.delete(id)
+    }
+
+    fn clear(&self) -> Result<(), ()> {
+        self.clear()
     }
 }

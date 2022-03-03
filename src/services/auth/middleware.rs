@@ -32,7 +32,7 @@ impl AuthGuard {
             role: Role::ClientService
         }
     }
-    
+
 }
 
 impl<S, B> Transform<S, ServiceRequest> for AuthGuard
@@ -83,7 +83,7 @@ impl<S, B> Service<ServiceRequest> for AuthGuardMiddleware<S>
         let validator = Rc::clone(&self.validator);
 
         async move {
-            match validator.validate_and_extend(&req) {
+            match validator.validate(&req) {
                 Ok(_) => service.call(req).await.map(|res| res.map_into_left_body()),
                 Err(err) => Ok(req.error_response(err).map_into_right_body())
             }
@@ -100,13 +100,15 @@ struct RequestValidator {
 
 impl RequestValidator {
 
-    fn validate_and_extend(&self,
-                           req: &ServiceRequest) -> Result<(), AuthError> {
+    fn validate(&self,
+                req: &ServiceRequest) -> Result<(), AuthError> {
         let auth_service_maybe = req.app_data::<Arc<AuthService>>();
 
         if auth_service_maybe.is_none() {
             return Err(AuthError::MissingAuthService);
         }
+
+        println!("Hello!");
 
         let auth_service = auth_service_maybe.unwrap();
 
@@ -133,8 +135,6 @@ impl RequestValidator {
                 if token.get_role().ne(&self.role) {
                     return Err(AuthError::Unauthorised);
                 }
-
-                req.extensions_mut().insert(token);
 
                 Ok(())
             },

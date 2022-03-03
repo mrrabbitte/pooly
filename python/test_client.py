@@ -1,10 +1,10 @@
 import payloads_pb2 as p
 import requests
 
-BASE_URL = "http://127.0.0.1:8868/v1"
-CONFIGS = BASE_URL + "/configs"
-QUERY = BASE_URL + "/query"
-BULK = BASE_URL + "/bulk"
+BASE_URL = "http://127.0.0.1:8868"
+CONFIGS = BASE_URL + "/admin/v1/configs"
+QUERY = BASE_URL + "/client/v1/query"
+BULK = BASE_URL + "/client/v1/bulk"
 
 config = {
   "hosts": ["localhost"],

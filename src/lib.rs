@@ -6,6 +6,8 @@ use crate::data::dao::{TypedDao, UpdatableDao};
 use crate::data::db::DbBuilder;
 use crate::services::auth::access::AccessControlService;
 use crate::services::auth::connection_ids::{LiteralConnectionIdAccessEntryService, WildcardPatternConnectionIdAccessEntryService};
+use crate::services::auth::identity::AuthService;
+use crate::services::clock::Clock;
 use crate::services::connections::config::ConnectionConfigService;
 use crate::services::connections::ConnectionService;
 use crate::services::queries::QueryService;
@@ -22,6 +24,7 @@ pub mod services;
 pub struct AppContext {
 
     pub access_control_service: Arc<AccessControlService>,
+    pub auth_service: Arc<AuthService>,
     pub connection_config_service: Arc<ConnectionConfigService>,
     pub literal_ids_service: Arc<LiteralConnectionIdAccessEntryService>,
     pub secrets_service: Arc<LocalSecretsService>,
@@ -80,7 +83,14 @@ impl AppContext {
                 ConnectionService::new(
                     connection_config_service.clone())));
 
+        let auth_service = Arc::new(
+            AuthService::new(
+                Clock::new(), db.clone(), secrets_service.clone())
+                .unwrap()
+        );
+
         AppContext {
+            auth_service,
             access_control_service,
             connection_config_service,
             literal_ids_service,
