@@ -16,9 +16,6 @@ use crate::services::secrets::LocalSecretsService;
 use crate::services::secrets::SecretsService;
 use crate::UpdatableService;
 
-const CONNECTION_IDS_KEYSPACE: &str = "connection_ids_v1";
-const CONNECTION_ID_PATTERNS_KEYSPACE: &str = "connection_id_patterns_v1";
-
 pub struct AccessControlService {
 
     literal_ids_service: Arc<LiteralConnectionIdAccessEntryService>,

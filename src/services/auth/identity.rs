@@ -16,21 +16,24 @@ use crate::models::tokens::AuthOutcome;
 use crate::models::versioned::Versioned;
 use crate::services::clock::Clock;
 
+const BEARER: &str = "Bearer ";
 const SEPARATOR: &str = ".";
 
-
-pub struct BearerAuthenticationService {
+pub struct AuthService {
 
     clock: Clock,
     delegate: CacheBackedService<JwtKeyUpdateCommand, JwtKey>
 
 }
 
-impl BearerAuthenticationService {
+impl AuthService {
 
-    pub fn auth(&self, token: &str) -> Result<AuthOutcome, AuthError> {
+    pub fn extract(&self,
+                   auth_header: &str) -> Result<AuthOutcome, AuthError> {
+        let token = auth_header.replace(BEARER, "");
+
         let parsed: Token<Header, Claims, _> =
-            Token::parse_unverified(token).unwrap();
+            Token::parse_unverified(&token).unwrap();
 
         let header = parsed.header();
 
@@ -44,7 +47,7 @@ impl BearerAuthenticationService {
             return Ok(AuthOutcome::Unauthorised);
         }
 
-        let jwt_token: JwtTokenData = token.try_into()?;
+        let jwt_token: JwtTokenData = token.as_str().try_into()?;
 
         let id = JwtKey::build_id(
             &header.key_id,
@@ -64,7 +67,7 @@ impl BearerAuthenticationService {
         Ok(AuthOutcome::Authorised(claims.try_into()?))
     }
 
-    /// The subject and expiration is required, not before is optionally checked.
+    /// The subject and expiration is required and checked while 'not before' is checked when present.
     #[inline]
     fn are_valid_claims(&self,
                         claims: &Claims) ->bool {

@@ -95,13 +95,18 @@ pub enum WildcardPatternError {
 #[derive(Debug, Serialize, Deserialize)]
 pub enum AuthError {
 
+    BadCredentials,
     InvalidClaims,
     InvalidToken,
     HmacError,
+    MissingAuthService,
+    MissingAuthHeader,
     PemError,
     StorageError(StorageError),
     UnsupportedAlgorithm,
-    VerificationError
+    Unauthorised,
+    VerificationError,
+
 
 }
 

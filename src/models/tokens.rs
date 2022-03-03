@@ -17,8 +17,27 @@ pub enum AuthOutcome {
 
 pub enum RoleToken {
 
-    Admin(AdminToken),
-    ClientService(ClientServiceToken),
+    Admin(AdminToken, Role),
+    ClientService(ClientServiceToken, Role),
+
+}
+
+impl RoleToken {
+
+    pub fn get_role(&self) -> &Role {
+        match self {
+            RoleToken::Admin(_, role) => role,
+            RoleToken::ClientService(_, role) => role
+        }
+    }
+
+}
+
+#[derive(Clone, PartialEq, Eq, Hash)]
+pub enum Role {
+
+    Admin,
+    ClientService
 
 }
 
@@ -46,9 +65,13 @@ impl TryFrom<&Claims> for RoleToken {
 
         match (role_maybe, id_maybe) {
             (Some(ADMIN), Some(admin_id)) =>
-                Ok(RoleToken::Admin(AdminToken { admin_id: admin_id.clone() } )),
+                Ok(RoleToken::Admin(
+                    AdminToken { admin_id: admin_id.clone() },
+                    Role::Admin )),
             (Some(CLIENT_SERVICE), Some(client_id)) =>
-                Ok(RoleToken::ClientService(ClientServiceToken { client_id: client_id.clone() } )),
+                Ok(RoleToken::ClientService(
+                    ClientServiceToken { client_id: client_id.clone() },
+                    Role::ClientService )),
             (_, _) => Err(AuthError::InvalidClaims)
         }
     }
