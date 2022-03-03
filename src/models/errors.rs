@@ -92,6 +92,19 @@ pub enum WildcardPatternError {
 
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub enum AuthError {
+
+    InvalidClaims,
+    InvalidToken,
+    HmacError,
+    PemError,
+    StorageError(StorageError),
+    UnsupportedAlgorithm,
+    VerificationError
+
+}
+
 impl std::fmt::Display for WildcardPatternError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self)
@@ -305,5 +318,11 @@ impl From<StorageError> for ConnectionConfigError {
 impl From<StorageError> for QueryError {
     fn from(_: StorageError) -> Self {
         QueryError::StorageError
+    }
+}
+
+impl From<StorageError> for AuthError {
+    fn from(err: StorageError) -> Self {
+        AuthError::StorageError(err)
     }
 }

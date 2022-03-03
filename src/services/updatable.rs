@@ -28,6 +28,7 @@ pub trait UpdatableService<U: UpdateCommand, T: Updatable<U>> {
     fn delete(&self, id: &str) -> Result<(), StorageError>;
 
     fn clear(&self) -> Result<(), ()>;
+
 }
 
 pub struct CacheBackedService<U: UpdateCommand, T: Updatable<U>> {

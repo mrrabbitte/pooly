@@ -7,8 +7,7 @@ extern crate tokio_postgres_rustls;
 use actix_web::{App, HttpServer, middleware};
 use actix_web::web::Data;
 
-use pooly::{AppContext, resources};
-use pooly::resources::secrets;
+use pooly::{AppContext, resources, services};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

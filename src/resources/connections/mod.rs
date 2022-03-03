@@ -9,6 +9,9 @@ use crate::models::connections::{ConnectionConfig, ConnectionConfigUpdateCommand
 use crate::services::connections::config::ConnectionConfigService;
 use crate::services::updatable::UpdatableService;
 
+pub mod access;
+
+
 #[post("/v1/connections")]
 pub async fn create(service: Data<Arc<ConnectionConfigService>>,
                     request: Json<ConnectionConfig>) -> Result<HttpResponse> {
