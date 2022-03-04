@@ -33,7 +33,7 @@ impl RoleToken {
 
 }
 
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Role {
 
     Admin,

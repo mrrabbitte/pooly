@@ -14,7 +14,7 @@ use sled::Db;
 use crate::{CacheBackedService, LocalSecretsService, UpdatableService};
 use crate::models::errors::{AuthError, StorageError};
 use crate::models::jwt::{JwtAlg, JwtKey, JwtKeyUpdateCommand};
-use crate::models::tokens::AuthOutcome;
+use crate::models::roles::AuthOutcome;
 use crate::models::versioned::Versioned;
 use crate::services::clock::Clock;
 
@@ -147,7 +147,6 @@ impl AuthService {
 }
 
 struct JwtTokenData<'a> {
-    raw: &'a str,
     header: &'a str,
     claims: &'a str,
     signature: &'a str
@@ -156,7 +155,7 @@ struct JwtTokenData<'a> {
 impl<'a> TryFrom<&'a str> for JwtTokenData<'a> {
     type Error = AuthError;
 
-    /// Taken from the jwt crate, should be deleted when access to the signature is provided.
+    /// Taken from the `jwt` crate, should be deleted when access to the signature is provided.
     fn try_from(raw: &'a str) -> Result<Self, Self::Error> {
         let mut components = raw.split(SEPARATOR);
         let header = components.next().ok_or(AuthError::InvalidToken)?;
@@ -168,7 +167,6 @@ impl<'a> TryFrom<&'a str> for JwtTokenData<'a> {
         }
 
         Ok(JwtTokenData {
-            raw,
             header,
             claims,
             signature

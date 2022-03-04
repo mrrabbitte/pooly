@@ -44,7 +44,9 @@ impl JwtKey {
 
     pub fn build_id(kid: &Option<String>,
                     alg: &JwtAlg) -> String {
-        format!("{}-{:?}", kid.as_deref().unwrap_or_else(|| "none"), &alg)
+        format!("{}-{:?}",
+                kid.as_deref().unwrap_or_else(|| "none"), &alg)
+            .to_lowercase()
     }
 
     pub fn get_alg(&self) -> &JwtAlg {

@@ -6,12 +6,15 @@ use std::sync::Arc;
 use actix_web::{dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform}, Error, HttpMessage, HttpResponse, ResponseError};
 use actix_web::body::EitherBody;
 use actix_web::http::StatusCode;
+use actix_web::web::Data;
 use futures_util::future::LocalBoxFuture;
 use futures_util::FutureExt;
 
 use crate::models::errors::AuthError;
-use crate::models::tokens::{AuthOutcome, Role};
+use crate::models::roles::{AuthOutcome, Role};
 use crate::services::auth::identity::AuthService;
+
+const AUTHORIZATION: &str = "Authorization";
 
 pub struct AuthGuard {
 
@@ -79,6 +82,7 @@ impl<S, B> Service<ServiceRequest> for AuthGuardMiddleware<S>
     forward_ready!(service);
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
+        println!("HERE: {:?}", self.validator.role);
         let service = Rc::clone(&self.service);
         let validator = Rc::clone(&self.validator);
 
@@ -102,17 +106,15 @@ impl RequestValidator {
 
     fn validate(&self,
                 req: &ServiceRequest) -> Result<(), AuthError> {
-        let auth_service_maybe = req.app_data::<Arc<AuthService>>();
+        let auth_service_maybe = req.app_data::<Data<Arc<AuthService>>>();
 
         if auth_service_maybe.is_none() {
             return Err(AuthError::MissingAuthService);
         }
 
-        println!("Hello!");
-
         let auth_service = auth_service_maybe.unwrap();
 
-        let auth_header_value_maybe = req.headers().get("");
+        let auth_header_value_maybe = req.headers().get(AUTHORIZATION);
 
         if auth_header_value_maybe.is_none() {
             return Err(AuthError::MissingAuthHeader);
