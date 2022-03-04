@@ -75,7 +75,7 @@ impl<T: FilesService> SecretsService<T> {
         self.encryption_service.decrypt(target)
     }
 
-    pub fn initialize(&self) -> Result<Vec<MasterKeySharePayload>, SecretsError> {
+    pub fn initialize(&self) -> Result<Vec<MasterKeyShare>, SecretsError> {
         if !self.is_sealed()
             || self.files_service.exists_key()?
             || self.files_service.exists_aad()? {
@@ -114,7 +114,7 @@ impl<T: FilesService> SecretsService<T> {
                 .dealer(master_key.get_value())
                 .take(MINIMUM_SHARES_THRESHOLD as usize)
                 .map(|share|
-                    MasterKeyShare::new((&share).into()).into())
+                    MasterKeyShare::new((&share).into()))
                 .collect()
         )
     }
@@ -250,7 +250,7 @@ mod tests {
         shares
             .into_iter()
             .for_each(|share|
-                shares_service.add(share.try_into().unwrap()));
+                shares_service.add(share));
 
         assert!(service.unseal().is_ok());
 

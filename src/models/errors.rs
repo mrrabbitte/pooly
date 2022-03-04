@@ -107,6 +107,14 @@ pub enum AuthError {
     Unauthorised,
     VerificationError,
 
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum InitializationError {
+
+    AuthClearError,
+    SecretsError(SecretsError),
+    StorageError(StorageError)
 
 }
 
@@ -114,14 +122,6 @@ impl std::fmt::Display for WildcardPatternError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self)
     }
-}
-
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
-pub enum AceUpdateError {
-
-    OptimisticLockingVersion(u32, u32),
-    WildcardPatternError(WildcardPatternError)
-
 }
 
 impl ConnectionConfigError {
@@ -329,5 +329,17 @@ impl From<StorageError> for QueryError {
 impl From<StorageError> for AuthError {
     fn from(err: StorageError) -> Self {
         AuthError::StorageError(err)
+    }
+}
+
+impl From<SecretsError> for InitializationError {
+    fn from(err: SecretsError) -> Self {
+        InitializationError::SecretsError(err)
+    }
+}
+
+impl From<StorageError> for InitializationError {
+    fn from(err: StorageError) -> Self {
+        InitializationError::StorageError(err)
     }
 }

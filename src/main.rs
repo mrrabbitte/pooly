@@ -19,6 +19,7 @@ async fn main() -> std::io::Result<()> {
             App::new()
                 .wrap(middleware::Logger::default())
                 .app_data(Data::new(app_context.auth_service.clone()))
+                .app_data(Data::new(app_context.initialization_service.clone()))
                 .app_data(Data::new(app_context.query_service.clone()))
                 .app_data(Data::new(app_context.connection_config_service.clone()))
                 .app_data(Data::new(app_context.secrets_service.clone()))
@@ -26,13 +27,13 @@ async fn main() -> std::io::Result<()> {
                 .app_data(Data::new(app_context.literal_ids_service.clone()))
                 .app_data(Data::new(app_context.pattern_ids_service.clone()))
                 .service(
-                    web::scope("/client")
+                    web::scope("/c/")
                         .wrap(AuthGuard::client())
                         .service(resources::query::bulk)
                         .service(resources::query::query)
                 )
                 .service(
-                    web::scope("/admin")
+                    web::scope("/a/")
                         .wrap(AuthGuard::admin())
                         .service(resources::secrets::actions::initialize)
                         .service(resources::secrets::actions::unseal)

@@ -21,6 +21,13 @@ impl MasterKeySharesService {
         self.shares.insert(share);
     }
 
+    pub fn add_all(&self,
+                   shares: &Vec<MasterKeyShare>) {
+        for share in shares {
+            self.shares.insert(share.clone());
+        }
+    }
+
     pub fn remove(&self,
                   share: &MasterKeyShare) {
         self.shares.remove(&share);

@@ -10,6 +10,7 @@ use crate::services::auth::identity::AuthService;
 use crate::services::clock::Clock;
 use crate::services::connections::config::ConnectionConfigService;
 use crate::services::connections::ConnectionService;
+use crate::services::initialize::InitializationService;
 use crate::services::queries::QueryService;
 use crate::services::secrets::{LocalSecretsService, SecretServiceFactory};
 use crate::services::secrets::random::VecGenerator;
@@ -26,6 +27,7 @@ pub struct AppContext {
     pub access_control_service: Arc<AccessControlService>,
     pub auth_service: Arc<AuthService>,
     pub connection_config_service: Arc<ConnectionConfigService>,
+    pub initialization_service: Arc<InitializationService>,
     pub literal_ids_service: Arc<LiteralConnectionIdAccessEntryService>,
     pub secrets_service: Arc<LocalSecretsService>,
     pub shares_service: Arc<MasterKeySharesService>,
@@ -89,10 +91,18 @@ impl AppContext {
                 .unwrap()
         );
 
+        let initialization_service = Arc::new(
+            InitializationService::new(
+                auth_service.clone(),
+                shares_service.clone(),
+                secrets_service.clone())
+        );
+
         AppContext {
             auth_service,
             access_control_service,
             connection_config_service,
+            initialization_service,
             literal_ids_service,
             secrets_service,
             shares_service,
