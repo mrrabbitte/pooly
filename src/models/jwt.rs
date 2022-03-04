@@ -1,9 +1,10 @@
 use std::fmt::Display;
+
 use jwt::AlgorithmType;
 use serde::{Deserialize, Serialize};
 use zeroize::Zeroize;
-use crate::models::errors::AuthError;
 
+use crate::models::errors::AuthError;
 use crate::models::updatable::{Updatable, UpdateCommand};
 use crate::models::versioned::VersionHeader;
 
@@ -25,6 +26,19 @@ pub struct JwtKey {
 pub struct JwtKeyUpdateCommand {
 
     header: VersionHeader,
+
+    #[serde(with="base64")]
+    value: Vec<u8>
+
+}
+
+#[derive(Zeroize)]
+#[zeroize(drop)]
+#[derive(Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Debug)]
+pub struct JwtKeyCreateCommand {
+
+    kid: Option<String>,
+    alg: JwtAlg,
     value: Vec<u8>
 
 }
@@ -114,5 +128,24 @@ impl TryFrom<AlgorithmType> for JwtAlg {
             AlgorithmType::Es512 => Ok(JwtAlg::Es512),
             _ => Err(AuthError::UnsupportedAlgorithm)
         }
+    }
+}
+
+impl From<JwtKeyCreateCommand> for JwtKey {
+    fn from(command: JwtKeyCreateCommand) -> Self {
+        JwtKey::new(command.kid.clone(), command.alg.clone(), command.value.clone())
+    }
+}
+
+mod base64 {
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+    pub fn serialize<S: Serializer>(value: &Vec<u8>, serializer: S) -> Result<S::Ok, S::Error> {
+        String::serialize(&base64::encode(value), serializer)
+    }
+
+    pub fn deserialize<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Vec<u8>, D::Error> {
+        base64::decode(String::deserialize(deserializer)?.as_bytes())
+            .map_err(|e| serde::de::Error::custom(e))
     }
 }
