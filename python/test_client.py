@@ -1,10 +1,27 @@
 import payloads_pb2 as p
 import requests
 
+### Please note, this is a dirty script written on the knee, a proper Python client will come. 
+
 BASE_URL = "http://127.0.0.1:8868"
+
+INITIALIZE = BASE_URL + "/i/v1/secrets/initialize"
 CONFIGS = BASE_URL + "/a/v1/configs"
 QUERY = BASE_URL + "/c/v1/query"
 BULK = BASE_URL + "/c/v1/bulk"
+CONTENT_TYPE = {"content-type": "application/json"}
+
+JWT_KEY = "ZDR1S0E0WEUwY0lmWnBweXUwYmFiM2s5aGlWUUxTZ2VUcldrcTV1ZGZnZGY="
+
+key = {"kid":"kid-1", "alg":"Hs512", "value": JWT_KEY}
+
+response = requests.post(INITIALIZE, headers = CONTENT_TYPE, json=key)
+
+print(response)
+print(response.content)
+
+
+input("wat now?")
 
 config = {
   "hosts": ["localhost"],

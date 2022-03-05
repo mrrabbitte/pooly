@@ -176,7 +176,7 @@ impl<'a> TryFrom<&'a str> for JwtTokenData<'a> {
 
 impl UpdatableService<JwtKeyUpdateCommand, JwtKey> for AuthService {
     fn get(&self, id: &str) -> Result<Option<Ref<String, Versioned<JwtKey>>>, StorageError> {
-        self.get(id)
+        self.delegate.get(id)
     }
 
     fn get_all_keys(&self) -> Result<HashSet<String>, StorageError> {
@@ -184,18 +184,18 @@ impl UpdatableService<JwtKeyUpdateCommand, JwtKey> for AuthService {
     }
 
     fn create(&self, payload: JwtKey) -> Result<Versioned<JwtKey>, StorageError> {
-        self.create(payload)
+        self.delegate.create(payload)
     }
 
     fn update(&self, id: &str, command: JwtKeyUpdateCommand) -> Result<Versioned<JwtKey>, StorageError> {
-        self.update(id, command)
+        self.delegate.update(id, command)
     }
 
     fn delete(&self, id: &str) -> Result<(), StorageError> {
-        self.delete(id)
+        self.delegate.delete(id)
     }
 
     fn clear(&self) -> Result<(), ()> {
-        self.clear()
+        self.delegate.clear()
     }
 }

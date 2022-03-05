@@ -76,9 +76,7 @@ impl<T: FilesService> SecretsService<T> {
     }
 
     pub fn initialize(&self) -> Result<Vec<MasterKeyShare>, SecretsError> {
-        if !self.is_sealed()
-            || self.files_service.exists_key()?
-            || self.files_service.exists_aad()? {
+        if self.is_initialized()? {
             return Err(SecretsError::AlreadyInitialized);
         }
 
@@ -160,6 +158,14 @@ impl<T: FilesService> SecretsService<T> {
         self.is_sealed.store(false, Ordering::Relaxed);
 
         Ok(())
+    }
+
+    pub fn is_initialized(&self) -> Result<bool, SecretsError> {
+        Ok(
+            !self.is_sealed()
+                || self.files_service.exists_key()?
+                || self.files_service.exists_aad()?
+        )
     }
 
     pub fn is_sealed(&self) -> bool {
@@ -283,7 +289,7 @@ mod tests {
 
     fn build_service(mock: MockFilesService,
                      key_shares_service: Arc<MasterKeySharesService>)
-        -> SecretsService<MockFilesService> {
+                     -> SecretsService<MockFilesService> {
         SecretsService::new(mock,
                             key_shares_service,
                             Arc::new(

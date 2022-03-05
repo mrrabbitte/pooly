@@ -32,6 +32,18 @@ pub struct JwtKeyUpdateCommand {
 
 }
 
+impl JwtKeyUpdateCommand {
+
+    pub fn new(header: VersionHeader,
+               value: Vec<u8>) -> JwtKeyUpdateCommand {
+        JwtKeyUpdateCommand {
+            header,
+            value
+        }
+    }
+
+}
+
 #[derive(Zeroize)]
 #[zeroize(drop)]
 #[derive(Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Debug)]
@@ -39,7 +51,23 @@ pub struct JwtKeyCreateCommand {
 
     kid: Option<String>,
     alg: JwtAlg,
+
+    #[serde(with="base64")]
     value: Vec<u8>
+
+}
+
+impl JwtKeyCreateCommand {
+
+    pub fn new(kid: Option<String>,
+               alg: JwtAlg,
+               value: Vec<u8>) -> JwtKeyCreateCommand {
+        JwtKeyCreateCommand {
+            kid,
+            alg,
+            value
+        }
+    }
 
 }
 
@@ -148,4 +176,52 @@ mod base64 {
         base64::decode(String::deserialize(deserializer)?.as_bytes())
             .map_err(|e| serde::de::Error::custom(e))
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::fmt::Debug;
+
+    use serde::{Deserialize, Serialize};
+    use serde_json;
+
+    use crate::models::jwt::{JwtAlg, JwtKey, JwtKeyCreateCommand, JwtKeyUpdateCommand};
+    use crate::models::updatable::Updatable;
+    use crate::models::versioned::VersionHeader;
+
+    #[test]
+    fn test_udpate_command() {
+        let old = JwtKey::new(Some("kid-1".into()), JwtAlg::Es256, vec![1, 2, 3]);
+
+        let command_value = vec![3,4,5];
+        let command =
+            JwtKeyUpdateCommand::new(VersionHeader::zero_version(), command_value.clone());
+
+        let new = old.accept(command);
+
+        assert_eq!(&old.id, &new.id);
+        assert_eq!(&old.kid, &new.kid);
+        assert_eq!(&old.alg, &new.alg);
+
+        assert_ne!(&old.value, &new.value);
+        assert_eq!(&new.value, &command_value);
+    }
+
+    #[test]
+    fn test_serde() {
+        check_serde(
+            &JwtKeyCreateCommand::new(
+                Some("kid-3".into()), JwtAlg::Rs256, vec![1, 4]));
+
+        check_serde(&JwtKeyUpdateCommand::new(VersionHeader::zero_version(),
+                                             vec![12,3]));
+
+        check_serde(&JwtKey::new(None, JwtAlg::Rs256, vec![23, 4]));
+    }
+
+    fn check_serde<T: Serialize + PartialEq + Debug + for<'de> Deserialize<'de>>(value: &T) {
+        assert_eq!(value,
+                   &serde_json::from_str::<T>(&serde_json::to_string(value).unwrap()).unwrap());
+    }
+
 }
