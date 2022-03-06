@@ -26,9 +26,13 @@ async fn main() -> std::io::Result<()> {
                 .app_data(Data::new(app_context.shares_service.clone()))
                 .app_data(Data::new(app_context.literal_ids_service.clone()))
                 .app_data(Data::new(app_context.pattern_ids_service.clone()))
-                .service(web::scope("/i")
-                    .service(resources::secrets::actions::initialize)
-                    .service(resources::secrets::actions::unseal)
+                .service(
+                    //TODO: Add unsealer role with a separate store with rsa only keys
+                    web::scope("/i")
+                        .service(resources::secrets::actions::initialize)
+                        .service(resources::secrets::shares::add_share)
+                        .service(resources::secrets::shares::clear_shares)
+                        .service(resources::secrets::actions::unseal)
                 )
                 .service(
                     web::scope("/c")
@@ -39,8 +43,7 @@ async fn main() -> std::io::Result<()> {
                 .service(
                     web::scope("/a")
                         .wrap(AuthGuard::admin())
-                        .service(resources::secrets::shares::add_share)
-                        .service(resources::secrets::shares::clear_shares)
+
                         .service(resources::keys::create)
                         .service(resources::keys::get)
                         .service(resources::keys::update)

@@ -8,13 +8,12 @@ use sharks::{Share, Sharks};
 
 use crate::data::files::{FilesService, SimpleFilesService};
 use crate::models::errors::SecretsError;
-use crate::models::secrets::{EncryptedPayload, EncryptionKey, KEY_LENGTH, MasterKey, MasterKeyShare, MasterKeySharePayload};
+use crate::models::secrets::{EncryptedPayload, EncryptionKey, KEY_LENGTH, MasterKey, MasterKeyShare, MasterKeySharePayload, NUM_SHARES};
 use crate::models::zeroize::ZeroizeWrapper;
 use crate::services::secrets::encryption::EncryptionService;
 use crate::services::secrets::random::VecGenerator;
 use crate::services::secrets::shares::MasterKeySharesService;
 
-const MINIMUM_SHARES_THRESHOLD: u8 = 8;
 const NONCE_SIZE: usize = 24;
 
 pub mod random;
@@ -105,12 +104,12 @@ impl<T: FilesService> SecretsService<T> {
             EncryptedPayload::new(nonce, encrypted_enc_key))?;
         self.files_service.store_aad(aad)?;
 
-        let sharks = Sharks(MINIMUM_SHARES_THRESHOLD);
+        let sharks = Sharks(NUM_SHARES);
 
         Ok(
             sharks
                 .dealer(master_key.get_value())
-                .take(MINIMUM_SHARES_THRESHOLD as usize)
+                .take(NUM_SHARES as usize)
                 .map(|share|
                     MasterKeyShare::new((&share).into()))
                 .collect()
@@ -124,7 +123,7 @@ impl<T: FilesService> SecretsService<T> {
 
         let master_key_shares = self.shares_service.get();
 
-        let sharks = Sharks(MINIMUM_SHARES_THRESHOLD);
+        let sharks = Sharks(NUM_SHARES);
 
         let mut shares = vec![];
 
@@ -256,7 +255,7 @@ mod tests {
         shares
             .into_iter()
             .for_each(|share|
-                shares_service.add(share));
+                shares_service.add(share).unwrap());
 
         assert!(service.unseal().is_ok());
 

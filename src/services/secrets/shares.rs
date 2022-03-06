@@ -1,6 +1,6 @@
 use dashmap::DashSet;
 
-use crate::models::secrets::MasterKeyShare;
+use crate::models::secrets::{MasterKeyShare, NUM_SHARES};
 
 pub struct MasterKeySharesService {
 
@@ -17,15 +17,23 @@ impl MasterKeySharesService {
     }
 
     pub fn add(&self,
-               share: MasterKeyShare) {
+               share: MasterKeyShare) -> Result<(), ()> {
+        if self.shares.len() >= (NUM_SHARES as usize) {
+            return Err(());
+        }
+
         self.shares.insert(share);
+
+        Ok(())
     }
 
     pub fn add_all(&self,
-                   shares: &Vec<MasterKeyShare>) {
+                   shares: &Vec<MasterKeyShare>) -> Result<(), ()> {
         for share in shares {
-            self.shares.insert(share.clone());
+            self.add(share.clone())?;
         }
+
+        Ok(())
     }
 
     pub fn remove(&self,
@@ -59,7 +67,7 @@ mod tests {
              MasterKeyShare::new(vec![3, 3, 3]));
 
 
-        service.add(first.clone());
+        service.add(first.clone()).unwrap();
 
         assert!(service.get().contains(&first));
 
@@ -67,9 +75,9 @@ mod tests {
 
         assert!(!service.get().contains(&first));
 
-        service.add(first.clone());
-        service.add(second.clone());
-        service.add(third.clone());
+        service.add(first.clone()).unwrap();
+        service.add(second.clone()).unwrap();
+        service.add(third.clone()).unwrap();
 
         assert!(service.get().contains(&first));
         assert!(service.get().contains(&second));

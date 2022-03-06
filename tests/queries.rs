@@ -70,7 +70,8 @@ mod tests {
         let shares_service = &context.shares_service;
 
         for share in shares {
-            shares_service.add(share.try_into().unwrap());
+            shares_service.add(share.try_into().unwrap())
+                .expect("Couldn't add share, too many shares.");
         }
 
         secrets_service.unseal()

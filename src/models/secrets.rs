@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use zeroize::Zeroize;
 
 pub const KEY_LENGTH: usize = 32;
+pub const NUM_SHARES: u8 = 10;
 
 #[derive(Zeroize)]
 #[zeroize(drop)]

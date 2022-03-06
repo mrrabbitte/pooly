@@ -113,6 +113,7 @@ pub enum AuthError {
 pub enum InitializationError {
 
     AuthClearError,
+    TooManyShares,
     SecretsError(SecretsError),
     StorageError(StorageError)
 

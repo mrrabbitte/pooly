@@ -29,7 +29,7 @@ impl InitializationService {
                       jwt_key: JwtKey) -> Result<Vec<MasterKeySharePayload>, InitializationError> {
         let shares = self.secrets_service.initialize()?;
 
-        self.shares_service.add_all(&shares);
+        self.shares_service.add_all(&shares).map_err(|_| InitializationError::TooManyShares)?;
 
         self.secrets_service.unseal()?;
 
