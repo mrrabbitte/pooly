@@ -6,12 +6,25 @@ extern crate tokio_postgres_rustls;
 
 use actix_web::{App, HttpServer, middleware, web};
 use actix_web::web::Data;
+use config::Config;
 
 use pooly::{AppContext, resources, services};
+use pooly::models::api_key::InitializeApiKey;
+use pooly::models::config::AppConfig;
+use pooly::services::auth::initialization::InitializationGuard;
 use pooly::services::auth::middleware::AuthGuard;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    let config = Config::builder()
+        .add_source(config::File::with_name("config.toml"))
+        .build()
+        .unwrap();
+
+    let config = config.try_deserialize::<AppConfig>().unwrap();
+
+    let init_api_key: InitializeApiKey = (&config).into();
+
     let app_context = AppContext::new();
 
     let server = HttpServer::new(
@@ -27,8 +40,8 @@ async fn main() -> std::io::Result<()> {
                 .app_data(Data::new(app_context.literal_ids_service.clone()))
                 .app_data(Data::new(app_context.pattern_ids_service.clone()))
                 .service(
-                    //TODO: Add unsealer role with a separate store with rsa only keys
                     web::scope("/i")
+                        .wrap(InitializationGuard::new(init_api_key.clone()))
                         .service(resources::secrets::actions::initialize)
                         .service(resources::secrets::shares::add_share)
                         .service(resources::secrets::shares::clear_shares)

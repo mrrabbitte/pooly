@@ -1,4 +1,6 @@
 pub mod access;
+pub mod api_key;
+pub mod config;
 pub mod connections;
 pub mod errors;
 pub mod jwt;

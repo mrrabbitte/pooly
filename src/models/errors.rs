@@ -3,6 +3,8 @@ use std::fmt::{Debug, Display, Formatter};
 use std::string::FromUtf8Error;
 use std::sync::PoisonError;
 
+use actix_web::{HttpResponse, ResponseError};
+use actix_web::http::StatusCode;
 use bincode::ErrorKind;
 use deadpool::managed::PoolError;
 use deadpool_postgres::CreatePoolError;
@@ -199,6 +201,23 @@ impl QueryError {
         }
     }
 
+}
+
+impl ResponseError for AuthError {
+    fn status_code(&self) -> StatusCode {
+        StatusCode::UNAUTHORIZED
+    }
+
+    fn error_response(&self) -> HttpResponse {
+        HttpResponse::build(self.status_code())
+            .finish()
+    }
+}
+
+impl fmt::Display for AuthError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(&StatusCode::UNAUTHORIZED, f)
+    }
 }
 
 impl From<PoolError<Error>> for QueryError {

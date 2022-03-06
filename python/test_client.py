@@ -13,9 +13,11 @@ CONTENT_TYPE = {"content-type": "application/json"}
 
 JWT_KEY = "ZDR1S0E0WEUwY0lmWnBweXUwYmFiM2s5aGlWUUxTZ2VUcldrcTV1ZGZnZGY="
 
+INIT_AUTH = "uUBlr1SyHb3ETk5h2A6yNrjXRa99FhopQ6Ow53XtXxrXC4IoTVT0o2fbXKDyBHS19scDFtl5aZlTRk"
+
 key = {"kid":"kid-1", "alg":"Hs512", "value": JWT_KEY}
 
-response = requests.post(INITIALIZE, headers = CONTENT_TYPE, json=key)
+response = requests.post(INITIALIZE, headers = {"content-type": "application/json", "Authorization": INIT_AUTH}, json=key)
 
 print(response)
 print(response.content)

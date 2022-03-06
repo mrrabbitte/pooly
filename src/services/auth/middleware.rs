@@ -122,13 +122,8 @@ impl RequestValidator {
 
         let auth_header_value = auth_header_value_maybe.unwrap();
 
-        let auth_header_str_result = auth_header_value.to_str();
-
-        if auth_header_str_result.is_err() {
-            return Err(AuthError::InvalidToken);
-        }
-
-        let auth_header = auth_header_str_result.unwrap();
+        let auth_header = auth_header_value.to_str()
+            .map_err(|_| AuthError::InvalidToken)?;
 
         let outcome = auth_service.extract(auth_header)?;
 
@@ -144,21 +139,4 @@ impl RequestValidator {
         }
     }
 
-}
-
-impl ResponseError for AuthError {
-    fn status_code(&self) -> StatusCode {
-        StatusCode::UNAUTHORIZED
-    }
-
-    fn error_response(&self) -> HttpResponse {
-        HttpResponse::build(self.status_code())
-            .finish()
-    }
-}
-
-impl fmt::Display for AuthError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Display::fmt(&StatusCode::UNAUTHORIZED, f)
-    }
 }
