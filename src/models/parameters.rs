@@ -8,7 +8,6 @@ use crate::models::payloads::ValueWrapper;
 pub fn convert_params<'a>(expected_param_types: &[Type],
                           received_params: &'a Vec<ValueWrapper>)
                           -> Result<Vec<&'a (dyn ToSql + Sync)>, QueryError> {
-
     if expected_param_types.len() != received_params.len() {
         return Err(
             QueryError::WrongNumParams(

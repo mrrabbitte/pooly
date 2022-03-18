@@ -5,7 +5,7 @@ use actix_web::post;
 use actix_web::Result;
 use actix_web::web::{Data, Json};
 
-use crate::models::jwt::JwtKeyCreateCommand;
+use crate::models::auth::jwt::JwtKeyCreateCommand;
 use crate::services::initialize::InitializationService;
 use crate::services::secrets::LocalSecretsService;
 

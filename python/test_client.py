@@ -14,6 +14,8 @@ QUERY = BASE_URL + "/c/v1/query"
 BULK = BASE_URL + "/c/v1/bulk"
 CONTENT_TYPE = {"content-type": "application/json"}
 
+CONNECTION_ID = "connection-id-1"
+
 JWT_KEY = "ZDR1S0E0WEUwY0lmWnBweXUwYmFiM2s5aGlWUUxTZ2VUcldrcTV1ZGZnZGY="
 
 INIT_AUTH = "uUBlr1SyHb3ETk5h2A6yNrjXRa99FhopQ6Ow53XtXxrXC4IoTVT0o2fbXKDyBHS19scDFtl5aZlTRk"
@@ -33,7 +35,7 @@ print(token)
 input("wat now?")
 
 config = {
-  "id": "connection-id-1",
+  "id": CONNECTION_ID,
   "hosts": ["localhost"],
   "db_name": "pooly_test",
   "user": "pooly",
@@ -49,7 +51,7 @@ print(response.content)
 
 qr = p.QueryRequest()
 
-qr.connection_id = "connection-id-1"
+qr.connection_id = CONNECTION_ID
 qr.query = "select column1, column2 from newtable where column1 = $1 and column2 = $2;"
 
 vw1 = p.ValueWrapper()
@@ -75,7 +77,7 @@ print(rec)
 
 qr = p.QueryRequest()
 
-qr.connection_id = "connection-id-1"
+qr.connection_id = CONNECTION_ID
 qr.query = "insert into newtable(column1, column2) values($1, $2) returning *;"
 vw1 = p.ValueWrapper()
 vw1.string = "something"
@@ -96,7 +98,7 @@ print("\n Received: \n")
 print(rec)
 
 bulk = p.TxBulkQueryRequest()
-bulk.connection_id = "connection-id-1"
+bulk.connection_id = CONNECTION_ID
 for i in range(0, 1):
 	body = p.TxBulkQueryRequestBody()
 	body.query = "insert into newtable(column1, column2) values ($1, $2) returning *;"

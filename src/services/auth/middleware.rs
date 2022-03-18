@@ -11,7 +11,7 @@ use futures_util::future::LocalBoxFuture;
 use futures_util::FutureExt;
 
 use crate::models::errors::AuthError;
-use crate::models::roles::{AuthOutcome, Role};
+use crate::models::auth::roles::{AuthOutcome, Role};
 use crate::services::auth::identity::AuthService;
 
 const AUTHORIZATION: &str = "Authorization";

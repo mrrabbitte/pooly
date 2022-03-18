@@ -8,7 +8,7 @@ mod tests {
     use testcontainers::images::postgres::Postgres;
 
     use pooly::AppContext;
-    use pooly::models::access::LiteralConnectionIdAccessEntry;
+    use pooly::models::auth::access::LiteralConnectionIdAccessEntry;
     use pooly::models::connections::ConnectionConfig;
     use pooly::models::payloads::query_response::Payload;
     use pooly::models::payloads::QueryRequest;

@@ -1,16 +1,13 @@
-pub mod access;
-pub mod api_key;
+pub mod auth;
 pub mod config;
 pub mod connections;
 pub mod errors;
-pub mod jwt;
 pub mod parameters;
 pub mod payloads;
 pub mod responses;
 pub mod rows;
 pub mod secrets;
 pub mod time;
-pub mod roles;
 pub mod updatable;
 pub mod versioned;
 pub mod wildcards;

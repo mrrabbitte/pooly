@@ -7,7 +7,7 @@ use sled::Db;
 
 use crate::data::dao::{Dao, UpdatableDao};
 use crate::LocalSecretsService;
-use crate::models::access::{LiteralConnectionIdAccessEntry, WildcardPatternConnectionIdAccessEntry};
+use crate::models::auth::access::{LiteralConnectionIdAccessEntry, WildcardPatternConnectionIdAccessEntry};
 use crate::models::connections::ConnectionConfigUpdateCommand;
 use crate::models::errors::StorageError;
 use crate::models::updatable::{StringSetCommand, WildcardPatternSetCommand};

@@ -9,7 +9,7 @@ use actix_web::web::Data;
 use futures_util::future::LocalBoxFuture;
 use futures_util::FutureExt;
 
-use crate::models::api_key::InitializeApiKey;
+use crate::models::auth::api_key::InitializeApiKey;
 use crate::models::errors::AuthError;
 
 const AUTHORIZATION: &str = "Authorization";

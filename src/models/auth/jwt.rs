@@ -185,7 +185,7 @@ mod tests {
     use serde::{Deserialize, Serialize};
     use serde_json;
 
-    use crate::models::jwt::{JwtAlg, JwtKey, JwtKeyCreateCommand, JwtKeyUpdateCommand};
+    use crate::models::auth::jwt::{JwtAlg, JwtKey, JwtKeyCreateCommand, JwtKeyUpdateCommand};
     use crate::models::updatable::Updatable;
     use crate::models::versioned::VersionHeader;
 

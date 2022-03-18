@@ -119,7 +119,7 @@ impl Updatable<WildcardPatternSetCommand> for WildcardPatternConnectionIdAccessE
 mod tests {
     use std::collections::HashSet;
 
-    use crate::models::access::{ConnectionIdAccessEntry, LiteralConnectionIdAccessEntry, WildcardPatternConnectionIdAccessEntry};
+    use crate::models::auth::access::{ConnectionIdAccessEntry, LiteralConnectionIdAccessEntry, WildcardPatternConnectionIdAccessEntry};
     use crate::models::versioned::Versioned;
     use crate::models::wildcards::WildcardPattern;
 

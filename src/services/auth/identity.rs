@@ -13,8 +13,8 @@ use sled::Db;
 
 use crate::{CacheBackedService, LocalSecretsService, UpdatableService};
 use crate::models::errors::{AuthError, StorageError};
-use crate::models::jwt::{JwtAlg, JwtKey, JwtKeyUpdateCommand};
-use crate::models::roles::AuthOutcome;
+use crate::models::auth::jwt::{JwtAlg, JwtKey, JwtKeyUpdateCommand};
+use crate::models::auth::roles::AuthOutcome;
 use crate::models::versioned::Versioned;
 use crate::services::clock::Clock;
 
