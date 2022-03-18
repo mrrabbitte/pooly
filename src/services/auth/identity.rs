@@ -15,7 +15,7 @@ use crate::{CacheBackedService, LocalSecretsService, UpdatableService};
 use crate::models::errors::{AuthError, StorageError};
 use crate::models::auth::jwt::{JwtAlg, JwtKey, JwtKeyUpdateCommand};
 use crate::models::auth::roles::AuthOutcome;
-use crate::models::versioned::Versioned;
+use crate::models::ver::versioned::Versioned;
 use crate::services::clock::Clock;
 
 const BEARER: &str = "Bearer ";

@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use zeroize::Zeroize;
 
-use crate::models::config::AppConfig;
+use crate::models::app::AppConfig;
 
 #[derive(Zeroize)]
 #[zeroize(drop)]

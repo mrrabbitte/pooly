@@ -10,7 +10,7 @@ use config::Config;
 
 use pooly::{AppContext, resources, services};
 use pooly::models::auth::api_key::InitializeApiKey;
-use pooly::models::config::AppConfig;
+use pooly::models::app::AppConfig;
 use pooly::services::auth::initialization::InitializationGuard;
 use pooly::services::auth::middleware::AuthGuard;
 

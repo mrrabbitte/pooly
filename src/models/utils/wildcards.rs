@@ -124,7 +124,7 @@ impl Into<String> for WildcardPattern {
 #[cfg(test)]
 mod tests {
     use crate::models::errors::WildcardPatternError;
-    use crate::models::wildcards::WildcardPattern;
+    use crate::models::utils::wildcards::WildcardPattern;
 
     #[test]
     fn test_matches_any_correctly() {

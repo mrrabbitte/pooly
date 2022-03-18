@@ -4,8 +4,8 @@ use serde::{Deserialize, Serialize};
 use zeroize::Zeroize;
 
 use crate::models::errors::StorageError;
-use crate::models::time;
-use crate::models::updatable::{Updatable, UpdateCommand};
+use crate::models::utils::time;
+use crate::models::ver::updatable::{Updatable, UpdateCommand};
 
 pub type VersionedVec = Versioned<Vec<u8>>;
 

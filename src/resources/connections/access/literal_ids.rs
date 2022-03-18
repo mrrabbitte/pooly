@@ -7,7 +7,7 @@ use actix_web::web::{Data, Json, Path};
 
 use crate::LiteralConnectionIdAccessEntryService;
 use crate::models::auth::access::LiteralConnectionIdAccessEntry;
-use crate::models::updatable::StringSetCommand;
+use crate::models::ver::updatable::StringSetCommand;
 use crate::services::updatable::UpdatableService;
 
 #[post("/v1/access/literals")]

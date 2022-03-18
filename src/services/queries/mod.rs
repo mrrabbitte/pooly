@@ -4,11 +4,11 @@ use deadpool_postgres::Transaction;
 use postgres_types::ToSql;
 
 use crate::models::errors::QueryError;
-use crate::models::parameters::convert_params;
+use crate::models::query::parameters::convert_params;
 use crate::models::payloads::{ErrorResponse, query_response, QueryRequest, QueryResponse, RowResponseGroup, tx_bulk_query_response, TxBulkQueryRequest, TxBulkQueryRequestBody, TxBulkQueryResponse, TxBulkQuerySuccessResponse, TxQuerySuccessResponse};
 use crate::models::payloads::QuerySuccessResponse;
 use crate::models::responses::ResponseWithCode;
-use crate::models::rows::convert_rows;
+use crate::models::query::rows::convert_rows;
 use crate::services::auth::access::AccessControlService;
 use crate::services::connections::ConnectionService;
 

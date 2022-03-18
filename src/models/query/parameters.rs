@@ -53,7 +53,7 @@ mod tests {
     use postgres_types::Type;
 
     use crate::models::errors::QueryError;
-    use crate::models::parameters::convert_params;
+    use crate::models::query::parameters::convert_params;
     use crate::models::payloads::value_wrapper::Value;
     use crate::models::payloads::ValueWrapper;
 

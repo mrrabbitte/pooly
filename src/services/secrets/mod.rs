@@ -8,8 +8,8 @@ use sharks::{Share, Sharks};
 
 use crate::data::files::{FilesService, SimpleFilesService};
 use crate::models::errors::SecretsError;
-use crate::models::secrets::{EncryptedPayload, EncryptionKey, KEY_LENGTH, MasterKey, MasterKeyShare, MasterKeySharePayload, NUM_SHARES};
-use crate::models::zeroize::ZeroizeWrapper;
+use crate::models::sec::secrets::{EncryptedPayload, EncryptionKey, KEY_LENGTH, MasterKey, MasterKeyShare, MasterKeySharePayload, NUM_SHARES};
+use crate::models::sec::zeroize::ZeroizeWrapper;
 use crate::services::secrets::encryption::EncryptionService;
 use crate::services::secrets::random::VecGenerator;
 use crate::services::secrets::shares::MasterKeySharesService;
@@ -185,7 +185,7 @@ mod tests {
 
     use crate::data::files::MockFilesService;
     use crate::models::errors::SecretsError;
-    use crate::models::secrets::EncryptedPayload;
+    use crate::models::sec::secrets::EncryptedPayload;
     use crate::services::secrets::random::VecGenerator;
     use crate::services::secrets::SecretsService;
     use crate::services::secrets::shares::MasterKeySharesService;

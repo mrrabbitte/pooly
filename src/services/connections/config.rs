@@ -6,9 +6,9 @@ use sled;
 use sled::Db;
 
 use crate::data::dao::{Dao, EncryptedDao, SimpleDao, TypedDao, UpdatableDao};
-use crate::models::connections::{ConnectionConfig, ConnectionConfigUpdateCommand, VersionedConnectionConfig};
+use crate::models::query::connections::{ConnectionConfig, ConnectionConfigUpdateCommand, VersionedConnectionConfig};
 use crate::models::errors::{ConnectionConfigError, StorageError};
-use crate::models::versioned::Versioned;
+use crate::models::ver::versioned::Versioned;
 use crate::services::secrets::LocalSecretsService;
 use crate::services::updatable::{CacheBackedService, UpdatableService};
 

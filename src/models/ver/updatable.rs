@@ -4,8 +4,8 @@ use std::hash::Hash;
 use serde::{de, Deserialize, Serialize};
 
 use crate::models::errors::StorageError;
-use crate::models::versioned::{Versioned, VersionHeader};
-use crate::models::wildcards::WildcardPattern;
+use crate::models::ver::versioned::{Versioned, VersionHeader};
+use crate::models::utils::wildcards::WildcardPattern;
 
 pub type StringSetCommand = SetCommand<String>;
 pub type WildcardPatternSetCommand = SetCommand<WildcardPattern>;

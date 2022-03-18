@@ -9,7 +9,7 @@ mod tests {
 
     use pooly::AppContext;
     use pooly::models::auth::access::LiteralConnectionIdAccessEntry;
-    use pooly::models::connections::ConnectionConfig;
+    use pooly::models::query::connections::ConnectionConfig;
     use pooly::models::payloads::query_response::Payload;
     use pooly::models::payloads::QueryRequest;
     use pooly::services::updatable::UpdatableService;

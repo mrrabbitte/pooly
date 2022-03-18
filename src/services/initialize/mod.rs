@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::{AuthService, LocalSecretsService, MasterKeySharesService, UpdatableService};
 use crate::models::errors::InitializationError;
 use crate::models::auth::jwt::JwtKey;
-use crate::models::secrets::MasterKeySharePayload;
+use crate::models::sec::secrets::MasterKeySharePayload;
 
 pub struct InitializationService {
 

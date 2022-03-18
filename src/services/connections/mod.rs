@@ -5,7 +5,7 @@ use deadpool::managed::{Object, PoolConfig};
 use deadpool_postgres::{Config, Manager, ManagerConfig, Pool, RecyclingMethod, Runtime, SslMode};
 use tokio_postgres::NoTls;
 
-use crate::models::connections::ConnectionConfig;
+use crate::models::query::connections::ConnectionConfig;
 use crate::models::errors::ConnectionError;
 use crate::services::connections::config::ConnectionConfigService;
 use crate::services::updatable::UpdatableService;

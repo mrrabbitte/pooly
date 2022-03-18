@@ -6,7 +6,7 @@ use actix_web::post;
 use actix_web::Result;
 use actix_web::web::{Data, Json};
 
-use crate::models::secrets::MasterKeySharePayload;
+use crate::models::sec::secrets::MasterKeySharePayload;
 use crate::services::secrets::shares::MasterKeySharesService;
 
 #[post("/v1/secrets/shares")]

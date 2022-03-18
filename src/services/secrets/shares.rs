@@ -1,6 +1,6 @@
 use dashmap::DashSet;
 
-use crate::models::secrets::{MasterKeyShare, NUM_SHARES};
+use crate::models::sec::secrets::{MasterKeyShare, NUM_SHARES};
 
 pub struct MasterKeySharesService {
 
@@ -54,7 +54,7 @@ impl MasterKeySharesService {
 
 #[cfg(test)]
 mod tests {
-    use crate::models::secrets::MasterKeyShare;
+    use crate::models::sec::secrets::MasterKeyShare;
     use crate::services::secrets::shares::MasterKeySharesService;
 
     #[test]

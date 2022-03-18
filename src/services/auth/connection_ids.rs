@@ -8,10 +8,10 @@ use sled::Db;
 use crate::data::dao::{Dao, UpdatableDao};
 use crate::LocalSecretsService;
 use crate::models::auth::access::{LiteralConnectionIdAccessEntry, WildcardPatternConnectionIdAccessEntry};
-use crate::models::connections::ConnectionConfigUpdateCommand;
+use crate::models::query::connections::ConnectionConfigUpdateCommand;
 use crate::models::errors::StorageError;
-use crate::models::updatable::{StringSetCommand, WildcardPatternSetCommand};
-use crate::models::versioned::Versioned;
+use crate::models::ver::updatable::{StringSetCommand, WildcardPatternSetCommand};
+use crate::models::ver::versioned::Versioned;
 use crate::services::updatable::{CacheBackedService, UpdatableService};
 
 const LITERAL_CONNECTION_IDS: &str = "literal_connection_id_aces_v1";

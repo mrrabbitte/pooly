@@ -5,7 +5,7 @@ use actix_web::post;
 use actix_web::Result;
 use actix_web::web::{Data, Json, Path};
 
-use crate::models::connections::{ConnectionConfig, ConnectionConfigUpdateCommand};
+use crate::models::query::connections::{ConnectionConfig, ConnectionConfigUpdateCommand};
 use crate::services::connections::config::ConnectionConfigService;
 use crate::services::updatable::UpdatableService;
 
