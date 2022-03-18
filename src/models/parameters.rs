@@ -1,12 +1,12 @@
 use postgres_types::{ToSql, Type};
 
 use crate::models::errors::QueryError;
-use crate::models::payloads::param_value_wrapper::Value;
-use crate::models::payloads::ParamValueWrapper;
+use crate::models::payloads::value_wrapper::Value;
+use crate::models::payloads::ValueWrapper;
 
 #[inline]
 pub fn convert_params<'a>(expected_param_types: &[Type],
-                          received_params: &'a Vec<ParamValueWrapper>)
+                          received_params: &'a Vec<ValueWrapper>)
                           -> Result<Vec<&'a (dyn ToSql + Sync)>, QueryError> {
 
     if expected_param_types.len() != received_params.len() {
@@ -55,8 +55,8 @@ mod tests {
 
     use crate::models::errors::QueryError;
     use crate::models::parameters::convert_params;
-    use crate::models::payloads::param_value_wrapper::Value;
-    use crate::models::payloads::ParamValueWrapper;
+    use crate::models::payloads::value_wrapper::Value;
+    use crate::models::payloads::ValueWrapper;
 
     #[test]
     fn test_converts_params_correctly() {
@@ -71,9 +71,9 @@ mod tests {
         let value_three = 123;
 
         let values = vec![
-            ParamValueWrapper { value: Some(Value::String(value_one.clone())) },
-            ParamValueWrapper { value: Some(Value::Bytes(value_two.clone())) },
-            ParamValueWrapper { value: Some(Value::Int8(value_three.clone())) }
+            ValueWrapper { value: Some(Value::String(value_one.clone())) },
+            ValueWrapper { value: Some(Value::Bytes(value_two.clone())) },
+            ValueWrapper { value: Some(Value::Int8(value_three.clone())) }
         ];
 
         let converted =
@@ -91,8 +91,8 @@ mod tests {
         ];
 
         let values = vec![
-            ParamValueWrapper { value: None }, ParamValueWrapper { value: None },
-            ParamValueWrapper { value: None }, ParamValueWrapper { value: None }
+            ValueWrapper { value: None }, ValueWrapper { value: None },
+            ValueWrapper { value: None }, ValueWrapper { value: None }
         ];
 
         assert!(
@@ -116,8 +116,8 @@ mod tests {
         param_types.push(unsupported);
 
         let values = vec![
-            ParamValueWrapper { value: None }, ParamValueWrapper { value: None },
-            ParamValueWrapper { value: None }, ParamValueWrapper { value: None }
+            ValueWrapper { value: None }, ValueWrapper { value: None },
+            ValueWrapper { value: None }, ValueWrapper { value: None }
         ];
 
         assert!(

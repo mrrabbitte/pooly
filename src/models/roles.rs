@@ -8,6 +8,7 @@ const POOLY_ROLE: &str = "pooly_role";
 const ADMIN: &str = "admin";
 const CLIENT_SERVICE: &str = "client_service";
 
+#[derive(Debug)]
 pub enum AuthOutcome {
 
     Authorised(RoleToken),
@@ -15,6 +16,7 @@ pub enum AuthOutcome {
 
 }
 
+#[derive(Debug)]
 pub enum RoleToken {
 
     Admin(AdminToken, Role),
@@ -41,12 +43,14 @@ pub enum Role {
 
 }
 
+#[derive(Debug)]
 pub struct ClientServiceToken {
 
     client_id: String
 
 }
 
+#[derive(Debug)]
 pub struct AdminToken {
 
     admin_id: String

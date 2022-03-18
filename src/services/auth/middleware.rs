@@ -122,14 +122,21 @@ impl RequestValidator {
 
         let auth_header_value = auth_header_value_maybe.unwrap();
 
+        println!("Auth header value: {:?}", &auth_header_value);
+
         let auth_header = auth_header_value.to_str()
             .map_err(|_| AuthError::InvalidToken)?;
 
         let outcome = auth_service.extract(auth_header)?;
 
+        println!("Outcome: {:?}", &outcome);
+
         match outcome {
             AuthOutcome::Authorised(token) => {
                 if token.get_role().ne(&self.role) {
+                    println!("expected role: {:?}, got role: {:?}",
+                             token.get_role(), &self.role);
+
                     return Err(AuthError::Unauthorised);
                 }
 

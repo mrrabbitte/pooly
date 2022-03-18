@@ -58,7 +58,9 @@ impl AuthService {
 
         let claims = parsed.claims();
 
-        if !self.are_valid_claims(claims) {
+        let invalid_claims = !self.are_valid_claims(claims);
+
+        if invalid_claims {
             return Ok(AuthOutcome::Unauthorised);
         }
 
@@ -85,15 +87,17 @@ impl AuthService {
     /// The subject and expiration is required and checked while 'not before' is checked when present.
     #[inline]
     fn are_valid_claims(&self,
-                        claims: &Claims) ->bool {
+                        claims: &Claims) -> bool {
         let registered = &claims.registered;
 
         let now = self.clock.now_seconds();
 
         registered.subject.is_some()
-            && registered.expiration.map(|exp| now > exp)
+            && registered.expiration
+            .map(|exp| now < exp)
             .unwrap_or(false)
-            && registered.not_before.map(|not_before| now < not_before)
+            && registered.not_before
+            .map(|not_before| now > not_before)
             .unwrap_or(true)
     }
 
@@ -103,7 +107,7 @@ impl AuthService {
         let key = jwt_key.get_value();
         match jwt_key.get_alg() {
             JwtAlg::Hs256 => {
-                let hmac: Hmac<Sha384> = Hmac::new_from_slice(key)
+                let hmac: Hmac<Sha256> = Hmac::new_from_slice(key)
                     .map_err(|err| AuthError::HmacError)?;
 
                 hmac.verify(token.header, token.claims, token.signature)
@@ -117,7 +121,7 @@ impl AuthService {
                     .map_err(|err| AuthError::VerificationError)
             },
             JwtAlg::Hs512 => {
-                let hmac: Hmac<Sha384> = Hmac::new_from_slice(key)
+                let hmac: Hmac<Sha512> = Hmac::new_from_slice(key)
                     .map_err(|err| AuthError::HmacError)?;
 
                 hmac.verify(token.header, token.claims, token.signature)

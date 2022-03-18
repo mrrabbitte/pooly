@@ -40,18 +40,18 @@ async fn main() -> std::io::Result<()> {
                 .app_data(Data::new(app_context.literal_ids_service.clone()))
                 .app_data(Data::new(app_context.pattern_ids_service.clone()))
                 .service(
+                    web::scope("/c")
+                        .wrap(AuthGuard::client())
+                        .service(resources::query::bulk)
+                        .service(resources::query::query)
+                )
+                .service(
                     web::scope("/i")
                         .wrap(InitializationGuard::new(init_api_key.clone()))
                         .service(resources::secrets::actions::initialize)
                         .service(resources::secrets::shares::add_share)
                         .service(resources::secrets::shares::clear_shares)
                         .service(resources::secrets::actions::unseal)
-                )
-                .service(
-                    web::scope("/c")
-                        .wrap(AuthGuard::client())
-                        .service(resources::query::bulk)
-                        .service(resources::query::query)
                 )
                 .service(
                     web::scope("/a")

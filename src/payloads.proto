@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package payloads.proto;
 
-message ParamValueWrapper {
+message ValueWrapper {
 
   oneof value {
     string string = 1;
@@ -16,19 +16,13 @@ message ParamValueWrapper {
 
 message JsonObjectWrapper {
 
-  map<string, ParamValueWrapper> body = 1;
-
-}
-
-message BytesWrapper {
-
-  optional bytes value_maybe = 1;
+  map<string, ValueWrapper> body = 1;
 
 }
 
 message RowResponse {
 
-  repeated BytesWrapper values = 1;
+  repeated ValueWrapper values = 1;
 
 }
 
@@ -72,12 +66,12 @@ message QueryRequest {
 
   string connection_id = 1;
   string query = 2;
-  repeated ParamValueWrapper params = 3;
+  repeated ValueWrapper params = 3;
 
 }
 
 message TxBulkQueryParams {
-  repeated ParamValueWrapper values = 1;
+  repeated ValueWrapper values = 1;
 }
 
 message TxBulkQueryRequestBody {

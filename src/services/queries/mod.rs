@@ -99,7 +99,7 @@ impl QueryService {
             let query_results =
                 tx.query(&stmt, param_values.as_slice()).await?;
 
-            results.push(convert_rows(query_results));
+            results.push(convert_rows(query_results)?);
         }
 
         let column_names =
@@ -139,7 +139,7 @@ impl QueryService {
                 let results =
                     connection.query(&stmt, params.as_slice()).await?;
 
-                let cwr = convert_rows(results);
+                let cwr = convert_rows(results)?;
 
                 Ok(
                     QuerySuccessResponse {

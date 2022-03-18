@@ -6,7 +6,7 @@ use dashmap::mapref::one::Ref;
 use sled::Db;
 
 use crate::data::dao::{Dao, EncryptedDao, SimpleDao, TypedDao};
-use crate::models::access::{ConnectionAccessControlEntry, LiteralConnectionIdAccessEntry, WildcardPatternConnectionIdAccessEntry};
+use crate::models::access::{LiteralConnectionIdAccessEntry, WildcardPatternConnectionIdAccessEntry};
 use crate::models::access::ConnectionIdAccessEntry;
 use crate::models::errors::StorageError;
 use crate::models::versioned::Versioned;
