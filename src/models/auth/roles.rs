@@ -33,6 +33,13 @@ impl RoleToken {
         }
     }
 
+    pub fn get_client_id(&self) -> &str {
+        match self {
+            RoleToken::Admin(_, _) => panic!("Wrong Role, should panic."),
+            RoleToken::ClientService(client_id, _) => &client_id.client_id
+        }
+    }
+
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]

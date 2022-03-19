@@ -1,14 +1,15 @@
 use std::fmt;
-use std::future::{ready, Ready};
+use std::ops::Deref;
 use std::rc::Rc;
 use std::sync::Arc;
 
-use actix_web::{dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform}, Error, HttpMessage, HttpResponse, ResponseError};
+use actix_utils::future::{ready, Ready};
+use actix_web::{dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform}, Error, FromRequest, HttpMessage, HttpRequest, HttpResponse, ResponseError};
 use actix_web::body::EitherBody;
+use actix_web::dev::Payload;
+use actix_web::guard::{Guard, GuardContext};
 use actix_web::http::StatusCode;
 use actix_web::web::Data;
-use futures_util::future::LocalBoxFuture;
-use futures_util::FutureExt;
 
 use crate::models::auth::roles::{AuthOutcome, Role, RoleToken};
 use crate::models::errors::AuthError;
@@ -16,115 +17,57 @@ use crate::services::auth::jwt::JwtAuthService;
 
 const AUTHORIZATION: &str = "Authorization";
 
-pub struct AuthGuard {
+pub struct RoleTokenGuard {
 
     role: Role
 
 }
 
-impl AuthGuard {
+impl Guard for RoleTokenGuard {
+    fn check(&self, ctx: &GuardContext<'_>) -> bool {
+        let extensions = ctx.req_data();
 
-    pub fn admin() -> AuthGuard {
-        AuthGuard {
-            role: Role::Admin
+        let role_token_maybe: Option<&RoleToken> = extensions.get();
+
+        match role_token_maybe {
+            Some(token) => self.role.eq(token.get_role()),
+            None => false
         }
     }
-
-    pub fn client() -> AuthGuard {
-        AuthGuard {
-            role: Role::ClientService
-        }
-    }
-
 }
 
-impl<S, B> Transform<S, ServiceRequest> for AuthGuard
-    where
-        S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
-        S::Future: 'static,
-        B: 'static,
-{
-    type Response = ServiceResponse<EitherBody<B>>;
-    type Error = Error;
-    type Transform = AuthGuardMiddleware<S>;
-    type InitError = ();
-    type Future = Ready<Result<Self::Transform, Self::InitError>>;
+impl FromRequest for RoleToken {
+    type Error = AuthError;
+    type Future = Ready<Result<RoleToken, AuthError>>;
 
-    fn new_transform(&self, service: S) -> Self::Future {
+    fn from_request(req: &HttpRequest,
+                    _: &mut Payload) -> Self::Future {
         ready(
-            Ok(
-                AuthGuardMiddleware {
-                    service: Rc::new(service),
-                    validator: Rc::new(RequestValidator { role: self.role.clone() })
-                }
-            )
+            extract_role_token(req)
         )
     }
 }
 
-pub struct AuthGuardMiddleware<S> {
+#[inline]
+fn extract_role_token(req: &HttpRequest) -> Result<RoleToken, AuthError> {
+    let auth_service_maybe = req.app_data::<Data<Arc<JwtAuthService>>>();
 
-    service: Rc<S>,
-    validator: Rc<RequestValidator>
-
-}
-
-impl<S, B> Service<ServiceRequest> for AuthGuardMiddleware<S>
-    where
-        S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
-        S::Future: 'static,
-        B: 'static,
-{
-    type Response = ServiceResponse<EitherBody<B>>;
-    type Error = Error;
-    type Future = LocalBoxFuture<'static, Result<Self::Response, Self::Error>>;
-
-    forward_ready!(service);
-
-    fn call(&self, req: ServiceRequest) -> Self::Future {
-        let service = Rc::clone(&self.service);
-        let validator = Rc::clone(&self.validator);
-
-        async move {
-            match validator.validate(&req) {
-                Ok(_) => service.call(req).await.map(|res| res.map_into_left_body()),
-                Err(err) => Ok(req.error_response(err).map_into_right_body())
-            }
-        }.boxed_local()
-    }
-}
-
-#[derive(Clone)]
-struct RequestValidator {
-
-    role: Role
-
-}
-
-impl RequestValidator {
-
-    fn validate(&self,
-                req: &ServiceRequest) -> Result<RoleToken, AuthError> {
-        let auth_service_maybe = req.app_data::<Data<Arc<JwtAuthService>>>();
-
-        if auth_service_maybe.is_none() {
-            return Err(AuthError::MissingAuthService);
-        }
-
-        let auth_service = auth_service_maybe.unwrap();
-
-        let auth_header_value_maybe = req.headers().get(AUTHORIZATION);
-
-        if auth_header_value_maybe.is_none() {
-            return Err(AuthError::MissingAuthHeader);
-        }
-
-        let auth_header_value = auth_header_value_maybe.unwrap();
-
-        let auth_header = auth_header_value.to_str()
-            .map_err(|_| AuthError::InvalidHeader)?;
-
-        Ok(auth_service.validate_and_extract(auth_header, &self.role)?)
+    if auth_service_maybe.is_none() {
+        return Err(AuthError::MissingAuthService);
     }
 
+    let auth_service = auth_service_maybe.unwrap();
+
+    let auth_header_value_maybe = req.headers().get(AUTHORIZATION);
+
+    if auth_header_value_maybe.is_none() {
+        return Err(AuthError::MissingAuthHeader);
+    }
+
+    let auth_header_value = auth_header_value_maybe.unwrap();
+
+    let auth_header = auth_header_value.to_str()
+        .map_err(|_| AuthError::InvalidHeader)?;
+
+    Ok(auth_service.extract(auth_header)?)
 }

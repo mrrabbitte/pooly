@@ -43,9 +43,8 @@ impl JwtAuthService {
         )
     }
 
-    pub fn validate_and_extract(&self,
-                                auth_header: &str,
-                                role: &Role) -> Result<RoleToken, AuthError> {
+    pub fn extract(&self,
+                   auth_header: &str) -> Result<RoleToken, AuthError> {
         let token = auth_header.replace(BEARER, "");
 
         let parsed: Token<Header, Claims, _> =
@@ -88,13 +87,7 @@ impl JwtAuthService {
             }
         }?;
 
-        let role_token: RoleToken = claims.try_into()?;
-
-        if role_token.get_role().ne(role) {
-            return Err(AuthError::Forbidden);
-        }
-
-        Ok(role_token)
+        Ok(claims.try_into()?)
     }
 
     /// The subject and expiration is required and checked while 'not before' is checked when present.
