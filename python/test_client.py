@@ -12,9 +12,9 @@ CREATE_KEY = BASE_URL + "/a/v1/keys"
 CONFIGS = BASE_URL + "/a/v1/connections"
 QUERY = BASE_URL + "/c/v1/query"
 BULK = BASE_URL + "/c/v1/bulk"
-CONTENT_TYPE = {"content-type": "application/json"}
+ACCESS_CONNECTION_IDS = BASE_URL+ "/a/v1/access/literals"
 
-ACCESS_CONNECTION_IDS = "/v1/access/literals"
+CONTENT_TYPE = {"content-type": "application/json"}
 
 CLIENT_ID = "client-id-1"
 CONNECTION_ID = "connection-id-1"
@@ -48,6 +48,16 @@ config = {
 }
 
 response = requests.post(CONFIGS, headers = {"content-type": "application/json", "Authorization": "Bearer " + admin_token}, json=config)
+
+print(response)
+print(response.content)
+
+literal_connection_id_access_entry = {
+  "client_id": CLIENT_ID,
+  "connection_ids": [CONNECTION_ID]
+}
+
+response = requests.post(ACCESS_CONNECTION_IDS, headers = {"content-type": "application/json", "Authorization": "Bearer " + admin_token}, json=literal_connection_id_access_entry)
 
 print(response)
 print(response.content)
