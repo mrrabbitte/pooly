@@ -8,7 +8,7 @@ use crate::data::dao::{TypedDao, UpdatableDao};
 use crate::data::db::DbBuilder;
 use crate::services::auth::access::AccessControlService;
 use crate::services::auth::connection_ids::{LiteralConnectionIdAccessEntryService, WildcardPatternConnectionIdAccessEntryService};
-use crate::services::auth::identity::AuthService;
+use crate::services::auth::jwt::JwtAuthService;
 use crate::services::clock::Clock;
 use crate::services::connections::config::ConnectionConfigService;
 use crate::services::connections::ConnectionService;
@@ -21,6 +21,7 @@ use crate::services::updatable::{CacheBackedService, UpdatableService};
 
 pub mod data;
 pub mod resources;
+pub mod middleware;
 pub mod models;
 pub mod services;
 
@@ -28,7 +29,7 @@ pub mod services;
 pub struct AppContext {
 
     pub access_control_service: Arc<AccessControlService>,
-    pub auth_service: Arc<AuthService>,
+    pub auth_service: Arc<JwtAuthService>,
     pub connection_config_service: Arc<ConnectionConfigService>,
     pub initialization_service: Arc<InitializationService>,
     pub literal_ids_service: Arc<LiteralConnectionIdAccessEntryService>,
@@ -89,7 +90,7 @@ impl AppContext {
                     connection_config_service.clone())));
 
         let auth_service = Arc::new(
-            AuthService::new(
+            JwtAuthService::new(
                 Clock::new(), db.clone(), secrets_service.clone())
                 .unwrap()
         );

@@ -23,20 +23,20 @@ const SEPARATOR: &str = ".";
 
 const JWT_KEYS: &str = "jwt_keys_v1";
 
-pub struct AuthService {
+pub struct JwtAuthService {
 
     clock: Clock,
     delegate: CacheBackedService<JwtKeyUpdateCommand, JwtKey>
 
 }
 
-impl AuthService {
+impl JwtAuthService {
 
     pub fn new(clock: Clock,
                db: Arc<Db>,
-               secrets_service: Arc<LocalSecretsService>) -> Result<AuthService, StorageError> {
+               secrets_service: Arc<LocalSecretsService>) -> Result<JwtAuthService, StorageError> {
         Ok(
-            AuthService {
+            JwtAuthService {
                 clock,
                 delegate: CacheBackedService::new(db, JWT_KEYS, secrets_service)?
             }
@@ -190,7 +190,7 @@ impl<'a> TryFrom<&'a str> for JwtTokenData<'a> {
     }
 }
 
-impl UpdatableService<JwtKeyUpdateCommand, JwtKey> for AuthService {
+impl UpdatableService<JwtKeyUpdateCommand, JwtKey> for JwtAuthService {
     fn get(&self, id: &str) -> Result<Option<Ref<String, Versioned<JwtKey>>>, StorageError> {
         self.delegate.get(id)
     }

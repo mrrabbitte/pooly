@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
-use crate::{AuthService, LocalSecretsService, MasterKeySharesService, UpdatableService};
+use crate::{JwtAuthService, LocalSecretsService, MasterKeySharesService, UpdatableService};
 use crate::models::errors::InitializationError;
 use crate::models::auth::jwt::JwtKey;
 use crate::models::sec::secrets::MasterKeySharePayload;
 
 pub struct InitializationService {
 
-    auth_service: Arc<AuthService>,
+    auth_service: Arc<JwtAuthService>,
     shares_service: Arc<MasterKeySharesService>,
     secrets_service: Arc<LocalSecretsService>,
 
@@ -15,7 +15,7 @@ pub struct InitializationService {
 
 impl InitializationService {
 
-    pub fn new(auth_service: Arc<AuthService>,
+    pub fn new(auth_service: Arc<JwtAuthService>,
                shares_service: Arc<MasterKeySharesService>,
                secrets_service: Arc<LocalSecretsService>) -> InitializationService {
         InitializationService {

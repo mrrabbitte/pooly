@@ -5,12 +5,12 @@ use actix_web::post;
 use actix_web::Result;
 use actix_web::web::{Data, Json, Path};
 
-use crate::AuthService;
+use crate::JwtAuthService;
 use crate::models::auth::jwt::{JwtKey, JwtKeyCreateCommand, JwtKeyUpdateCommand};
 use crate::services::updatable::UpdatableService;
 
 #[post("/v1/keys")]
-pub async fn create(service: Data<Arc<AuthService>>,
+pub async fn create(service: Data<Arc<JwtAuthService>>,
                     request: Json<JwtKeyCreateCommand>) -> Result<HttpResponse> {
     match service.create(request.0.into()) {
         Ok(_) => Ok(HttpResponse::Ok().finish()),
@@ -19,7 +19,7 @@ pub async fn create(service: Data<Arc<AuthService>>,
 }
 
 #[get("/v1/keys/{id}")]
-pub async fn get(service: Data<Arc<AuthService>>,
+pub async fn get(service: Data<Arc<JwtAuthService>>,
                  id: Path<String>) -> Result<HttpResponse> {
     match service.get(&id.into_inner()) {
         Ok(ace) => Ok(
@@ -32,7 +32,7 @@ pub async fn get(service: Data<Arc<AuthService>>,
 }
 
 #[patch("/v1/keys/{id}")]
-pub async fn update(service: Data<Arc<AuthService>>,
+pub async fn update(service: Data<Arc<JwtAuthService>>,
                     id: Path<String>,
                     request: Json<JwtKeyUpdateCommand>) -> Result<HttpResponse> {
     match service.update(&id.into_inner(), request.0) {
@@ -42,7 +42,7 @@ pub async fn update(service: Data<Arc<AuthService>>,
 }
 
 #[delete("/v1/keys/{id}")]
-pub async fn delete(service: Data<Arc<AuthService>>,
+pub async fn delete(service: Data<Arc<JwtAuthService>>,
                     id: Path<String>) -> Result<HttpResponse> {
     match service.delete(&id.into_inner()) {
         Ok(_) => Ok(HttpResponse::Ok().finish()),

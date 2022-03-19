@@ -12,7 +12,7 @@ use futures_util::FutureExt;
 
 use crate::models::auth::roles::{AuthOutcome, Role, RoleToken};
 use crate::models::errors::AuthError;
-use crate::services::auth::identity::AuthService;
+use crate::services::auth::jwt::JwtAuthService;
 
 const AUTHORIZATION: &str = "Authorization";
 
@@ -105,7 +105,7 @@ impl RequestValidator {
 
     fn validate(&self,
                 req: &ServiceRequest) -> Result<RoleToken, AuthError> {
-        let auth_service_maybe = req.app_data::<Data<Arc<AuthService>>>();
+        let auth_service_maybe = req.app_data::<Data<Arc<JwtAuthService>>>();
 
         if auth_service_maybe.is_none() {
             return Err(AuthError::MissingAuthService);
@@ -120,8 +120,6 @@ impl RequestValidator {
         }
 
         let auth_header_value = auth_header_value_maybe.unwrap();
-
-        println!("Auth header value: {:?}", &auth_header_value);
 
         let auth_header = auth_header_value.to_str()
             .map_err(|_| AuthError::InvalidHeader)?;

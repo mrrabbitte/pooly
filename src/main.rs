@@ -11,8 +11,8 @@ use config::Config;
 use pooly::{AppContext, resources, services};
 use pooly::models::auth::api_key::InitializeApiKey;
 use pooly::models::app::AppConfig;
-use pooly::services::auth::initialization::InitializationGuard;
-use pooly::services::auth::middleware::AuthGuard;
+use pooly::middleware::auth::api_key::InitializationGuard;
+use pooly::middleware::auth::jwt::AuthGuard;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
