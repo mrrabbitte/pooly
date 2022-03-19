@@ -13,7 +13,7 @@ use sled::Db;
 
 use crate::{CacheBackedService, LocalSecretsService, UpdatableService};
 use crate::models::auth::jwt::{JwtAlg, JwtKey, JwtKeyUpdateCommand};
-use crate::models::auth::roles::{AuthOutcome, RoleToken};
+use crate::models::auth::roles::{AuthOutcome, Role, RoleToken};
 use crate::models::errors::{AuthError, StorageError};
 use crate::models::versioning::versioned::Versioned;
 use crate::services::clock::Clock;
@@ -43,8 +43,9 @@ impl AuthService {
         )
     }
 
-    pub fn extract(&self,
-                   auth_header: &str) -> Result<RoleToken, AuthError> {
+    pub fn validate_and_extract(&self,
+                                auth_header: &str,
+                                role: &Role) -> Result<RoleToken, AuthError> {
         let token = auth_header.replace(BEARER, "");
 
         let parsed: Token<Header, Claims, _> =
@@ -87,7 +88,13 @@ impl AuthService {
             }
         }?;
 
-        Ok(claims.try_into()?)
+        let role_token: RoleToken = claims.try_into()?;
+
+        if role_token.get_role().ne(role) {
+            return Err(AuthError::Forbidden);
+        }
+
+        Ok(role_token)
     }
 
     /// The subject and expiration is required and checked while 'not before' is checked when present.

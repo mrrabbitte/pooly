@@ -126,7 +126,7 @@ impl RequestValidator {
         let auth_header = auth_header_value.to_str()
             .map_err(|_| AuthError::InvalidHeader)?;
 
-        Ok(auth_service.extract(auth_header)?)
+        Ok(auth_service.validate_and_extract(auth_header, &self.role)?)
     }
 
 }

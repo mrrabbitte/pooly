@@ -97,7 +97,6 @@ pub enum WildcardPatternError {
 #[derive(Debug, Serialize, Deserialize)]
 pub enum AuthError {
 
-    BadCredentials,
     InvalidClaims,
     InvalidHeader,
     HmacError,
@@ -107,7 +106,7 @@ pub enum AuthError {
     PemError,
     StorageError(StorageError),
     UnsupportedAlgorithm,
-    Unauthorised,
+    Forbidden,
     VerificationError,
 
 }
@@ -206,7 +205,19 @@ impl QueryError {
 
 impl ResponseError for AuthError {
     fn status_code(&self) -> StatusCode {
-        StatusCode::UNAUTHORIZED
+        match self {
+            AuthError::InvalidClaims => StatusCode::UNAUTHORIZED,
+            AuthError::InvalidHeader => StatusCode::UNAUTHORIZED,
+            AuthError::HmacError => StatusCode::UNAUTHORIZED,
+            AuthError::NoneAlgorithmProvided => StatusCode::UNAUTHORIZED,
+            AuthError::MissingAuthService => StatusCode::INTERNAL_SERVER_ERROR,
+            AuthError::MissingAuthHeader => StatusCode::UNAUTHORIZED,
+            AuthError::PemError => StatusCode::INTERNAL_SERVER_ERROR,
+            AuthError::StorageError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            AuthError::UnsupportedAlgorithm => StatusCode::UNAUTHORIZED,
+            AuthError::Forbidden => StatusCode::FORBIDDEN,
+            AuthError::VerificationError => StatusCode::UNAUTHORIZED
+        }
     }
 
     fn error_response(&self) -> HttpResponse {
