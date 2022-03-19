@@ -101,7 +101,7 @@ impl ApiKeyValidator {
             Some(auth_header_value) => {
                 if self.api_key
                     .get_value()
-                    .ne(auth_header_value.to_str().map_err(|_| AuthError::InvalidToken)?) {
+                    .ne(auth_header_value.to_str().map_err(|_| AuthError::InvalidHeader)?) {
                     return Err(AuthError::BadCredentials);
                 }
 

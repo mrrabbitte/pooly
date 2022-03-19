@@ -14,7 +14,7 @@ use sled::Db;
 use crate::{CacheBackedService, LocalSecretsService, UpdatableService};
 use crate::models::errors::{AuthError, StorageError};
 use crate::models::auth::jwt::{JwtAlg, JwtKey, JwtKeyUpdateCommand};
-use crate::models::auth::roles::AuthOutcome;
+use crate::models::auth::roles::{AuthOutcome, RoleToken};
 use crate::models::ver::versioned::Versioned;
 use crate::services::clock::Clock;
 
@@ -44,7 +44,7 @@ impl AuthService {
     }
 
     pub fn extract(&self,
-                   auth_header: &str) -> Result<AuthOutcome, AuthError> {
+                   auth_header: &str) -> Result<RoleToken, AuthError> {
         let token = auth_header.replace(BEARER, "");
 
         let parsed: Token<Header, Claims, _> =
@@ -53,7 +53,7 @@ impl AuthService {
         let header = parsed.header();
 
         if header.algorithm == AlgorithmType::None {
-            return Ok(AuthOutcome::Unauthorised);
+            return Err(AuthError::NoneAlgorithmProvided);
         }
 
         let claims = parsed.claims();
@@ -61,7 +61,7 @@ impl AuthService {
         let invalid_claims = !self.are_valid_claims(claims);
 
         if invalid_claims {
-            return Ok(AuthOutcome::Unauthorised);
+            return Err(AuthError::InvalidClaims);
         }
 
         let jwt_token: JwtTokenData = token.as_str().try_into()?;
@@ -71,17 +71,23 @@ impl AuthService {
             &header.algorithm.try_into()?
         );
 
-        let is_verified = match self.delegate.get(&id)? {
-            None => Ok(false),
-            Some(value) =>
-                Self::verify(value.value().get_value(), &jwt_token)
+        match self.delegate.get(&id)? {
+            None => Ok(()),
+            Some(value) => {
+                match Self::verify(value.value().get_value(), &jwt_token) {
+                    Ok(value) => {
+                        if value {
+                            Ok(())
+                        } else {
+                            Err(AuthError::VerificationError)
+                        }
+                    }
+                    Err(err) => Err(err)
+                }
+            }
         }?;
 
-        if !is_verified {
-            return Ok(AuthOutcome::Unauthorised);
-        }
-
-        Ok(AuthOutcome::Authorised(claims.try_into()?))
+        Ok(claims.try_into()?)
     }
 
     /// The subject and expiration is required and checked while 'not before' is checked when present.
@@ -162,12 +168,12 @@ impl<'a> TryFrom<&'a str> for JwtTokenData<'a> {
     /// Taken from the `jwt` crate, should be deleted when access to the signature is provided.
     fn try_from(raw: &'a str) -> Result<Self, Self::Error> {
         let mut components = raw.split(SEPARATOR);
-        let header = components.next().ok_or(AuthError::InvalidToken)?;
-        let claims = components.next().ok_or(AuthError::InvalidToken)?;
-        let signature = components.next().ok_or(AuthError::InvalidToken)?;
+        let header = components.next().ok_or(AuthError::InvalidHeader)?;
+        let claims = components.next().ok_or(AuthError::InvalidHeader)?;
+        let signature = components.next().ok_or(AuthError::InvalidHeader)?;
 
         if components.next().is_some() {
-            return Err(AuthError::InvalidToken);
+            return Err(AuthError::InvalidHeader);
         }
 
         Ok(JwtTokenData {

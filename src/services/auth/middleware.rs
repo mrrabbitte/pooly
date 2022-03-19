@@ -10,8 +10,8 @@ use actix_web::web::Data;
 use futures_util::future::LocalBoxFuture;
 use futures_util::FutureExt;
 
+use crate::models::auth::roles::{AuthOutcome, Role, RoleToken};
 use crate::models::errors::AuthError;
-use crate::models::auth::roles::{AuthOutcome, Role};
 use crate::services::auth::identity::AuthService;
 
 const AUTHORIZATION: &str = "Authorization";
@@ -82,7 +82,6 @@ impl<S, B> Service<ServiceRequest> for AuthGuardMiddleware<S>
     forward_ready!(service);
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
-        println!("HERE: {:?}", self.validator.role);
         let service = Rc::clone(&self.service);
         let validator = Rc::clone(&self.validator);
 
@@ -105,7 +104,7 @@ struct RequestValidator {
 impl RequestValidator {
 
     fn validate(&self,
-                req: &ServiceRequest) -> Result<(), AuthError> {
+                req: &ServiceRequest) -> Result<RoleToken, AuthError> {
         let auth_service_maybe = req.app_data::<Data<Arc<AuthService>>>();
 
         if auth_service_maybe.is_none() {
@@ -125,25 +124,9 @@ impl RequestValidator {
         println!("Auth header value: {:?}", &auth_header_value);
 
         let auth_header = auth_header_value.to_str()
-            .map_err(|_| AuthError::InvalidToken)?;
+            .map_err(|_| AuthError::InvalidHeader)?;
 
-        let outcome = auth_service.extract(auth_header)?;
-
-        println!("Outcome: {:?}", &outcome);
-
-        match outcome {
-            AuthOutcome::Authorised(token) => {
-                if token.get_role().ne(&self.role) {
-                    println!("expected role: {:?}, got role: {:?}",
-                             token.get_role(), &self.role);
-
-                    return Err(AuthError::Unauthorised);
-                }
-
-                Ok(())
-            },
-            AuthOutcome::Unauthorised => return Err(AuthError::BadCredentials)
-        }
+        Ok(auth_service.extract(auth_header)?)
     }
 
 }

@@ -11,8 +11,8 @@ const CLIENT_SERVICE: &str = "client_service";
 #[derive(Debug)]
 pub enum AuthOutcome {
 
-    Authorised(RoleToken),
-    Unauthorised
+    Authenticated(RoleToken),
+    Unauthenticated
 
 }
 

@@ -99,8 +99,9 @@ pub enum AuthError {
 
     BadCredentials,
     InvalidClaims,
-    InvalidToken,
+    InvalidHeader,
     HmacError,
+    NoneAlgorithmProvided,
     MissingAuthService,
     MissingAuthHeader,
     PemError,
