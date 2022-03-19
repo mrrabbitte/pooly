@@ -9,7 +9,7 @@ use crate::data::dao::{Dao, EncryptedDao, SimpleDao, TypedDao};
 use crate::models::auth::access::{LiteralConnectionIdAccessEntry, WildcardPatternConnectionIdAccessEntry};
 use crate::models::auth::access::ConnectionIdAccessEntry;
 use crate::models::errors::StorageError;
-use crate::models::ver::versioned::Versioned;
+use crate::models::versioning::versioned::Versioned;
 use crate::models::utils::wildcards::WildcardPattern;
 use crate::services::auth::connection_ids::{LiteralConnectionIdAccessEntryService, WildcardPatternConnectionIdAccessEntryService};
 use crate::services::secrets::LocalSecretsService;

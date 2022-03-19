@@ -6,4 +6,4 @@ pub mod responses;
 pub mod sec;
 pub mod utils;
 pub mod query;
-pub mod ver;
+pub mod versioning;

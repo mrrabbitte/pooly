@@ -8,8 +8,8 @@ use sled::Db;
 
 use crate::data::dao::{Dao, EncryptedDao, SimpleDao, UpdatableDao};
 use crate::models::errors::StorageError;
-use crate::models::ver::updatable::{Updatable, UpdateCommand};
-use crate::models::ver::versioned::Versioned;
+use crate::models::versioning::updatable::{Updatable, UpdateCommand};
+use crate::models::versioning::versioned::Versioned;
 use crate::services::secrets::SecretsService;
 use crate::{LocalSecretsService, TypedDao};
 

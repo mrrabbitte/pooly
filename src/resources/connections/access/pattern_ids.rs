@@ -6,7 +6,7 @@ use actix_web::Result;
 use actix_web::web::{Data, Json, Path};
 
 use crate::models::auth::access::WildcardPatternConnectionIdAccessEntry;
-use crate::models::ver::updatable::{StringSetCommand, WildcardPatternSetCommand};
+use crate::models::versioning::updatable::{StringSetCommand, WildcardPatternSetCommand};
 use crate::services::updatable::UpdatableService;
 use crate::WildcardPatternConnectionIdAccessEntryService;
 

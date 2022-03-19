@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use serde::{Deserialize, Serialize};
 
-use crate::models::ver::updatable::{StringSetCommand, Updatable, WildcardPatternSetCommand};
+use crate::models::versioning::updatable::{StringSetCommand, Updatable, WildcardPatternSetCommand};
 use crate::models::utils::wildcards::WildcardPattern;
 
 pub trait ConnectionIdAccessEntry {
@@ -120,7 +120,7 @@ mod tests {
     use std::collections::HashSet;
 
     use crate::models::auth::access::{ConnectionIdAccessEntry, LiteralConnectionIdAccessEntry, WildcardPatternConnectionIdAccessEntry};
-    use crate::models::ver::versioned::Versioned;
+    use crate::models::versioning::versioned::Versioned;
     use crate::models::utils::wildcards::WildcardPattern;
 
     const CLIENT_ID: &str = "client-id-1";

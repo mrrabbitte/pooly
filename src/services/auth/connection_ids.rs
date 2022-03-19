@@ -10,8 +10,8 @@ use crate::LocalSecretsService;
 use crate::models::auth::access::{LiteralConnectionIdAccessEntry, WildcardPatternConnectionIdAccessEntry};
 use crate::models::query::connections::ConnectionConfigUpdateCommand;
 use crate::models::errors::StorageError;
-use crate::models::ver::updatable::{StringSetCommand, WildcardPatternSetCommand};
-use crate::models::ver::versioned::Versioned;
+use crate::models::versioning::updatable::{StringSetCommand, WildcardPatternSetCommand};
+use crate::models::versioning::versioned::Versioned;
 use crate::services::updatable::{CacheBackedService, UpdatableService};
 
 const LITERAL_CONNECTION_IDS: &str = "literal_connection_id_aces_v1";

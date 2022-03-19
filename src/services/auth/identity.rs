@@ -12,10 +12,10 @@ use sha2::{Sha256, Sha384, Sha512};
 use sled::Db;
 
 use crate::{CacheBackedService, LocalSecretsService, UpdatableService};
-use crate::models::errors::{AuthError, StorageError};
 use crate::models::auth::jwt::{JwtAlg, JwtKey, JwtKeyUpdateCommand};
 use crate::models::auth::roles::{AuthOutcome, RoleToken};
-use crate::models::ver::versioned::Versioned;
+use crate::models::errors::{AuthError, StorageError};
+use crate::models::versioning::versioned::Versioned;
 use crate::services::clock::Clock;
 
 const BEARER: &str = "Bearer ";

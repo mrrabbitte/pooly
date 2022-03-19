@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 use zeroize::Zeroize;
 
-use crate::models::ver::updatable::{Updatable, UpdateCommand};
-use crate::models::ver::versioned::{Versioned, VersionHeader};
+use crate::models::versioning::updatable::{Updatable, UpdateCommand};
+use crate::models::versioning::versioned::{Versioned, VersionHeader};
 
 pub type VersionedConnectionConfig = Versioned<ConnectionConfig>;
 

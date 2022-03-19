@@ -8,9 +8,9 @@ use sled::transaction::{abort, ConflictableTransactionError};
 
 use crate::LocalSecretsService;
 use crate::models::errors::StorageError;
-use crate::models::ver::updatable::{Updatable, UpdateCommand};
-use crate::models::ver::versioned;
-use crate::models::ver::versioned::{Versioned, VersionedVec};
+use crate::models::versioning::updatable::{Updatable, UpdateCommand};
+use crate::models::versioning::versioned;
+use crate::models::versioning::versioned::{Versioned, VersionedVec};
 use crate::models::sec::zeroize::ZeroizeWrapper;
 
 pub trait Dao<T> {

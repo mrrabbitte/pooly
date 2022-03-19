@@ -5,7 +5,7 @@ use zeroize::Zeroize;
 
 use crate::models::errors::StorageError;
 use crate::models::utils::time;
-use crate::models::ver::updatable::{Updatable, UpdateCommand};
+use crate::models::versioning::updatable::{Updatable, UpdateCommand};
 
 pub type VersionedVec = Versioned<Vec<u8>>;
 

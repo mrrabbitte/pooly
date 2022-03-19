@@ -5,8 +5,8 @@ use serde::{Deserialize, Serialize};
 use zeroize::Zeroize;
 
 use crate::models::errors::AuthError;
-use crate::models::ver::updatable::{Updatable, UpdateCommand};
-use crate::models::ver::versioned::VersionHeader;
+use crate::models::versioning::updatable::{Updatable, UpdateCommand};
+use crate::models::versioning::versioned::VersionHeader;
 
 #[derive(Zeroize)]
 #[zeroize(drop)]
@@ -186,8 +186,8 @@ mod tests {
     use serde_json;
 
     use crate::models::auth::jwt::{JwtAlg, JwtKey, JwtKeyCreateCommand, JwtKeyUpdateCommand};
-    use crate::models::ver::updatable::Updatable;
-    use crate::models::ver::versioned::VersionHeader;
+    use crate::models::versioning::updatable::Updatable;
+    use crate::models::versioning::versioned::VersionHeader;
 
     #[test]
     fn test_udpate_command() {
