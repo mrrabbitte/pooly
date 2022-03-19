@@ -5,7 +5,7 @@ use dashmap::mapref::one::Ref;
 use hmac::digest::core_api::CoreProxy;
 use hmac::digest::KeyInit;
 use hmac::Hmac;
-use jwt::{AlgorithmType, Claims, Header, PKeyWithDigest, Token, Unverified, VerifyingAlgorithm, VerifyWithKey};
+use jwt::{AlgorithmType, Claims, Error, Header, PKeyWithDigest, Token, Unverified, VerifyingAlgorithm, VerifyWithKey};
 use openssl::hash::MessageDigest;
 use openssl::pkey::PKey;
 use sha2::{Sha256, Sha384, Sha512};
@@ -73,14 +73,14 @@ impl AuthService {
         );
 
         match self.delegate.get(&id)? {
-            None => Ok(()),
+            None => Err(AuthError::UnknownKey),
             Some(value) => {
                 match Self::verify(value.value().get_value(), &jwt_token) {
                     Ok(value) => {
                         if value {
                             Ok(())
                         } else {
-                            Err(AuthError::VerificationError)
+                            Err(AuthError::VerificationError("Invalid token".into()))
                         }
                     }
                     Err(err) => Err(err)
@@ -118,35 +118,35 @@ impl AuthService {
     fn verify(jwt_key: &JwtKey,
               token: &JwtTokenData) -> Result<bool, AuthError> {
         let key = jwt_key.get_value();
-        match jwt_key.get_alg() {
-            JwtAlg::Hs256 => {
-                let hmac: Hmac<Sha256> = Hmac::new_from_slice(key)
-                    .map_err(|err| AuthError::HmacError)?;
 
-                hmac.verify(token.header, token.claims, token.signature)
-                    .map_err(|err| AuthError::VerificationError)
-            },
-            JwtAlg::Hs384 => {
-                let hmac: Hmac<Sha384> = Hmac::new_from_slice(key)
-                    .map_err(|err| AuthError::HmacError)?;
+        Ok(
+            match jwt_key.get_alg() {
+                JwtAlg::Hs256 => {
+                    let hmac: Hmac<Sha256> = Hmac::new_from_slice(key)
+                        .map_err(|err| AuthError::HmacError)?;
 
-                hmac.verify(token.header, token.claims, token.signature)
-                    .map_err(|err| AuthError::VerificationError)
-            },
-            JwtAlg::Hs512 => {
-                let hmac: Hmac<Sha512> = Hmac::new_from_slice(key)
-                    .map_err(|err| AuthError::HmacError)?;
+                    hmac.verify(token.header, token.claims, token.signature)?
+                },
+                JwtAlg::Hs384 => {
+                    let hmac: Hmac<Sha384> = Hmac::new_from_slice(key)
+                        .map_err(|err| AuthError::HmacError)?;
 
-                hmac.verify(token.header, token.claims, token.signature)
-                    .map_err(|err| AuthError::VerificationError)
-            },
-            JwtAlg::Rs256 | JwtAlg::Es256 =>
-                Self::verify_pk_digest(key, token, MessageDigest::sha256()),
-            JwtAlg::Rs384 | JwtAlg::Es384 =>
-                Self::verify_pk_digest(key, token, MessageDigest::sha384()),
-            JwtAlg::Rs512 | JwtAlg::Es512 =>
-                Self::verify_pk_digest(key, token, MessageDigest::sha512())
-        }
+                    hmac.verify(token.header, token.claims, token.signature)?
+                },
+                JwtAlg::Hs512 => {
+                    let hmac: Hmac<Sha512> = Hmac::new_from_slice(key)
+                        .map_err(|err| AuthError::HmacError)?;
+
+                    hmac.verify(token.header, token.claims, token.signature)?
+                },
+                JwtAlg::Rs256 | JwtAlg::Es256 =>
+                    Self::verify_pk_digest(key, token, MessageDigest::sha256())?,
+                JwtAlg::Rs384 | JwtAlg::Es384 =>
+                    Self::verify_pk_digest(key, token, MessageDigest::sha384())?,
+                JwtAlg::Rs512 | JwtAlg::Es512 =>
+                    Self::verify_pk_digest(key, token, MessageDigest::sha512())?
+            }
+        )
     }
 
     #[inline]
@@ -158,8 +158,7 @@ impl AuthService {
             key: PKey::public_key_from_pem(key).map_err(|err| AuthError::PemError)?,
         };
 
-        algo.verify(token.header, token.claims, token.signature)
-            .map_err(|err| AuthError::VerificationError)
+        Ok( algo.verify(token.header, token.claims, token.signature)? )
     }
 }
 

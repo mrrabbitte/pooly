@@ -99,6 +99,7 @@ pub enum AuthError {
 
     InvalidClaims,
     InvalidHeader,
+    InvalidToken,
     HmacError,
     NoneAlgorithmProvided,
     MissingAuthService,
@@ -106,8 +107,9 @@ pub enum AuthError {
     PemError,
     StorageError(StorageError),
     UnsupportedAlgorithm,
+    UnknownKey,
     Forbidden,
-    VerificationError,
+    VerificationError(String),
 
 }
 
@@ -206,23 +208,17 @@ impl QueryError {
 impl ResponseError for AuthError {
     fn status_code(&self) -> StatusCode {
         match self {
-            AuthError::InvalidClaims => StatusCode::UNAUTHORIZED,
-            AuthError::InvalidHeader => StatusCode::UNAUTHORIZED,
-            AuthError::HmacError => StatusCode::UNAUTHORIZED,
-            AuthError::NoneAlgorithmProvided => StatusCode::UNAUTHORIZED,
-            AuthError::MissingAuthService => StatusCode::INTERNAL_SERVER_ERROR,
-            AuthError::MissingAuthHeader => StatusCode::UNAUTHORIZED,
-            AuthError::PemError => StatusCode::INTERNAL_SERVER_ERROR,
-            AuthError::StorageError(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            AuthError::UnsupportedAlgorithm => StatusCode::UNAUTHORIZED,
+            AuthError::PemError
+            | AuthError::MissingAuthService
+            | AuthError::StorageError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             AuthError::Forbidden => StatusCode::FORBIDDEN,
-            AuthError::VerificationError => StatusCode::UNAUTHORIZED
+            _ => StatusCode::UNAUTHORIZED
         }
     }
 
     fn error_response(&self) -> HttpResponse {
         HttpResponse::build(self.status_code())
-            .finish()
+            .json(self)
     }
 }
 
@@ -252,7 +248,7 @@ impl From<ConnectionConfigError> for QueryError {
             ConnectionConfigError::AlreadyExistsError => 409,
             _ => 500
         };
-       QueryError::ConnectionConfigError(message, code)
+        QueryError::ConnectionConfigError(message, code)
     }
 }
 
@@ -373,5 +369,11 @@ impl From<SecretsError> for InitializationError {
 impl From<StorageError> for InitializationError {
     fn from(err: StorageError) -> Self {
         InitializationError::StorageError(err)
+    }
+}
+
+impl From<jwt::Error> for AuthError {
+    fn from(err: jwt::Error) -> Self {
+        AuthError::VerificationError(format!("{:?}", err))
     }
 }

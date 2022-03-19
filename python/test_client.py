@@ -1,6 +1,6 @@
 import payloads_pb2 as p
 import requests
-
+import base64 
 import jwt
 
 ### Please note, this is a dirty script written on a knee, a proper Python client will come. 
@@ -14,13 +14,16 @@ QUERY = BASE_URL + "/c/v1/query"
 BULK = BASE_URL + "/c/v1/bulk"
 CONTENT_TYPE = {"content-type": "application/json"}
 
+ACCESS_CONNECTION_IDS = "/v1/access/literals"
+
+CLIENT_ID = "client-id-1"
 CONNECTION_ID = "connection-id-1"
 
-JWT_KEY = "ZDR1S0E0WEUwY0lmWnBweXUwYmFiM2s5aGlWUUxTZ2VUcldrcTV1ZGZnZGY="
+JWT_KEY = b"ZDR1S0E0WEUwY0lmWnBweXUwYmFiM2s5aGlWUUxTZ2VUcldrcTV1ZGZnZGY="
 
 INIT_AUTH = "uUBlr1SyHb3ETk5h2A6yNrjXRa99FhopQ6Ow53XtXxrXC4IoTVT0o2fbXKDyBHS19scDFtl5aZlTRk"
 
-key = {"kid":"kid-1", "alg":"Hs512", "value": JWT_KEY}
+key = {"kid":"kid-1", "alg":"Hs512", "value": base64.b64encode(JWT_KEY)}
 
 response = requests.post(INITIALIZE, headers = {"content-type": "application/json", "Authorization": INIT_AUTH}, json=key)
 
@@ -28,9 +31,9 @@ print(response)
 print(response.content)
 
 
-token = jwt.encode({"exp": 1700000000, "aud": "pooly", "pooly_role": "admin", "sub": "admin-id-1"}, JWT_KEY, algorithm="HS512",  headers = {"kid": "kid-1", "typ": "JWT", "cty": "JWT"})
+admin_token = jwt.encode({"exp": 1700000000, "aud": "pooly", "pooly_role": "admin", "sub": "admin-id-1"}, JWT_KEY, algorithm="HS512",  headers = {"kid": "kid-1", "typ": "JWT", "cty": "JWT"})
 
-print(token)
+print(admin_token)
 
 input("wat now?")
 
@@ -44,10 +47,13 @@ config = {
   "max_connections": 10
 }
 
-response = requests.post(CONFIGS, headers = {"content-type": "application/json", "Authorization": "Bearer " + token}, json=config)
+response = requests.post(CONFIGS, headers = {"content-type": "application/json", "Authorization": "Bearer " + admin_token}, json=config)
 
 print(response)
 print(response.content)
+
+client_token = jwt.encode({"exp": 1700000000, "aud": "pooly", "pooly_role": "client_service", "sub": CLIENT_ID}, JWT_KEY, algorithm="HS512",  headers = {"kid": "kid-1", "typ": "JWT", "cty": "JWT"})
+
 
 qr = p.QueryRequest()
 
@@ -65,13 +71,14 @@ qr.params.append(vw2)
 
 print("Sending: \n", qr)
 
-response = requests.post(QUERY, headers={"content-type": "application/protobuf", "Authorization": "Bearer " + token}, data=qr.SerializeToString())
+response = requests.post(QUERY, headers={"content-type": "application/protobuf", "Authorization": "Bearer " + client_token}, data=qr.SerializeToString())
+
+print("\n Got:", response.content, response)
+print("\n Received: \n")
 
 rec = p.QueryResponse()
 rec.ParseFromString(response.content)
 
-print("\n Got:", response)
-print("\n Received: \n")
 print(rec)
 
 
@@ -88,7 +95,7 @@ qr.params.append(vw1)
 qr.params.append(vw2)
 print("Sending: \n", qr)
 
-response = requests.post(QUERY, headers={"content-type": "application/protobuf", "Authorization": "Bearer " + token}, data=qr.SerializeToString())
+response = requests.post(QUERY, headers={"content-type": "application/protobuf", "Authorization": "Bearer " + client_token}, data=qr.SerializeToString())
 
 rec = p.QueryResponse()
 rec.ParseFromString(response.content)
@@ -113,7 +120,7 @@ for i in range(0, 1):
 		body.params.append(params_row) 
 	bulk.queries.append(body)
 
-response = requests.post(BULK, headers={"content-type": "application/protobuf", "Authorization": "Bearer " + token}, data=bulk.SerializeToString())
+response = requests.post(BULK, headers={"content-type": "application/protobuf", "Authorization": "Bearer " + client_token}, data=bulk.SerializeToString())
 
 rec = p.TxBulkQueryResponse()
 rec.ParseFromString(response.content)

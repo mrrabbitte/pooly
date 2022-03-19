@@ -16,7 +16,7 @@ pub trait ConnectionIdAccessEntry {
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct LiteralConnectionIdAccessEntry {
 
-    pub client_id: String,
+    client_id: String,
     connection_ids: HashSet<String>
 
 }
