@@ -9,7 +9,7 @@ use actix_web::web::Data;
 use config::Config;
 
 use pooly::{AppContext, resources, services};
-use pooly::middleware::auth::api_key::InitializationGuard;
+use pooly::middleware::auth::api_key::InitializationApiKeyAuthGuard;
 use pooly::models::app::AppConfig;
 use pooly::models::auth::api_key::InitializeApiKey;
 
@@ -45,7 +45,7 @@ async fn main() -> std::io::Result<()> {
                 )
                 .service(
                     web::scope("/i")
-                        .wrap(InitializationGuard::new(init_api_key.clone()))
+                        .wrap(InitializationApiKeyAuthGuard::new(init_api_key.clone()))
                         .service(resources::secrets::actions::initialize)
                         .service(resources::secrets::shares::add_share)
                         .service(resources::secrets::shares::clear_shares)

@@ -14,23 +14,23 @@ use crate::models::errors::AuthError;
 
 const AUTHORIZATION: &str = "Authorization";
 
-pub struct InitializationGuard {
+pub struct InitializationApiKeyAuthGuard {
 
     api_key: InitializeApiKey
 
 }
 
-impl InitializationGuard {
+impl InitializationApiKeyAuthGuard {
 
-    pub fn new(api_key: InitializeApiKey) -> InitializationGuard {
-        InitializationGuard {
+    pub fn new(api_key: InitializeApiKey) -> InitializationApiKeyAuthGuard {
+        InitializationApiKeyAuthGuard {
             api_key
         }
     }
 
 }
 
-impl<S, B> Transform<S, ServiceRequest> for InitializationGuard
+impl<S, B> Transform<S, ServiceRequest> for InitializationApiKeyAuthGuard
     where
         S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
         S::Future: 'static,
