@@ -7,7 +7,7 @@ use mockall::automock;
 
 use crate::data::db::BASE_STORAGE_PATH;
 use crate::models::errors::SecretsError;
-use crate::models::secrets::EncryptedPayload;
+use crate::models::sec::secrets::EncryptedPayload;
 
 pub struct SimpleFilesService {
 

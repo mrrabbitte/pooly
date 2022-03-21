@@ -1,60 +1,63 @@
+use std::collections::HashSet;
 use std::sync::Arc;
 
+use dashmap::mapref::one::Ref;
 use sled;
 use sled::Db;
 
-use crate::data::dao::{Dao, EncryptedDao, SimpleDao};
-use crate::models::connections::{ConnectionConfig, Versioned};
-use crate::models::errors::ConnectionConfigError;
+use crate::data::dao::{Dao, EncryptedDao, SimpleDao, TypedDao, UpdatableDao};
+use crate::models::query::connections::{ConnectionConfig, ConnectionConfigUpdateCommand, VersionedConnectionConfig};
+use crate::models::errors::{ConnectionConfigError, StorageError};
+use crate::models::versioning::versioned::Versioned;
 use crate::services::secrets::LocalSecretsService;
+use crate::services::updatable::{CacheBackedService, UpdatableService};
 
-const CONNECTION_CONFIGS: &str = "connection_configs";
+const CONNECTION_CONFIGS_KEYSPACE: &str = "connection_configs_v1";
 
 pub struct ConnectionConfigService {
 
-    dao: EncryptedDao
+    delegate: CacheBackedService<ConnectionConfigUpdateCommand, ConnectionConfig>
 
 }
 
 impl ConnectionConfigService {
 
     pub fn new(db: Arc<Db>,
-               secrets_service: Arc<LocalSecretsService>) -> Self {
-        ConnectionConfigService {
-            dao: EncryptedDao::new(
-                SimpleDao::new(CONNECTION_CONFIGS, db)
-                    .unwrap(),
-                secrets_service)
-        }
+               secrets_service: Arc<LocalSecretsService>) -> Result<Self, StorageError> {
+        Ok(
+            ConnectionConfigService {
+                delegate:
+                CacheBackedService::new(db, CONNECTION_CONFIGS_KEYSPACE, secrets_service)?
+            }
+        )
     }
 
-    pub fn get(&self,
-               connection_id: &str) -> Result<Option<ConnectionConfig>, ConnectionConfigError> {
-        match self.dao.get(connection_id)? {
-            Some(decrypted) => {
-                let versioned_config: Versioned<ConnectionConfig> =
-                    bincode::deserialize(decrypted.get_value())?;
+}
 
-                Ok(Some(versioned_config.unwrap()))
-            },
-            None => Ok(None)
-        }
+impl UpdatableService<ConnectionConfigUpdateCommand, ConnectionConfig> for ConnectionConfigService {
+    fn get(&self, id: &str) -> Result<Option<Ref<String, Versioned<ConnectionConfig>>>, StorageError> {
+        self.delegate.get(id)
     }
 
-    pub fn create(&self,
-                  config: ConnectionConfig) -> Result<(), ConnectionConfigError> {
-        let config_id = config.id.clone();
-
-        let serialized = bincode::serialize(&Versioned::V1(config))?;
-
-        self.dao.create(&config_id, serialized)?;
-
-        Ok(())
+    fn get_all_keys(&self) -> Result<HashSet<String>, StorageError> {
+        self.delegate.get_all_keys()
     }
 
-    #[cfg(test)]
-    pub fn clear(&self) -> Result<(), ()> {
-        self.storage_service.clear()
+    fn create(&self, payload: ConnectionConfig)
+              -> Result<Versioned<ConnectionConfig>, StorageError> {
+        self.delegate.create(payload)
     }
 
+    fn update(&self, id: &str, command: ConnectionConfigUpdateCommand)
+              -> Result<Versioned<ConnectionConfig>, StorageError> {
+        self.delegate.update(id, command)
+    }
+
+    fn delete(&self, id: &str) -> Result<(), StorageError> {
+        self.delegate.delete(id)
+    }
+
+    fn clear(&self) -> Result<(), ()> {
+        self.delegate.clear()
+    }
 }

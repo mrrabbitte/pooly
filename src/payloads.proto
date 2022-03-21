@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package payloads.proto;
 
-message ParamValueWrapper {
+message ValueWrapper {
 
   oneof value {
     string string = 1;
@@ -16,19 +16,13 @@ message ParamValueWrapper {
 
 message JsonObjectWrapper {
 
-  map<string, ParamValueWrapper> body = 1;
-
-}
-
-message BytesWrapper {
-
-  optional bytes value_maybe = 1;
+  map<string, ValueWrapper> body = 1;
 
 }
 
 message RowResponse {
 
-  repeated BytesWrapper values = 1;
+  repeated ValueWrapper values = 1;
 
 }
 
@@ -47,11 +41,13 @@ message ErrorResponse {
   enum ErrorType {
     CONNECTION_CONFIG_ERROR = 0;
     CREATE_POOL_ERROR = 1;
-    MISSING_CONNECTION = 2;
-    POOL_ERROR = 3;
-    POSTGRES_ERROR = 4;
-    WRONG_NUM_OF_PARAMS = 5;
-    UNKNOWN_PG_VALUE_TYPE = 6;
+    FORBIDDEN_CONNECTION_ID = 2;
+    MISSING_CONNECTION = 3;
+    POOL_ERROR = 4;
+    POSTGRES_ERROR = 5;
+    STORAGE_ERROR = 6;
+    WRONG_NUM_OF_PARAMS = 7;
+    UNKNOWN_PG_VALUE_TYPE = 8;
   }
 
   ErrorType error_type = 3;
@@ -70,12 +66,12 @@ message QueryRequest {
 
   string connection_id = 1;
   string query = 2;
-  repeated ParamValueWrapper params = 3;
+  repeated ValueWrapper params = 3;
 
 }
 
 message TxBulkQueryParams {
-  repeated ParamValueWrapper values = 1;
+  repeated ValueWrapper values = 1;
 }
 
 message TxBulkQueryRequestBody {

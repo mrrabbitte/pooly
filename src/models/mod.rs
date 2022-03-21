@@ -1,8 +1,9 @@
-
-pub mod connections;
+pub mod auth;
+pub mod app;
 pub mod errors;
-pub mod parameters;
 pub mod payloads;
 pub mod responses;
-pub mod rows;
-pub mod secrets;
+pub mod sec;
+pub mod utils;
+pub mod query;
+pub mod versioning;

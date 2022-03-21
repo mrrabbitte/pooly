@@ -1,8 +1,7 @@
-
-pub mod configs;
+pub mod connections;
+pub mod keys;
 pub mod query;
 pub mod secrets;
-pub mod shares;
 
 
 

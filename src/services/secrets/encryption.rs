@@ -4,9 +4,9 @@ use chacha20poly1305::aead::{Aead, NewAead, Payload};
 use chacha20poly1305::aead::generic_array::GenericArray;
 use chacha20poly1305::XChaCha20Poly1305;
 
-use crate::models::connections::ZeroizeWrapper;
 use crate::models::errors::SecretsError;
-use crate::models::secrets::{EncryptedPayload, EncryptionKey, KEY_LENGTH};
+use crate::models::sec::secrets::{EncryptedPayload, EncryptionKey, KEY_LENGTH};
+use crate::models::sec::zeroize::ZeroizeWrapper;
 use crate::services::secrets::random::VecGenerator;
 
 const NONCE_SIZE: usize = 24;
@@ -92,8 +92,8 @@ mod tests {
     use chacha20poly1305::XChaCha20Poly1305;
     use ring::rand::SystemRandom;
 
-    use crate::models::connections::ZeroizeWrapper;
-    use crate::models::secrets::{EncryptionKey, KEY_LENGTH};
+    use crate::models::sec::secrets::{EncryptionKey, KEY_LENGTH};
+    use crate::models::sec::zeroize::ZeroizeWrapper;
     use crate::services::secrets::encryption::{EncryptionService, KeyWithAad};
     use crate::services::secrets::random::VecGenerator;
 

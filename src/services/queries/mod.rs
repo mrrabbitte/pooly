@@ -1,51 +1,64 @@
+use std::sync::Arc;
+
 use deadpool_postgres::Transaction;
 use postgres_types::ToSql;
 
 use crate::models::errors::QueryError;
-use crate::models::parameters::convert_params;
+use crate::models::query::parameters::convert_params;
 use crate::models::payloads::{ErrorResponse, query_response, QueryRequest, QueryResponse, RowResponseGroup, tx_bulk_query_response, TxBulkQueryRequest, TxBulkQueryRequestBody, TxBulkQueryResponse, TxBulkQuerySuccessResponse, TxQuerySuccessResponse};
 use crate::models::payloads::QuerySuccessResponse;
 use crate::models::responses::ResponseWithCode;
-use crate::models::rows::convert_rows;
+use crate::models::query::rows::convert_rows;
+use crate::services::auth::access::AccessControlService;
 use crate::services::connections::ConnectionService;
 
 pub struct QueryService {
 
+    access_control_service: Arc<AccessControlService>,
     connection_service: ConnectionService
 
 }
 
 impl QueryService {
 
-    pub fn new(connection_service: ConnectionService) -> Self {
+    pub fn new(access_control_service: Arc<AccessControlService>,
+               connection_service: ConnectionService) -> Self {
         QueryService {
+            access_control_service,
             connection_service
         }
     }
 
     pub async fn bulk_tx(&self,
+                         client_id: &str,
                          request: &TxBulkQueryRequest,
                          correlation_id: &str) -> ResponseWithCode<TxBulkQueryResponse> {
-        match self.do_bulk_tx(request).await {
+        match self.do_bulk_tx(client_id, request).await {
             Ok(ok) => ResponseWithCode::ok(ok.into()),
             Err(err) => QueryService::build_response(err, correlation_id)
         }
     }
 
     pub async fn query(&self,
+                       client_id: &str,
                        request: &QueryRequest,
                        correlation_id: &str) -> ResponseWithCode<QueryResponse> {
-        match self.do_query(request).await {
+        match self.do_query(client_id, request).await {
             Ok(ok) => ResponseWithCode::ok(ok.into()),
             Err(err) => QueryService::build_response(err, correlation_id)
         }
     }
 
     async fn do_bulk_tx(&self,
+                        client_id: &str,
                         request: &TxBulkQueryRequest) -> Result<Vec<TxQuerySuccessResponse>, QueryError> {
-        let db_id: &str = &request.connection_id;
+        let connection_id: &str = &request.connection_id;
 
-        match self.connection_service.get(db_id).await {
+        if !self.access_control_service.is_allowed(client_id, connection_id)? {
+            return Err(QueryError::ForbiddenConnectionId);
+        }
+
+        match self.connection_service.get(connection_id).await {
             Some(connection_result) => {
                 let mut connection = connection_result?;
 
@@ -65,7 +78,7 @@ impl QueryService {
 
                 Ok(results)
             },
-            None => Err(QueryError::UnknownDatabaseConnection(db_id.to_owned())),
+            None => Err(QueryError::UnknownDatabaseConnection(connection_id.to_owned())),
         }
     }
 
@@ -86,7 +99,7 @@ impl QueryService {
             let query_results =
                 tx.query(&stmt, param_values.as_slice()).await?;
 
-            results.push(convert_rows(query_results));
+            results.push(convert_rows(query_results)?);
         }
 
         let column_names =
@@ -105,8 +118,14 @@ impl QueryService {
         })
     }
 
-    async fn do_query(&self, request: &QueryRequest) -> Result<QuerySuccessResponse, QueryError> {
+    async fn do_query(&self,
+                      client_id: &str,
+                      request: &QueryRequest) -> Result<QuerySuccessResponse, QueryError> {
         let connection_id: &str = &request.connection_id;
+
+        if !self.access_control_service.is_allowed(client_id, connection_id)? {
+            return Err(QueryError::ForbiddenConnectionId);
+        }
 
         match self.connection_service.get(connection_id).await {
             Some(connection_result) => {
@@ -120,7 +139,7 @@ impl QueryService {
                 let results =
                     connection.query(&stmt, params.as_slice()).await?;
 
-                let cwr = convert_rows(results);
+                let cwr = convert_rows(results)?;
 
                 Ok(
                     QuerySuccessResponse {

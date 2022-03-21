@@ -1,11 +1,17 @@
+use std::fmt;
+use std::fmt::{Debug, Display, Formatter};
+use std::string::FromUtf8Error;
 use std::sync::PoisonError;
 
+use actix_web::{HttpResponse, ResponseError};
+use actix_web::http::StatusCode;
 use bincode::ErrorKind;
 use deadpool::managed::PoolError;
 use deadpool_postgres::CreatePoolError;
 use ring::error::Unspecified;
 use serde::{Deserialize, Serialize};
 use sled::CompareAndSwapError;
+use sled::transaction::TransactionError;
 use tokio_postgres::Error;
 
 use crate::models::payloads::error_response::ErrorType;
@@ -16,11 +22,13 @@ pub enum QueryError {
 
     ConnectionConfigError(String, u16),
     CreatePoolError(String),
+    ForbiddenConnectionId,
     UnknownDatabaseConnection(String),
     PoolError(String),
     PostgresError(String),
-    WrongNumParams(usize, usize),
-    UnknownPostgresValueType(String)
+    StorageError,
+    UnknownPostgresValueType(String),
+    WrongNumParams(usize, usize)
 
 }
 
@@ -30,6 +38,7 @@ pub enum ConnectionError {
     CreatePoolError(CreatePoolError),
     ConnectionConfigError(ConnectionConfigError),
     PoolError(PoolError<Error>),
+    StorageError(StorageError)
 
 }
 
@@ -60,11 +69,64 @@ pub enum SecretsError {
 pub enum StorageError {
 
     AlreadyExistsError,
+    CouldNotFindValueToUpdate,
+    OptimisticLockingError {
+        old_created_at: u128,
+        new_created_at: u128,
+        old_version: u32,
+        new_version: u32
+    },
     RetrievalError(String),
     SerdeError(String),
     SecretsError(SecretsError),
-    SledError(String)
+    SledError(String),
+    TransactionError(String),
+    Utf8Error
 
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+pub enum WildcardPatternError {
+
+    NoStars,
+    TooManyStars,
+    UnsupportedPattern
+
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum AuthError {
+
+    InvalidClaims,
+    InvalidHeader,
+    InvalidToken,
+    HmacError,
+    NoneAlgorithmProvided,
+    MissingAuthService,
+    MissingAuthHeader,
+    PemError,
+    StorageError(StorageError),
+    UnsupportedAlgorithm,
+    UnknownKey,
+    Forbidden,
+    VerificationError(String),
+
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum InitializationError {
+
+    AuthClearError,
+    TooManyShares,
+    SecretsError(SecretsError),
+    StorageError(StorageError)
+
+}
+
+impl std::fmt::Display for WildcardPatternError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self)
+    }
 }
 
 impl ConnectionConfigError {
@@ -98,11 +160,13 @@ impl QueryError {
         match self {
             QueryError::ConnectionConfigError(_, code) => *code,
             QueryError::CreatePoolError(_) => 500,
+            QueryError::ForbiddenConnectionId => 403,
             QueryError::UnknownDatabaseConnection(_) => 400,
             QueryError::PoolError(_) => 500,
             QueryError::PostgresError(_) => 500,
             QueryError::WrongNumParams(_, _) => 400,
-            QueryError::UnknownPostgresValueType(_) => 500
+            QueryError::UnknownPostgresValueType(_) => 500,
+            QueryError::StorageError => 500,
         }
     }
 
@@ -114,14 +178,16 @@ impl QueryError {
             QueryError::WrongNumParams(_, _) => ErrorType::WrongNumOfParams,
             QueryError::UnknownPostgresValueType(_) => ErrorType::UnknownPgValueType,
             QueryError::CreatePoolError(_) => ErrorType::CreatePoolError,
-            QueryError::ConnectionConfigError(_, _) => ErrorType::ConnectionConfigError
+            QueryError::ConnectionConfigError(_, _) => ErrorType::ConnectionConfigError,
+            QueryError::ForbiddenConnectionId => ErrorType::ForbiddenConnectionId,
+            QueryError::StorageError => ErrorType::StorageError
         }
     }
 
     fn get_message(self) -> String {
         match self {
             QueryError::UnknownDatabaseConnection(missing_name) =>
-                format!("Not found database: {}", missing_name),
+                format!("Connection not found: {}", missing_name),
             QueryError::PoolError(message) => message,
             QueryError::PostgresError(message) => message,
             QueryError::WrongNumParams(actual, expected) =>
@@ -129,10 +195,37 @@ impl QueryError {
             QueryError::UnknownPostgresValueType(pg_type) =>
                 format!("Unknown pg type: {}", pg_type),
             QueryError::CreatePoolError(message) => message,
-            QueryError::ConnectionConfigError(message, _) => message
+            QueryError::ConnectionConfigError(message, _) => message,
+            QueryError::ForbiddenConnectionId =>
+                "The connection of the requested id is forbidden.".into(),
+            QueryError::StorageError =>
+                "Underlying storage error.".into(),
         }
     }
 
+}
+
+impl ResponseError for AuthError {
+    fn status_code(&self) -> StatusCode {
+        match self {
+            AuthError::PemError
+            | AuthError::MissingAuthService
+            | AuthError::StorageError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            AuthError::Forbidden => StatusCode::FORBIDDEN,
+            _ => StatusCode::UNAUTHORIZED
+        }
+    }
+
+    fn error_response(&self) -> HttpResponse {
+        HttpResponse::build(self.status_code())
+            .json(self)
+    }
+}
+
+impl fmt::Display for AuthError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(&StatusCode::UNAUTHORIZED, f)
+    }
 }
 
 impl From<PoolError<Error>> for QueryError {
@@ -155,7 +248,7 @@ impl From<ConnectionConfigError> for QueryError {
             ConnectionConfigError::AlreadyExistsError => 409,
             _ => 500
         };
-       QueryError::ConnectionConfigError(message, code)
+        QueryError::ConnectionConfigError(message, code)
     }
 }
 
@@ -165,7 +258,8 @@ impl From<ConnectionError> for QueryError {
             ConnectionError::CreatePoolError(err) =>
                 QueryError::CreatePoolError(err.to_string()),
             ConnectionError::PoolError(err) => err.into(),
-            ConnectionError::ConnectionConfigError(err) => err.into()
+            ConnectionError::ConnectionConfigError(err) => err.into(),
+            ConnectionError::StorageError(err) => err.into()
         }
     }
 }
@@ -212,6 +306,12 @@ impl From<CompareAndSwapError> for StorageError {
     }
 }
 
+impl<E: Debug> From<TransactionError<E>> for StorageError {
+    fn from(err: TransactionError<E>) -> Self {
+        StorageError::TransactionError(format!("{:?}", err))
+    }
+}
+
 impl From<CompareAndSwapError> for ConnectionConfigError {
     fn from(_: CompareAndSwapError) -> Self {
         ConnectionConfigError::AlreadyExistsError
@@ -236,8 +336,44 @@ impl From<SecretsError> for StorageError {
     }
 }
 
+impl From<FromUtf8Error> for StorageError {
+    fn from(_: FromUtf8Error) -> Self {
+        StorageError::Utf8Error
+    }
+}
+
 impl From<StorageError> for ConnectionConfigError {
     fn from(err: StorageError) -> Self {
         ConnectionConfigError::ConfigStorageError(err)
+    }
+}
+
+impl From<StorageError> for QueryError {
+    fn from(_: StorageError) -> Self {
+        QueryError::StorageError
+    }
+}
+
+impl From<StorageError> for AuthError {
+    fn from(err: StorageError) -> Self {
+        AuthError::StorageError(err)
+    }
+}
+
+impl From<SecretsError> for InitializationError {
+    fn from(err: SecretsError) -> Self {
+        InitializationError::SecretsError(err)
+    }
+}
+
+impl From<StorageError> for InitializationError {
+    fn from(err: StorageError) -> Self {
+        InitializationError::StorageError(err)
+    }
+}
+
+impl From<jwt::Error> for AuthError {
+    fn from(err: jwt::Error) -> Self {
+        AuthError::VerificationError(format!("{:?}", err))
     }
 }

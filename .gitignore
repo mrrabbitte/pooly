@@ -18,6 +18,8 @@ __pycache__/
 pooly_configs
 /stored/
 stored/
+/storage/
+storage/
 .profraw
 *.profraw
 coveralls.json

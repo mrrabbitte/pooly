@@ -6,15 +6,14 @@ use chacha20poly1305::aead::generic_array::GenericArray;
 use chacha20poly1305::XChaCha20Poly1305;
 use sharks::{Share, Sharks};
 
-use crate::models::connections::ZeroizeWrapper;
-use crate::models::errors::SecretsError;
-use crate::models::secrets::{EncryptedPayload, EncryptionKey, KEY_LENGTH, MasterKey, MasterKeyShare, MasterKeySharePayload};
-use crate::services::secrets::encryption::EncryptionService;
 use crate::data::files::{FilesService, SimpleFilesService};
+use crate::models::errors::SecretsError;
+use crate::models::sec::secrets::{EncryptedPayload, EncryptionKey, KEY_LENGTH, MasterKey, MasterKeyShare, MasterKeySharePayload, NUM_SHARES};
+use crate::models::sec::zeroize::ZeroizeWrapper;
+use crate::services::secrets::encryption::EncryptionService;
 use crate::services::secrets::random::VecGenerator;
 use crate::services::secrets::shares::MasterKeySharesService;
 
-const MINIMUM_SHARES_THRESHOLD: u8 = 8;
 const NONCE_SIZE: usize = 24;
 
 pub mod random;
@@ -75,10 +74,8 @@ impl<T: FilesService> SecretsService<T> {
         self.encryption_service.decrypt(target)
     }
 
-    pub fn initialize(&self) -> Result<Vec<MasterKeySharePayload>, SecretsError> {
-        if !self.is_sealed()
-            || self.files_service.exists_key()?
-            || self.files_service.exists_aad()? {
+    pub fn initialize(&self) -> Result<Vec<MasterKeyShare>, SecretsError> {
+        if self.is_initialized()? {
             return Err(SecretsError::AlreadyInitialized);
         }
 
@@ -107,14 +104,14 @@ impl<T: FilesService> SecretsService<T> {
             EncryptedPayload::new(nonce, encrypted_enc_key))?;
         self.files_service.store_aad(aad)?;
 
-        let sharks = Sharks(MINIMUM_SHARES_THRESHOLD);
+        let sharks = Sharks(NUM_SHARES);
 
         Ok(
             sharks
                 .dealer(master_key.get_value())
-                .take(MINIMUM_SHARES_THRESHOLD as usize)
+                .take(NUM_SHARES as usize)
                 .map(|share|
-                    MasterKeyShare::new((&share).into()).into())
+                    MasterKeyShare::new((&share).into()))
                 .collect()
         )
     }
@@ -126,7 +123,7 @@ impl<T: FilesService> SecretsService<T> {
 
         let master_key_shares = self.shares_service.get();
 
-        let sharks = Sharks(MINIMUM_SHARES_THRESHOLD);
+        let sharks = Sharks(NUM_SHARES);
 
         let mut shares = vec![];
 
@@ -162,6 +159,14 @@ impl<T: FilesService> SecretsService<T> {
         Ok(())
     }
 
+    pub fn is_initialized(&self) -> Result<bool, SecretsError> {
+        Ok(
+            !self.is_sealed()
+                || self.files_service.exists_key()?
+                || self.files_service.exists_aad()?
+        )
+    }
+
     pub fn is_sealed(&self) -> bool {
         self.is_sealed.load(Ordering::Relaxed)
     }
@@ -178,9 +183,9 @@ mod tests {
 
     use ring::rand::SystemRandom;
 
-    use crate::models::errors::SecretsError;
-    use crate::models::secrets::EncryptedPayload;
     use crate::data::files::MockFilesService;
+    use crate::models::errors::SecretsError;
+    use crate::models::sec::secrets::EncryptedPayload;
     use crate::services::secrets::random::VecGenerator;
     use crate::services::secrets::SecretsService;
     use crate::services::secrets::shares::MasterKeySharesService;
@@ -250,7 +255,7 @@ mod tests {
         shares
             .into_iter()
             .for_each(|share|
-                shares_service.add(share.try_into().unwrap()));
+                shares_service.add(share).unwrap());
 
         assert!(service.unseal().is_ok());
 
@@ -283,7 +288,7 @@ mod tests {
 
     fn build_service(mock: MockFilesService,
                      key_shares_service: Arc<MasterKeySharesService>)
-        -> SecretsService<MockFilesService> {
+                     -> SecretsService<MockFilesService> {
         SecretsService::new(mock,
                             key_shares_service,
                             Arc::new(
