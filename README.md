@@ -23,9 +23,7 @@ WIP. The roadmap includes:
 - [ ] Rust client;
 - [ ] rich logging support;
 - [ ] metrics support -> Prometheus;
-
 - [ ] even wider range of postgres types + optionally return raw bytes;
-
 - [ ] add option to use Vault instead of local secrets keeping;
-
+- [ ] queries deduping.
 
