@@ -16,9 +16,9 @@ WIP. The roadmap includes:
 - [ ] add validation to config / admin value objects;
 - [ ] Java client;
 - [ ] docker image + unsealing script;
+- [ ] Property-Based Testing + increased test coverage for all of the services;
 - [ ] throttle requests based on the client_id;
 - [ ] gRPC Streaming results
-- [ ] Property-Based Testing + increased test coverage for all of the services;
 - [ ] Python client;
 - [ ] Rust client;
 - [ ] rich logging support;
