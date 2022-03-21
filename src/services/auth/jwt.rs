@@ -189,7 +189,7 @@ impl UpdatableService<JwtKeyUpdateCommand, JwtKey> for JwtAuthService {
     }
 
     fn get_all_keys(&self) -> Result<HashSet<String>, StorageError> {
-        self.get_all_keys()
+        self.delegate.get_all_keys()
     }
 
     fn create(&self, payload: JwtKey) -> Result<Versioned<JwtKey>, StorageError> {

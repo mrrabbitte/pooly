@@ -10,6 +10,7 @@ use config::Config;
 
 use pooly::{AppContext, resources, services};
 use pooly::middleware::auth::api_key::InitializationApiKeyAuthGuard;
+use pooly::middleware::auth::jwt::AuthGuard;
 use pooly::models::app::AppConfig;
 use pooly::models::auth::api_key::InitializeApiKey;
 
@@ -40,6 +41,7 @@ async fn main() -> std::io::Result<()> {
                 .app_data(Data::new(app_context.pattern_ids_service.clone()))
                 .service(
                     web::scope("/c")
+                        .wrap(AuthGuard::client())
                         .service(resources::query::bulk)
                         .service(resources::query::query)
                 )
@@ -53,6 +55,7 @@ async fn main() -> std::io::Result<()> {
                 )
                 .service(
                     web::scope("/a")
+                        .wrap(AuthGuard::admin())
                         .service(resources::keys::create)
                         .service(resources::keys::get)
                         .service(resources::keys::update)

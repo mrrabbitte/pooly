@@ -7,7 +7,7 @@ use actix_web::post;
 use actix_web::Result;
 use actix_web::web::Data;
 use uuid::Uuid;
-use crate::models::auth::roles::RoleToken;
+use crate::models::auth::roles::{ClientServiceToken};
 
 use crate::models::payloads::{QueryRequest, TxBulkQueryRequest};
 use crate::models::responses::ResponseWithCode;
@@ -16,10 +16,10 @@ use crate::services::queries::QueryService;
 #[post("/v1/bulk")]
 pub async fn bulk(service: Data<Arc<QueryService>>,
                   request: ProtoBuf<TxBulkQueryRequest>,
-                  role: RoleToken) -> Result<HttpResponse> {
+                  token: ClientServiceToken) -> Result<HttpResponse> {
     let correlation_id = Uuid::new_v4().to_string();
 
-    let response = service.bulk_tx(role.get_client_id(), &request.0, &correlation_id).await;
+    let response = service.bulk_tx(token.get_client_id(), &request.0, &correlation_id).await;
 
     build_response(response)
 }
@@ -27,10 +27,10 @@ pub async fn bulk(service: Data<Arc<QueryService>>,
 #[post("/v1/query")]
 pub async fn query(service: Data<Arc<QueryService>>,
                    request: ProtoBuf<QueryRequest>,
-                   role: RoleToken) -> Result<HttpResponse> {
+                   token: ClientServiceToken) -> Result<HttpResponse> {
     let correlation_id = Uuid::new_v4().to_string();
 
-    let response = service.query(role.get_client_id(), &request.0, &correlation_id).await;
+    let response = service.query(token.get_client_id(), &request.0, &correlation_id).await;
 
     build_response(response)
 }

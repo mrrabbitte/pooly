@@ -33,16 +33,9 @@ impl RoleToken {
         }
     }
 
-    pub fn get_client_id(&self) -> &str {
-        match self {
-            RoleToken::Admin(_, _) => panic!("Wrong Role, should panic."),
-            RoleToken::ClientService(client_id, _) => &client_id.client_id
-        }
-    }
-
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Role {
 
     Admin,
@@ -50,14 +43,22 @@ pub enum Role {
 
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ClientServiceToken {
 
     client_id: String
 
 }
 
-#[derive(Debug)]
+impl ClientServiceToken {
+
+    pub fn get_client_id(&self) -> &str {
+        &self.client_id
+    }
+
+}
+
+#[derive(Debug, Clone)]
 pub struct AdminToken {
 
     admin_id: String
