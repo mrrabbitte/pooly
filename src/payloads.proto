@@ -5,10 +5,15 @@ package payloads.proto;
 message ValueWrapper {
 
   oneof value {
-    string string = 1;
-    int64 int8 = 2;
-    int32 int4 = 3;
-    bytes bytes = 4;
+    bool bool = 1;
+    bytes bytes = 2;
+    string char = 3;
+    int32 int2 = 3;
+    int32 int4 = 4;
+    int64 int8 = 5;
+    string name = 5;
+    string string = 6;
+    string varchar = 7;
     //JsonObjectWrapper json_object = 4;
   }
 

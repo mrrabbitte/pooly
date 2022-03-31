@@ -32,7 +32,20 @@ fn convert_row(row: &Row) -> Result<Vec<ValueWrapper>, QueryError> {
 
     for i in 0..columns.len() {
         let col_type = columns[i].type_();
-
+///            Inner::Bool => 16,
+//             Inner::Bytea => 17,
+//             Inner::Char => 18,
+//             Inner::Name => 19,
+//             Inner::Int8 => 20,
+//             Inner::Int2 => 21,
+//             Inner::Int2Vector => 22,
+//             Inner::Int4 => 23,
+//             Inner::Regproc => 24,
+//             Inner::Text => 25,
+//             Inner::Oid => 26,
+//             Inner::Tid => 27,
+//             Inner::Xid => 28,
+//             Inner::Cid => 29,
         let value = match col_type.oid() {
             25 => get_or_empty(&row, proto_string, i)?,
             1043 => get_or_empty(&row, proto_string, i)?,
