@@ -32,25 +32,17 @@ fn convert_row(row: &Row) -> Result<Vec<ValueWrapper>, QueryError> {
 
     for i in 0..columns.len() {
         let col_type = columns[i].type_();
-///            Inner::Bool => 16,
-//             Inner::Bytea => 17,
-//             Inner::Char => 18,
-//             Inner::Name => 19,
-//             Inner::Int8 => 20,
-//             Inner::Int2 => 21,
-//             Inner::Int2Vector => 22,
-//             Inner::Int4 => 23,
-//             Inner::Regproc => 24,
-//             Inner::Text => 25,
-//             Inner::Oid => 26,
-//             Inner::Tid => 27,
-//             Inner::Xid => 28,
-//             Inner::Cid => 29,
+
         let value = match col_type.oid() {
+            16 => get_or_empty(&row, Value::Bool, i)?,
+            17 => get_or_empty(&row, Value::Bytes, i)?,
             25 => get_or_empty(&row, proto_string, i)?,
             1043 => get_or_empty(&row, proto_string, i)?,
+            18 => get_or_empty(&row, Value::Char, i)?,
+            19 => get_or_empty(&row, Value::String, i)?,
             20 => get_or_empty(&row, Value::Int8, i)?,
             23 => get_or_empty(&row, Value::Int4, i)?,
+            21 => get_or_empty(&row, Value::Int4, i)?,
             unknown => return Err(
                 QueryError::UnknownPostgresValueType(
                     format!("Got unsupported row value type: {}, oid: {}.",

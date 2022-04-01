@@ -24,12 +24,15 @@ pub fn convert_params<'a>(expected_param_types: &[Type],
 
         match &value_wrapper.value {
             None => params.push(get_null_for_type(expected_type)?),
-            Some(Value::String(val)) => params.push(val),
-            Some(Value::Int8(val)) => params.push(val),
+            Some(Value::Bool(val)) => params.push(val),
+            Some(Value::Bytes(val)) => params.push(val),
+            Some(Value::Char(val)) => params.push(val),
+            Some(Value::Double(val)) => params.push(val),
+            Some(Value::Float(val)) => params.push(val),
             Some(Value::Int4(val)) => params.push(val),
-            Some(Value::Bytes(val)) => params.push(val)
+            Some(Value::Int8(val)) => params.push(val),
+            Some(Value::String(val)) => params.push(val)
         }
-
     }
 
     Ok(params)

@@ -7,21 +7,35 @@ message ValueWrapper {
   oneof value {
     bool bool = 1;
     bytes bytes = 2;
-    string char = 3;
-    int32 int2 = 3;
-    int32 int4 = 4;
-    int64 int8 = 5;
-    string name = 5;
-    string string = 6;
-    string varchar = 7;
-    //JsonObjectWrapper json_object = 4;
+    double double = 3;
+    string char = 4;
+    float float = 5;
+    int32 int4 = 6;
+    int64 int8 = 7;
+    string string = 8;
+    //JsonObjectWrapper json_object = 9;
   }
 
 }
 
 message JsonObjectWrapper {
 
-  map<string, ValueWrapper> body = 1;
+  oneof json_value {
+    MapWrapper map = 1;
+    ListWrapper list = 2;
+  }
+
+}
+
+message MapWrapper {
+
+  map<string, ValueWrapper> value = 1;
+
+}
+
+message ListWrapper {
+
+  repeated  ValueWrapper values = 1;
 
 }
 
