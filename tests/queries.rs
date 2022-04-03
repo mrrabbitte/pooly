@@ -52,6 +52,19 @@ mod tests {
 
         assert!(matches!(payload, Payload::Success(_)));
 
+        let response = app_context.query_service.query(
+            CLIENT_ID,
+            &QueryRequest{
+                connection_id: CONNECTION_ID.to_string(),
+                query: "SELECT '{\"other\": \"val\"}'::jsonb".to_string(),
+                params: vec![]
+            },
+            "corr-id-1").await;
+
+        let payload = response.0.payload.expect("Expected payload.");
+
+        assert!(matches!(payload, Payload::Success(_)));
+
         app_context.secrets_service.clear().expect("Could not clear secrets.");
         app_context.connection_config_service.clear().expect("Could not clear configs.");
     }

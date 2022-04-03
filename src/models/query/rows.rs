@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::io::Read;
 
 use postgres_types::{FromSql, Type};
 use tokio_postgres::Row;
@@ -37,6 +38,7 @@ fn convert_row(row: &Row) -> Result<Vec<ValueWrapper>, QueryError> {
             16 => get_or_empty(&row, |val| Ok(Value::Bool(val)), i)?,
             17 => get_or_empty(&row, |val| Ok(Value::Bytes(val)), i)?,
             114 => get_or_empty(&row, proto_json, i)?,
+            3802 => get_or_empty(&row, proto_json, i)?,
             25 => get_or_empty(&row, proto_string, i)?,
             1043 => get_or_empty(&row, proto_string, i)?,
             18 => get_or_empty(&row, proto_char, i)?,
@@ -91,9 +93,14 @@ struct RawJsonBytes {
 
 
 impl<'a> FromSql<'a> for RawJsonBytes {
-    fn from_sql(ty: &Type, raw: &'a [u8]) -> Result<Self, Box<dyn Error + Sync + Send>> {
+    fn from_sql(ty: &Type, mut raw: &'a [u8]) -> Result<Self, Box<dyn Error + Sync + Send>> {
         if !Self::accepts(ty) {
             return Err("The type cannot be treated as json raw bytes.".into());
+        }
+
+        if *ty == Type::JSONB {
+            let mut b = [0; 1];
+            raw.read_exact(&mut b)?;
         }
 
         Ok(
@@ -104,6 +111,6 @@ impl<'a> FromSql<'a> for RawJsonBytes {
     }
 
     fn accepts(ty: &Type) -> bool {
-        ty.oid() == 114
+        *ty == Type::JSONB || *ty == Type::JSON
     }
 }
