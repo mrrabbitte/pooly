@@ -8,34 +8,13 @@ message ValueWrapper {
     bool bool = 1;
     bytes bytes = 2;
     double double = 3;
-    string char = 4;
+    bytes char = 4;
     float float = 5;
     int32 int4 = 6;
     int64 int8 = 7;
     string string = 8;
-    //JsonObjectWrapper json_object = 9;
+    string json = 9;
   }
-
-}
-
-message JsonObjectWrapper {
-
-  oneof json_value {
-    MapWrapper map = 1;
-    ListWrapper list = 2;
-  }
-
-}
-
-message MapWrapper {
-
-  map<string, ValueWrapper> value = 1;
-
-}
-
-message ListWrapper {
-
-  repeated  ValueWrapper values = 1;
 
 }
 

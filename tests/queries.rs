@@ -9,9 +9,9 @@ mod tests {
 
     use pooly::AppContext;
     use pooly::models::auth::access::LiteralConnectionIdAccessEntry;
-    use pooly::models::query::connections::ConnectionConfig;
     use pooly::models::payloads::query_response::Payload;
     use pooly::models::payloads::QueryRequest;
+    use pooly::models::query::connections::ConnectionConfig;
     use pooly::services::updatable::UpdatableService;
 
     const CLIENT_ID: &str = "client-id-1";
@@ -43,14 +43,14 @@ mod tests {
             CLIENT_ID,
             &QueryRequest{
                 connection_id: CONNECTION_ID.to_string(),
-                query: "SELECT 1 as int8;".to_string(),
+                query: "SELECT '{\"some\": \"value\"}'::json".to_string(),
                 params: vec![]
             },
             "corr-id-1").await;
 
-        println!("{:?}", &response.0);
+        let payload = response.0.payload.expect("Expected payload.");
 
-        assert!(matches!(response.0.payload, Some(Payload::Success(_))));
+        assert!(matches!(payload, Payload::Success(_)));
 
         app_context.secrets_service.clear().expect("Could not clear secrets.");
         app_context.connection_config_service.clear().expect("Could not clear configs.");
