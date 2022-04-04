@@ -24,12 +24,19 @@ pub fn convert_params<'a>(expected_param_types: &[Type],
 
         match &value_wrapper.value {
             None => params.push(get_null_for_type(expected_type)?),
-            Some(Value::String(val)) => params.push(val),
-            Some(Value::Int8(val)) => params.push(val),
+            Some(Value::Bool(val)) => params.push(val),
+            Some(Value::Bytes(val)) => params.push(val),
+            Some(Value::Char(val)) => params.push(val),
+            Some(Value::Double(val)) => params.push(val),
+            Some(Value::Float(val)) => params.push(val),
             Some(Value::Int4(val)) => params.push(val),
-            Some(Value::Bytes(val)) => params.push(val)
+            Some(Value::Int8(val)) => params.push(val),
+            Some(Value::String(val)) => params.push(val),
+            Some(Value::Json(val)) => {
+                validate_json(val)?;
+                params.push(val)
+            }
         }
-
     }
 
     Ok(params)
@@ -48,14 +55,18 @@ fn get_null_for_type(c_type: &Type) -> Result<&'static (dyn ToSql + Sync), Query
     }
 }
 
+fn validate_json(val: &str) -> Result<(), QueryError> {
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use postgres_types::Type;
 
     use crate::models::errors::QueryError;
-    use crate::models::query::parameters::convert_params;
     use crate::models::payloads::value_wrapper::Value;
     use crate::models::payloads::ValueWrapper;
+    use crate::models::query::parameters::convert_params;
 
     #[test]
     fn test_converts_params_correctly() {

@@ -5,18 +5,16 @@ package payloads.proto;
 message ValueWrapper {
 
   oneof value {
-    string string = 1;
-    int64 int8 = 2;
-    int32 int4 = 3;
-    bytes bytes = 4;
-    //JsonObjectWrapper json_object = 4;
+    bool bool = 1;
+    bytes bytes = 2;
+    double double = 3;
+    bytes char = 4;
+    float float = 5;
+    int32 int4 = 6;
+    int64 int8 = 7;
+    string string = 8;
+    string json = 9;
   }
-
-}
-
-message JsonObjectWrapper {
-
-  map<string, ValueWrapper> body = 1;
 
 }
 

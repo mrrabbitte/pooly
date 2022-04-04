@@ -28,7 +28,8 @@ pub enum QueryError {
     PostgresError(String),
     StorageError,
     UnknownPostgresValueType(String),
-    WrongNumParams(usize, usize)
+    WrongNumParams(usize, usize),
+    ReadUtfError(String)
 
 }
 
@@ -167,6 +168,7 @@ impl QueryError {
             QueryError::WrongNumParams(_, _) => 400,
             QueryError::UnknownPostgresValueType(_) => 500,
             QueryError::StorageError => 500,
+            QueryError::ReadUtfError(_) => 500
         }
     }
 
@@ -180,7 +182,8 @@ impl QueryError {
             QueryError::CreatePoolError(_) => ErrorType::CreatePoolError,
             QueryError::ConnectionConfigError(_, _) => ErrorType::ConnectionConfigError,
             QueryError::ForbiddenConnectionId => ErrorType::ForbiddenConnectionId,
-            QueryError::StorageError => ErrorType::StorageError
+            QueryError::StorageError => ErrorType::StorageError,
+            QueryError::ReadUtfError(_) => ErrorType::PostgresError
         }
     }
 
@@ -200,6 +203,7 @@ impl QueryError {
                 "The connection of the requested id is forbidden.".into(),
             QueryError::StorageError =>
                 "Underlying storage error.".into(),
+            QueryError::ReadUtfError(message) => message
         }
     }
 
@@ -357,6 +361,12 @@ impl From<StorageError> for QueryError {
 impl From<StorageError> for AuthError {
     fn from(err: StorageError) -> Self {
         AuthError::StorageError(err)
+    }
+}
+
+impl From<FromUtf8Error> for QueryError {
+    fn from(err: FromUtf8Error) -> Self {
+        QueryError::ReadUtfError(format!("{:?}", err))
     }
 }
 

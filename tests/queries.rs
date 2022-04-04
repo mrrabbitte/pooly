@@ -9,9 +9,10 @@ mod tests {
 
     use pooly::AppContext;
     use pooly::models::auth::access::LiteralConnectionIdAccessEntry;
-    use pooly::models::query::connections::ConnectionConfig;
     use pooly::models::payloads::query_response::Payload;
     use pooly::models::payloads::QueryRequest;
+    use pooly::models::payloads::value_wrapper::Value;
+    use pooly::models::query::connections::ConnectionConfig;
     use pooly::services::updatable::UpdatableService;
 
     const CLIENT_ID: &str = "client-id-1";
@@ -39,18 +40,25 @@ mod tests {
         app_context.connection_config_service.create(build_config(pg_host))
             .expect("Could not create config.");
 
-        let response = app_context.query_service.query(
-            CLIENT_ID,
-            &QueryRequest{
-                connection_id: CONNECTION_ID.to_string(),
-                query: "SELECT 1 as int8;".to_string(),
-                params: vec![]
-            },
-            "corr-id-1").await;
+        let queries = build_value_queries();
 
-        println!("{:?}", &response.0);
+        for (query, expected_value) in queries {
+            let response = app_context.query_service.query(
+                CLIENT_ID,
+                &QueryRequest{
+                    connection_id: CONNECTION_ID.to_string(),
+                    query: query.clone(),
+                    params: vec![]
+                },
+                "corr-id-1").await;
 
-        assert!(matches!(response.0.payload, Some(Payload::Success(_))));
+            let payload = response.0.payload.expect("Expected payload.");
+
+            assert!(matches!(&payload, Payload::Success(_)),
+                    "Query: {:?}, payload: {:?}", &query, &payload);
+
+            check_expected_value(payload, expected_value);
+        }
 
         app_context.secrets_service.clear().expect("Could not clear secrets.");
         app_context.connection_config_service.clear().expect("Could not clear configs.");
@@ -111,5 +119,42 @@ mod tests {
         env_vars.insert("POSTGRES_HOST_AUTH_METHOD".into(), "trust".into());
 
         env_vars
+    }
+
+    fn build_value_queries() -> HashMap<String, Value> {
+        let mut ret = HashMap::new();
+
+        ret.insert("SELECT '{\"some\": \"value\"}'::jsonb".to_string(),
+                   Value::Json("{\"some\": \"value\"}".into()));
+        ret.insert("SELECT '{\"other\": \"val\"}'::json".to_string(),
+                   Value::Json("{\"other\": \"val\"}".into()));
+        ret.insert("SELECT 'some-str-value-1'".into(),
+                   Value::String("some-str-value-1".into()));
+        ret.insert("SELECT 128::int8".into(), Value::Int8(128));
+        ret.insert("SELECT 3::int4".into(), Value::Int4(3));
+        ret.insert("SELECT 0.2::float4".into(), Value::Float(0.2));
+        ret.insert("SELECT 0.34::float8".into(), Value::Double(0.34));
+
+        ret
+    }
+
+    fn check_expected_value(payload: Payload,
+                            expected: Value) {
+        match payload {
+            Payload::Success(success) => {
+                let row = success.rows.get(0).unwrap();
+
+                let value_wrapper_maybe = row.values.get(0).unwrap();
+
+                let value = &value_wrapper_maybe.value;
+
+                match value {
+                    Some(actual) =>
+                        assert_eq!(&expected, actual),
+                    None => panic!("Expected value.")
+                }
+            },
+            Payload::Error(_) => panic!("Expected success.")
+        }
     }
 }

@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::io::Read;
 
 use postgres_types::{FromSql, Type};
 use tokio_postgres::Row;
@@ -34,10 +35,19 @@ fn convert_row(row: &Row) -> Result<Vec<ValueWrapper>, QueryError> {
         let col_type = columns[i].type_();
 
         let value = match col_type.oid() {
+            16 => get_or_empty(&row, |val| Ok(Value::Bool(val)), i)?,
+            17 => get_or_empty(&row, |val| Ok(Value::Bytes(val)), i)?,
+            114 => get_or_empty(&row, proto_json, i)?,
+            3802 => get_or_empty(&row, proto_json, i)?,
             25 => get_or_empty(&row, proto_string, i)?,
             1043 => get_or_empty(&row, proto_string, i)?,
-            20 => get_or_empty(&row, Value::Int8, i)?,
-            23 => get_or_empty(&row, Value::Int4, i)?,
+            18 => get_or_empty(&row, proto_char, i)?,
+            19 => get_or_empty(&row, |val| Ok(Value::String(val)), i)?,
+            20 => get_or_empty(&row, |val| Ok(Value::Int8(val)), i)?,
+            23 => get_or_empty(&row, |val| Ok(Value::Int4(val)), i)?,
+            21 => get_or_empty(&row, |val| Ok(Value::Int4(val)), i)?,
+            700 => get_or_empty(&row, |val| Ok(Value::Float(val)), i)?,
+            701 => get_or_empty(&row, |val| Ok(Value::Double(val)), i)?,
             unknown => return Err(
                 QueryError::UnknownPostgresValueType(
                     format!("Got unsupported row value type: {}, oid: {}.",
@@ -56,12 +66,56 @@ fn get_or_empty<'a, T, F>(row: &'a Row,
                           i: usize) -> Result<Option<Value>, QueryError>
     where
         T: FromSql<'a>,
-        F: Fn(T) -> Value {
+        F: Fn(T) -> Result<Value, QueryError> {
     let value_maybe: Option<T> = row.try_get(i)?;
 
-    Ok(value_maybe.map(constructor))
+    match value_maybe {
+        None => Ok(None),
+        Some(value) => Ok(Some(constructor(value)?))
+    }
 }
 
-fn proto_string(val: String) -> Value {
-    Value::String(val.into())
+fn proto_char(val: i8) -> Result<Value, QueryError> {
+    Ok(Value::Char(vec![val as u8]))
+}
+
+fn proto_json(val: RawJsonBytes) -> Result<Value, QueryError> {
+    let utf_json = String::from_utf8(val.bytes)?;
+
+    Ok(Value::Json(utf_json.into()))
+}
+
+fn proto_string(val: String) -> Result<Value, QueryError> {
+    Ok(Value::String(val.into()))
+}
+
+struct RawJsonBytes {
+    bytes: Vec<u8>
+}
+
+impl<'a> FromSql<'a> for RawJsonBytes {
+    fn from_sql(ty: &Type, mut raw: &'a [u8]) -> Result<Self, Box<dyn Error + Sync + Send>> {
+        if !Self::accepts(ty) {
+            return Err("The type cannot be treated as json raw bytes.".into());
+        }
+
+        if *ty == Type::JSONB {
+            let mut b = [0; 1];
+            raw.read_exact(&mut b)?;
+
+            if b[0] != 1 {
+                return Err("Unsupported JSONB encoding version".into());
+            }
+        }
+
+        Ok(
+            RawJsonBytes {
+                bytes: raw.to_vec()
+            }
+        )
+    }
+
+    fn accepts(ty: &Type) -> bool {
+        *ty == Type::JSONB || *ty == Type::JSON
+    }
 }
