@@ -13,12 +13,12 @@ WIP. The roadmap includes:
 - [x] basic integration tests;
 - [x] send back bytes received from db, accept strongly typed param values;
 - [x] JWT auth + admin / client_service roles;
-- [ ] wider range of postgres types support as input and output;
-- [ ] TLS postgres support;
-- [ ] add validation to config / admin value objects;
-- [ ] Java client;
-- [ ] docker image + unsealing script;
+- [x] wider range of postgres types support as input and output;
 - [ ] Property-Based Testing + increased test coverage for all of the services;
+- [ ] Java client;
+- [ ] TLS postgres support;
+- [ ] docker image + unsealing script;
+- [ ] add validation to config / admin value objects;
 - [ ] throttle requests based on the client_id;
 - [ ] gRPC Streaming results
 - [ ] Python client;
