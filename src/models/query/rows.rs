@@ -46,6 +46,8 @@ fn convert_row(row: &Row) -> Result<Vec<ValueWrapper>, QueryError> {
             20 => get_or_empty(&row, |val| Ok(Value::Int8(val)), i)?,
             23 => get_or_empty(&row, |val| Ok(Value::Int4(val)), i)?,
             21 => get_or_empty(&row, |val| Ok(Value::Int4(val)), i)?,
+            700 => get_or_empty(&row, |val| Ok(Value::Float(val)), i)?,
+            701 => get_or_empty(&row, |val| Ok(Value::Double(val)), i)?,
             unknown => return Err(
                 QueryError::UnknownPostgresValueType(
                     format!("Got unsupported row value type: {}, oid: {}.",
@@ -91,7 +93,6 @@ struct RawJsonBytes {
     bytes: Vec<u8>
 }
 
-
 impl<'a> FromSql<'a> for RawJsonBytes {
     fn from_sql(ty: &Type, mut raw: &'a [u8]) -> Result<Self, Box<dyn Error + Sync + Send>> {
         if !Self::accepts(ty) {
@@ -101,6 +102,10 @@ impl<'a> FromSql<'a> for RawJsonBytes {
         if *ty == Type::JSONB {
             let mut b = [0; 1];
             raw.read_exact(&mut b)?;
+
+            if b[0] != 1 {
+                return Err("Unsupported JSONB encoding version".into());
+            }
         }
 
         Ok(
