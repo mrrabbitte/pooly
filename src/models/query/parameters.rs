@@ -1,5 +1,4 @@
 use postgres_types::{ToSql, Type};
-use prost::Message;
 
 use crate::models::errors::QueryError;
 use crate::models::payloads::value_wrapper::Value;
