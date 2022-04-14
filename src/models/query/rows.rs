@@ -76,7 +76,7 @@ fn get_or_empty<'a, T, F>(row: &'a Row,
 }
 
 fn proto_char(val: i8) -> Result<Value, QueryError> {
-    Ok(Value::Char(vec![val as u8]))
+    Ok(Value::Char(val as i32))
 }
 
 fn proto_json(val: RawJsonBytes) -> Result<Value, QueryError> {

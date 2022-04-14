@@ -8,7 +8,7 @@ message ValueWrapper {
     bool bool = 1;
     bytes bytes = 2;
     double double = 3;
-    bytes char = 4;
+    int32 char = 4;
     float float = 5;
     int32 int4 = 6;
     int64 int8 = 7;
