@@ -20,8 +20,6 @@ mod tests {
 
     use crate::common;
 
-
-
     #[tokio::test]
     async fn test_simple_query() {
         pretty_env_logger::try_init().unwrap();
@@ -47,7 +45,7 @@ mod tests {
         for (query, expected_value) in queries {
             let response = app_context.query_service.query(
                 common::CLIENT_ID,
-                &QueryRequest{
+                &QueryRequest {
                     connection_id: common::CONNECTION_ID.to_string(),
                     query: query.clone(),
                     params: vec![]
@@ -62,10 +60,7 @@ mod tests {
             check_expected_value(payload, expected_value);
         }
 
-        app_context.secrets_service.clear().expect("Could not clear secrets.");
-        app_context.connection_config_service.clear().expect("Could not clear configs.");
-
-        test_context::clear(&namespace).expect("Could not delete storage.");
+        common::cleanup(app_context, &namespace);
     }
 
     fn build_value_queries() -> HashMap<String, Value> {

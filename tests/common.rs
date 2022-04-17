@@ -73,3 +73,11 @@ pub fn build_env_vars() -> HashMap<String, String> {
 
     env_vars
 }
+
+pub fn cleanup(app_context: AppContext,
+               namespace: &str) {
+    app_context.secrets_service.clear().expect("Could not clear secrets.");
+    app_context.connection_config_service.clear().expect("Could not clear configs.");
+
+    test_context::clear(namespace).expect("Could not delete storage.");
+}
