@@ -52,29 +52,6 @@ mod tests {
                    |action| TestCaseResult::Ok(()));
     }
 
-    // #[prost(bool, tag="1")]
-    // Bool(bool),
-    // #[prost(bytes, tag="2")]
-    // Bytes(::prost::alloc::vec::Vec<u8>),
-    // #[prost(double, tag="3")]
-    // Double(f64),
-    // #[prost(int32, tag="4")]
-    // Char(i32),
-    // #[prost(float, tag="5")]
-    // Float(f32),
-    // #[prost(int32, tag="6")]
-    // Int4(i32),
-    // #[prost(int64, tag="7")]
-    // Int8(i64),
-    // #[prost(string, tag="8")]
-    // String(::prost::alloc::string::String),
-    // #[prost(string, tag="9")]
-    // Json(::prost::alloc::string::String),
-
-    // fn tx_bulk_query_request_strategy() -> impl Strategy<Value = TxBulkQueryRequest> {
-    //
-    // }
-
     fn values_test_action_strategy(query_service: Arc<QueryService>)
                                    -> impl Strategy<Value = TestValuesAction> {
         vec(value_strategy(), MAX_VALUES_PER_ACTION)
