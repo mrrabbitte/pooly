@@ -2,10 +2,11 @@ use std::sync::Arc;
 
 use ring::rand::SystemRandom;
 use serde::{Deserialize, Serialize};
+use sled::Db;
 use zeroize::Zeroize;
 
 use crate::data::dao::{TypedDao, UpdatableDao};
-use crate::data::db::DbBuilder;
+use crate::data::db::DbService;
 use crate::services::auth::access::AccessControlService;
 use crate::services::auth::connection_ids::{LiteralConnectionIdAccessEntryService, WildcardPatternConnectionIdAccessEntryService};
 use crate::services::auth::jwt::JwtAuthService;
@@ -43,7 +44,11 @@ pub struct AppContext {
 
 impl AppContext {
 
-    pub fn new() -> AppContext {
+    pub fn new() -> Self {
+        Self::with_db(DbService::create())
+    }
+
+    fn with_db(db: Arc<Db>) -> Self {
         let vec_generator =
             Arc::new(
                 VecGenerator::new(
@@ -55,8 +60,6 @@ impl AppContext {
             Arc::new(
                 SecretServiceFactory::create(
                     shares_service.clone(), vec_generator.clone()));
-
-        let db = DbBuilder::new();
 
         let connection_config_service =
             Arc::new(
@@ -114,6 +117,18 @@ impl AppContext {
             pattern_ids_service,
             vec_generator
         }
+    }
+}
+
+pub mod test_context {
+    use crate::{AppContext, DbService};
+
+    pub fn with_namespace(namespace: &str) -> AppContext {
+        AppContext::with_db(DbService::with_namespace(namespace))
+    }
+
+    pub fn clear(namespace: &str) -> Result<(), ()> {
+        DbService::clear(namespace)
     }
 
 }
