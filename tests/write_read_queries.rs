@@ -17,7 +17,8 @@ mod tests {
     use uuid::Uuid;
 
     use pooly::AppContext;
-    use pooly::models::payloads::{QueryRequest, QueryResponse, TxBulkQueryRequest, ValueWrapper};
+    use pooly::models::payloads::{QueryRequest, QueryResponse, QuerySuccessResponse, TxBulkQueryRequest, ValueWrapper};
+    use pooly::models::payloads::query_response::Payload;
     use pooly::models::payloads::value_wrapper::Value;
     use pooly::services::queries::QueryService;
     use pooly::services::updatable::UpdatableService;
@@ -55,11 +56,12 @@ mod tests {
 
         let runtime = Arc::new(
             Builder::new_current_thread()
+                .enable_all()
                 .build()
                 .expect("Could not build runtime.")
         );
 
-        runner.run(&values_test_action_strategy(query_service, runtime),
+        let result = runner.run(&values_test_action_strategy(query_service, runtime),
                    |action| {
                        action.test();
 
@@ -67,6 +69,8 @@ mod tests {
                    });
 
         common::cleanup(app_context, &namespace);
+
+        assert_eq!(true, result.is_ok(), "Got result: {:?}", result);
     }
 
     fn values_test_action_strategy(query_service: Arc<QueryService>,
@@ -84,7 +88,6 @@ mod tests {
             any::<bool>().prop_map(Value::Bool),
             any::<Vec<u8>>().prop_map(Value::Bytes),
             any::<f64>().prop_map(Value::Double),
-            any::<i8>().prop_map(|val| val as i32).prop_map(Value::Char),
             any::<f32>().prop_map(Value::Float),
             any::<i32>().prop_map(Value::Int4),
             any::<i64>().prop_map(Value::Int8),
@@ -98,26 +101,27 @@ mod tests {
 
         #[derivative(Debug="ignore")]
         service: Arc<QueryService>,
+        runtime: Arc<Runtime>,
 
         nullable_queries: TestValueQueries,
         non_nullable_queries: TestValueQueries,
 
         values: Vec<Value>,
-        runtime: Arc<Runtime>
+
 
     }
 
     impl TestValuesAction {
 
-        fn new(query_service: Arc<QueryService>,
+        fn new(service: Arc<QueryService>,
                values: Vec<Value>,
                runtime: Arc<Runtime>) -> Self {
             TestValuesAction {
+                service,
+                runtime,
                 nullable_queries: TestValueQueries::new(&values, true),
                 non_nullable_queries: TestValueQueries::new(&values, false),
-                values,
-                service: query_service,
-                runtime
+                values
             }
         }
 
@@ -134,24 +138,25 @@ mod tests {
                    params: Vec<ValueWrapper>) {
             self.execute_single_query(&queries.create_table, Vec::new());
             self.execute_single_query(&queries.insert_query, params);
-            
-            assert!(self
-                .execute_single_query(&queries.select_query, Vec::new())
-                .payload
-                .is_some());
+            self.execute_single_query(&queries.select_query, Vec::new());
         }
 
         fn execute_single_query(&self,
                                 query: &str,
-                                params: Vec<ValueWrapper>) -> QueryResponse {
-            self.runtime.block_on(
+                                params: Vec<ValueWrapper>) -> QuerySuccessResponse {
+            let payload = self.runtime.block_on(
                 self.service.query(common::CLIENT_ID,
                                    &QueryRequest {
                                        connection_id: common::CONNECTION_ID.to_string(),
                                        query: query.into(),
                                        params
                                    },
-                                   query)).0
+                                   query)).0.payload;
+            match payload {
+                Some(Payload::Success(response)) => response,
+                _ => panic!("Expected success query response, failed to execute: {}, got: {:?}",
+                            query, payload)
+            }
         }
     }
 
@@ -170,11 +175,11 @@ mod tests {
 
         fn new(values: &Vec<Value>,
                nullable: bool) -> Self {
-            let table_name = Uuid::new_v4().to_string();
+            let table_name = "table_".to_string()
+                + Uuid::new_v4().to_string().replace("-", "_").as_str();
 
             let (columns_declaration, col_names) =
                 Self::build_columns_declaration(&values, nullable);
-
 
             let mut create_table = format!(
                 "CREATE TABLE {table_name} ({columns_declaration});",
@@ -191,11 +196,11 @@ mod tests {
                                        table_name=table_name);
 
             let insert_query = format!(
-                "INSERT INTO {table_name}({col_names_declaration}) VALUES ({values_declaration}));",
+                "INSERT INTO {table_name}({col_names_declaration}) VALUES ({values_declaration});",
                 table_name=table_name,
                 col_names_declaration=col_names_declaration,
                 values_declaration=
-                (0..col_names.len())
+                (1..col_names.len() + 1)
                     .map(|i| format!("${}", i))
                     .collect::<Vec<String>>()
                     .join(","));
@@ -213,38 +218,43 @@ mod tests {
             let mut declaration = String::new();
             let mut column_names = Vec::new();
 
-            for value in values {
+            for (idx, value) in values.iter().enumerate() {
                 if !declaration.is_empty() {
                     declaration += ", ";
                 }
 
                 match value {
                     Value::Bool(_) =>
-                        Self::col(&mut declaration,
+                        Self::col(idx,
+                                  &mut declaration,
                                   &mut column_names, "boolean", nullable),
                     Value::Bytes(_) =>
-                        Self::col(&mut declaration,
+                        Self::col(idx,
+                                  &mut declaration,
                                   &mut column_names, "bytea", nullable),
                     Value::Double(_) =>
-                        Self::col(&mut declaration,
+                        Self::col(idx,
+                                  &mut declaration,
                                   &mut column_names, "double precision", nullable),
-                    Value::Char(_) =>
-                        Self::col(&mut declaration,
-                                  &mut column_names, "character(1)", nullable),
                     Value::Float(_) =>
-                        Self::col(&mut declaration,
+                        Self::col(idx,
+                                  &mut declaration,
                                   &mut column_names, "real", nullable),
                     Value::Int4(_) =>
-                        Self::col(&mut declaration,
+                        Self::col(idx,
+                                  &mut declaration,
                                   &mut column_names, "integer", nullable),
                     Value::Int8(_) =>
-                        Self::col(&mut declaration,
+                        Self::col(idx,
+                                  &mut declaration,
                                   &mut column_names, "bigint", nullable),
                     Value::String(_) =>
-                        Self::col(&mut declaration,
+                        Self::col(idx,
+                                  &mut declaration,
                                   &mut column_names, "varchar", nullable),
                     Value::Json(_) =>
-                        Self::col(&mut declaration,
+                        Self::col(idx,
+                                  &mut declaration,
                                   &mut column_names, "jsonb", nullable),
                 }
             }
@@ -252,7 +262,8 @@ mod tests {
             (declaration, column_names)
         }
 
-        fn col(declaration: &mut String,
+        fn col(idx: usize,
+               declaration: &mut String,
                col_names: &mut Vec<String>,
                col_type: &str,
                nullable: bool) {
@@ -264,7 +275,7 @@ mod tests {
                 }
             };
 
-            let col_name = format!("{}_col", col_type);
+            let col_name = format!("{}_{}_col", col_type.replace(" ", "_"), idx);
 
             declaration.push_str(
                 format!("{} {} {}", &col_name, col_type, null_declaration).as_str());

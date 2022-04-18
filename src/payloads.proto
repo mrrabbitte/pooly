@@ -8,12 +8,11 @@ message ValueWrapper {
     bool bool = 1;
     bytes bytes = 2;
     double double = 3;
-    int32 char = 4;
-    float float = 5;
-    int32 int4 = 6;
-    int64 int8 = 7;
-    string string = 8;
-    string json = 9;
+    float float = 4;
+    int32 int4 = 5;
+    int64 int8 = 6;
+    string string = 7;
+    string json = 8;
   }
 
 }
