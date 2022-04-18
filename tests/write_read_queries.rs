@@ -131,7 +131,7 @@ mod tests {
                              .iter()
                              .map(|value| ValueWrapper { value: Some(value.clone()) } )
                              .collect());
-            
+
             self.do_test(&self.nullable_queries,
                          self.values
                              .iter()
@@ -152,6 +152,12 @@ mod tests {
         fn do_test(&self,
                    queries: &TestValueQueries,
                    params: Vec<ValueWrapper>) {
+            self.do_test_single_queries(queries, params);
+        }
+
+        fn do_test_single_queries(&self,
+                                  queries: &TestValueQueries,
+                                  params: Vec<ValueWrapper>) {
             self.execute_single_query(&queries.create_table, Vec::new());
             self.execute_single_query(&queries.insert_query, params.clone());
 
