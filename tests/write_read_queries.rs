@@ -137,8 +137,20 @@ mod tests {
                    queries: &TestValueQueries,
                    params: Vec<ValueWrapper>) {
             self.execute_single_query(&queries.create_table, Vec::new());
-            self.execute_single_query(&queries.insert_query, params);
-            self.execute_single_query(&queries.select_query, Vec::new());
+            self.execute_single_query(&queries.insert_query, params.clone());
+
+            let success_response =
+                self.execute_single_query(&queries.select_query, Vec::new());
+
+            assert_eq!(&success_response.column_names, &queries.column_names);
+
+            assert_eq!(success_response.rows.len(), 1);
+
+            for row in success_response.rows {
+                assert_eq!(params, row.values);
+            }
+
+            self.execute_single_query(&queries.drop_table, Vec::new());
         }
 
         fn execute_single_query(&self,
@@ -162,6 +174,8 @@ mod tests {
 
     #[derive(Debug)]
     struct TestValueQueries {
+
+        column_names: Vec<String>,
 
         create_table: String,
         drop_table: String,
@@ -206,6 +220,7 @@ mod tests {
                     .join(","));
 
             TestValueQueries {
+                column_names: col_names,
                 create_table,
                 drop_table,
                 select_query,
