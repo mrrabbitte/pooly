@@ -131,6 +131,22 @@ mod tests {
                              .iter()
                              .map(|value| ValueWrapper { value: Some(value.clone()) } )
                              .collect());
+            
+            self.do_test(&self.nullable_queries,
+                         self.values
+                             .iter()
+                             .enumerate()
+                             .map(|(idx, value)| {
+                                 let value_maybe = {
+                                     if idx % 2 == 0 {
+                                         Some(value.clone())
+                                     } else {
+                                         None
+                                     }
+                                 };
+                                 ValueWrapper { value: value_maybe}
+                             })
+                             .collect());
         }
 
         fn do_test(&self,
