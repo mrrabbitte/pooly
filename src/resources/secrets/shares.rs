@@ -1,4 +1,3 @@
-use std::detect::__is_feature_detected::sha;
 use std::sync::Arc;
 
 use actix_web::HttpResponse;

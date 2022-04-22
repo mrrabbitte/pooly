@@ -1,11 +1,10 @@
 use std::collections::HashSet;
 use std::hash::Hash;
 
-use serde::{de, Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
-use crate::models::errors::StorageError;
-use crate::models::versioning::versioned::{Versioned, VersionHeader};
 use crate::models::utils::wildcards::WildcardPattern;
+use crate::models::versioning::versioned::VersionHeader;
 
 pub type StringSetCommand = SetCommand<String>;
 pub type WildcardPatternSetCommand = SetCommand<WildcardPattern>;

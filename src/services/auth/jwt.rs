@@ -2,10 +2,9 @@ use std::collections::HashSet;
 use std::sync::Arc;
 
 use dashmap::mapref::one::Ref;
-use hmac::digest::core_api::CoreProxy;
 use hmac::digest::KeyInit;
 use hmac::Hmac;
-use jwt::{AlgorithmType, Claims, Error, Header, PKeyWithDigest, Token, Unverified, VerifyingAlgorithm, VerifyWithKey};
+use jwt::{AlgorithmType, Claims, Header, PKeyWithDigest, Token, VerifyingAlgorithm};
 use openssl::hash::MessageDigest;
 use openssl::pkey::PKey;
 use sha2::{Sha256, Sha384, Sha512};
@@ -13,7 +12,7 @@ use sled::Db;
 
 use crate::{CacheBackedService, LocalSecretsService, UpdatableService};
 use crate::models::auth::jwt::{JwtAlg, JwtKey, JwtKeyUpdateCommand};
-use crate::models::auth::roles::{AuthOutcome, Role, RoleToken};
+use crate::models::auth::roles::RoleToken;
 use crate::models::errors::{AuthError, StorageError};
 use crate::models::versioning::versioned::Versioned;
 use crate::services::clock::Clock;
@@ -116,19 +115,19 @@ impl JwtAuthService {
             match jwt_key.get_alg() {
                 JwtAlg::Hs256 => {
                     let hmac: Hmac<Sha256> = Hmac::new_from_slice(key)
-                        .map_err(|err| AuthError::HmacError)?;
+                        .map_err(|_| AuthError::HmacError)?;
 
                     hmac.verify(token.header, token.claims, token.signature)?
                 },
                 JwtAlg::Hs384 => {
                     let hmac: Hmac<Sha384> = Hmac::new_from_slice(key)
-                        .map_err(|err| AuthError::HmacError)?;
+                        .map_err(|_| AuthError::HmacError)?;
 
                     hmac.verify(token.header, token.claims, token.signature)?
                 },
                 JwtAlg::Hs512 => {
                     let hmac: Hmac<Sha512> = Hmac::new_from_slice(key)
-                        .map_err(|err| AuthError::HmacError)?;
+                        .map_err(|_| AuthError::HmacError)?;
 
                     hmac.verify(token.header, token.claims, token.signature)?
                 },
@@ -148,7 +147,7 @@ impl JwtAuthService {
                         digest: MessageDigest) -> Result<bool, AuthError> {
         let algo = PKeyWithDigest {
             digest,
-            key: PKey::public_key_from_pem(key).map_err(|err| AuthError::PemError)?,
+            key: PKey::public_key_from_pem(key).map_err(|_| AuthError::PemError)?,
         };
 
         Ok( algo.verify(token.header, token.claims, token.signature)? )

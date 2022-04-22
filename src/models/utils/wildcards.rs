@@ -1,6 +1,4 @@
-use std::str::FromStr;
-
-use serde::{de, Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 
 use crate::models::errors::WildcardPatternError;
 

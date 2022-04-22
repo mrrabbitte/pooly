@@ -1,14 +1,11 @@
 use std::collections::HashSet;
 use std::sync::Arc;
 
-use dashmap::DashMap;
 use dashmap::mapref::one::Ref;
 use sled::Db;
 
-use crate::data::dao::{Dao, UpdatableDao};
 use crate::LocalSecretsService;
 use crate::models::auth::access::{LiteralConnectionIdAccessEntry, WildcardPatternConnectionIdAccessEntry};
-use crate::models::query::connections::ConnectionConfigUpdateCommand;
 use crate::models::errors::StorageError;
 use crate::models::versioning::updatable::{StringSetCommand, WildcardPatternSetCommand};
 use crate::models::versioning::versioned::Versioned;

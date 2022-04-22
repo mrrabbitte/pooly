@@ -5,9 +5,8 @@ use dashmap::mapref::one::Ref;
 use sled;
 use sled::Db;
 
-use crate::data::dao::{Dao, EncryptedDao, SimpleDao, TypedDao, UpdatableDao};
-use crate::models::query::connections::{ConnectionConfig, ConnectionConfigUpdateCommand, VersionedConnectionConfig};
-use crate::models::errors::{ConnectionConfigError, StorageError};
+use crate::models::errors::StorageError;
+use crate::models::query::connections::{ConnectionConfig, ConnectionConfigUpdateCommand};
 use crate::models::versioning::versioned::Versioned;
 use crate::services::secrets::LocalSecretsService;
 use crate::services::updatable::{CacheBackedService, UpdatableService};

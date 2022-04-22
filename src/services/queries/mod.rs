@@ -58,6 +58,10 @@ impl QueryService {
             return Err(QueryError::ForbiddenConnectionId);
         }
 
+        if request.queries.is_empty() {
+            return Ok(Vec::new());
+        }
+
         match self.connection_service.get(connection_id).await {
             Some(connection_result) => {
                 let mut connection = connection_result?;

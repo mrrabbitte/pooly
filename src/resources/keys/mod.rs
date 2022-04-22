@@ -6,7 +6,7 @@ use actix_web::Result;
 use actix_web::web::{Data, Json, Path};
 
 use crate::JwtAuthService;
-use crate::models::auth::jwt::{JwtKey, JwtKeyCreateCommand, JwtKeyUpdateCommand};
+use crate::models::auth::jwt::{JwtKeyCreateCommand, JwtKeyUpdateCommand};
 use crate::services::updatable::UpdatableService;
 
 #[post("/v1/keys")]

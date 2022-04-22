@@ -40,8 +40,8 @@ fn convert_row(row: &Row) -> Result<Vec<ValueWrapper>, QueryError> {
             114 => get_or_empty(&row, proto_json, i)?,
             3802 => get_or_empty(&row, proto_json, i)?,
             25 => get_or_empty(&row, proto_string, i)?,
+            1042 => get_or_empty(&row, proto_string, i)?,
             1043 => get_or_empty(&row, proto_string, i)?,
-            18 => get_or_empty(&row, proto_char, i)?,
             19 => get_or_empty(&row, |val| Ok(Value::String(val)), i)?,
             20 => get_or_empty(&row, |val| Ok(Value::Int8(val)), i)?,
             23 => get_or_empty(&row, |val| Ok(Value::Int4(val)), i)?,
@@ -73,10 +73,6 @@ fn get_or_empty<'a, T, F>(row: &'a Row,
         None => Ok(None),
         Some(value) => Ok(Some(constructor(value)?))
     }
-}
-
-fn proto_char(val: i8) -> Result<Value, QueryError> {
-    Ok(Value::Char(val as i32))
 }
 
 fn proto_json(val: RawJsonBytes) -> Result<Value, QueryError> {

@@ -10,7 +10,6 @@ use crate::data::dao::{Dao, EncryptedDao, SimpleDao, UpdatableDao};
 use crate::models::errors::StorageError;
 use crate::models::versioning::updatable::{Updatable, UpdateCommand};
 use crate::models::versioning::versioned::Versioned;
-use crate::services::secrets::SecretsService;
 use crate::{LocalSecretsService, TypedDao};
 
 pub trait UpdatableService<U: UpdateCommand, T: Updatable<U>> {
@@ -76,7 +75,7 @@ CacheBackedService<U, T> {
               removed: &Versioned<T>) {
         self.cache
             .remove_if(id,
-                       |k, v| v.get_header().eq(removed.get_header()));
+                       |_, v| v.get_header().eq(removed.get_header()));
     }
 
 }

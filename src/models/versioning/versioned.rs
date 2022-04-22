@@ -1,5 +1,3 @@
-use std::time::Instant;
-
 use serde::{Deserialize, Serialize};
 use zeroize::Zeroize;
 

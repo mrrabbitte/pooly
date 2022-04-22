@@ -21,7 +21,7 @@ pub async fn initialize(service: Data<Arc<InitializationService>>,
 #[post("/v1/secrets/clear")]
 pub async fn clear(service: Data<Arc<InitializationService>>) -> Result<HttpResponse> {
     match service.clear() {
-        Ok(shares) => Ok(HttpResponse::Ok().finish()),
+        Ok(_) => Ok(HttpResponse::Ok().finish()),
         Err(err) => Ok(HttpResponse::InternalServerError().json(err))
     }
 }
