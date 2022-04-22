@@ -17,7 +17,7 @@ mod tests {
     use uuid::Uuid;
 
     use pooly::AppContext;
-    use pooly::models::payloads::{QueryRequest, QueryResponse, QuerySuccessResponse, TxBulkQueryRequest, ValueWrapper};
+    use pooly::models::payloads::{QueryRequest, QueryResponse, QuerySuccessResponse, tx_bulk_query_response, TxBulkQueryParams, TxBulkQueryRequest, TxBulkQueryRequestBody, TxBulkQuerySuccessResponse, ValueWrapper};
     use pooly::models::payloads::query_response::Payload;
     use pooly::models::payloads::value_wrapper::Value;
     use pooly::services::queries::QueryService;
@@ -61,12 +61,14 @@ mod tests {
                 .expect("Could not build runtime.")
         );
 
-        let result = runner.run(&values_test_action_strategy(query_service, runtime),
+        let result = runner.run(
+            &values_test_action_strategy(query_service, runtime),
                    |action| {
                        action.test();
 
                        TestCaseResult::Ok(())
-                   });
+                   }
+        );
 
         common::cleanup(app_context, &namespace);
 
@@ -107,7 +109,6 @@ mod tests {
         non_nullable_queries: TestValueQueries,
 
         values: Vec<Value>,
-
 
     }
 
@@ -152,12 +153,55 @@ mod tests {
         fn do_test(&self,
                    queries: &TestValueQueries,
                    params: Vec<ValueWrapper>) {
-            self.do_test_single_queries(queries, params);
+            self.do_test_single_queries(queries, &params);
+            self.do_test_tx_bulk_queries(queries, &params);
+        }
+
+        fn do_test_tx_bulk_queries(&self,
+                                   queries: &TestValueQueries,
+                                   params: &Vec<ValueWrapper>) {
+            self.execute_single_query(&queries.create_table, Vec::new());
+
+            let insert_responses = self.execute_tx_bulk_query(vec![
+                (queries.insert_query.clone(), vec![
+                    params.clone(),
+                    params.clone(),
+                    params.clone()
+                ]),
+                (queries.insert_query.clone(), vec![
+                    params.clone(),
+                    params.clone()
+                ])
+            ]).responses;
+
+            assert_eq!(2, insert_responses.len());
+
+            assert_eq!(3, insert_responses[0].row_groups.len());
+            assert_eq!(2, insert_responses[1].row_groups.len());
+
+            let mut insert_rows = insert_responses[0].row_groups[0].rows.clone();
+            insert_rows.extend(insert_responses[0].row_groups[1].rows.clone());
+            insert_rows.extend(insert_responses[0].row_groups[2].rows.clone());
+            insert_rows.extend(insert_responses[1].row_groups[0].rows.clone());
+            insert_rows.extend(insert_responses[1].row_groups[1].rows.clone());
+
+            for row in &insert_rows {
+                assert_eq!(params, &row.values);
+            }
+
+            let select_response =
+                self.execute_single_query(&queries.select_query, Vec::new());
+
+            let select_rows = select_response.rows;
+
+            assert_eq!(insert_rows, select_rows);
+
+            self.execute_single_query(&queries.drop_table, Vec::new());
         }
 
         fn do_test_single_queries(&self,
                                   queries: &TestValueQueries,
-                                  params: Vec<ValueWrapper>) {
+                                  params: &Vec<ValueWrapper>) {
             self.execute_single_query(&queries.create_table, Vec::new());
             self.execute_single_query(&queries.insert_query, params.clone());
 
@@ -169,10 +213,44 @@ mod tests {
             assert_eq!(success_response.rows.len(), 1);
 
             for row in success_response.rows {
-                assert_eq!(params, row.values);
+                assert_eq!(params, &row.values);
             }
 
             self.execute_single_query(&queries.drop_table, Vec::new());
+        }
+
+        fn execute_tx_bulk_query(&self,
+                                 queries: Vec<(String, Vec<Vec<ValueWrapper>>)>) -> TxBulkQuerySuccessResponse {
+            let payload = self.runtime.block_on(
+                self.service.bulk_tx(
+                    common::CLIENT_ID,
+                    &TxBulkQueryRequest {
+                        connection_id: common::CONNECTION_ID.to_string(),
+                        queries:
+                        queries
+                            .clone()
+                            .into_iter()
+                            .map(|(query, params)|
+                                TxBulkQueryRequestBody {
+                                    query: query.clone(),
+                                    params: params
+                                        .into_iter()
+                                        .map(|values|
+                                            TxBulkQueryParams { values })
+                                        .collect()
+                                })
+                            .collect()
+                    },
+                    "tx_correlation_id_1"
+                )
+            ).0.payload;
+
+            match payload {
+                Some(tx_bulk_query_response::Payload::Success(response))
+                => response,
+                _ => panic!("Expected success query response, failed to execute: {:?}, got: {:?}",
+                            queries, payload)
+            }
         }
 
         fn execute_single_query(&self,
@@ -217,7 +295,7 @@ mod tests {
             let (columns_declaration, col_names) =
                 Self::build_columns_declaration(&values, nullable);
 
-            let mut create_table = format!(
+            let create_table = format!(
                 "CREATE TABLE {table_name} ({columns_declaration});",
                 table_name=table_name,
                 columns_declaration=columns_declaration
@@ -232,7 +310,9 @@ mod tests {
                                        table_name=table_name);
 
             let insert_query = format!(
-                "INSERT INTO {table_name}({col_names_declaration}) VALUES ({values_declaration});",
+                "INSERT INTO {table_name}({col_names_declaration}) \
+                VALUES ({values_declaration}) \
+                RETURNING *;",
                 table_name=table_name,
                 col_names_declaration=col_names_declaration,
                 values_declaration=
