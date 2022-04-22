@@ -14,18 +14,20 @@ WIP. The roadmap includes:
 - [x] send back bytes received from db, accept strongly typed param values;
 - [x] JWT auth + admin / client_service roles;
 - [x] wider range of postgres types support as input and output;
-- [ ] Property-Based Testing + increased test coverage for all of the services;
+- [x] PBT + basic integration tests coverage;
+- [ ] throttle requests based on the client_id;
+- [ ] gRPC Streaming results;
+- [ ] OpenTelemetry support;
 - [ ] Java client;
-- [ ] TLS postgres support;
+- [ ] Docs on pooly;
+- [ ] rich logging support;
 - [ ] docker image + unsealing script;
 - [ ] add validation to config / admin value objects;
-- [ ] throttle requests based on the client_id;
-- [ ] gRPC Streaming results
+- [ ] more test coverage;
+- [ ] TLS postgres support;
 - [ ] Python client;
 - [ ] Rust client;
-- [ ] rich logging support;
-- [ ] OpenTelemetry support;
-- [ ] even wider range of postgres types + optionally return raw bytes;
+- [ ] even wider range of postgres types;
 - [ ] add option to use Vault instead of local secrets keeping;
 - [ ] queries deduping.
 
