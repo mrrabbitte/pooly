@@ -41,7 +41,7 @@ impl InitializationService {
     pub fn clear(&self) -> Result<(), InitializationError> {
         self.secrets_service.clear()?;
 
-        self.auth_service.clear().map_err(|err| InitializationError::AuthClearError)?;
+        self.auth_service.clear().map_err(|_| InitializationError::AuthClearError)?;
 
         self.shares_service.clear();
 

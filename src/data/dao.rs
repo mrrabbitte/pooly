@@ -3,15 +3,15 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
-use sled::{Db, IVec, Subscriber, Tree};
+use sled::{Db, IVec, Tree};
 use sled::transaction::{abort, ConflictableTransactionError};
 
 use crate::LocalSecretsService;
 use crate::models::errors::StorageError;
+use crate::models::sec::zeroize::ZeroizeWrapper;
 use crate::models::versioning::updatable::{Updatable, UpdateCommand};
 use crate::models::versioning::versioned;
 use crate::models::versioning::versioned::{Versioned, VersionedVec};
-use crate::models::sec::zeroize::ZeroizeWrapper;
 
 pub trait Dao<T> {
 
@@ -29,6 +29,7 @@ pub trait Dao<T> {
 
 }
 
+#[derive(Debug)]
 pub struct SimpleDao {
 
     keyspace: String,

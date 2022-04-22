@@ -2,7 +2,6 @@ use jwt::Claims;
 
 use crate::models::errors::AuthError;
 
-const EXPECTED_AUDIENCE: &str = "pooly";
 const POOLY_ROLE: &str = "pooly_role";
 
 const ADMIN: &str = "admin";

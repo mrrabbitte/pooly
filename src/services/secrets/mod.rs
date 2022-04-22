@@ -8,7 +8,7 @@ use sharks::{Share, Sharks};
 
 use crate::data::files::{FilesService, SimpleFilesService};
 use crate::models::errors::SecretsError;
-use crate::models::sec::secrets::{EncryptedPayload, EncryptionKey, KEY_LENGTH, MasterKey, MasterKeyShare, MasterKeySharePayload, NUM_SHARES};
+use crate::models::sec::secrets::{EncryptedPayload, EncryptionKey, KEY_LENGTH, MasterKey, MasterKeyShare, NUM_SHARES};
 use crate::models::sec::zeroize::ZeroizeWrapper;
 use crate::services::secrets::encryption::EncryptionService;
 use crate::services::secrets::random::VecGenerator;

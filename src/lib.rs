@@ -1,11 +1,9 @@
 use std::sync::Arc;
 
 use ring::rand::SystemRandom;
-use serde::{Deserialize, Serialize};
 use sled::Db;
-use zeroize::Zeroize;
 
-use crate::data::dao::{TypedDao, UpdatableDao};
+use crate::data::dao::TypedDao;
 use crate::data::db::DbService;
 use crate::services::auth::access::AccessControlService;
 use crate::services::auth::connection_ids::{LiteralConnectionIdAccessEntryService, WildcardPatternConnectionIdAccessEntryService};

@@ -1,17 +1,15 @@
-use std::fmt;
 use std::future::{ready, Ready};
 use std::rc::Rc;
 use std::sync::Arc;
 
-use actix_web::{dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform}, Error, FromRequest, HttpMessage, HttpRequest, HttpResponse, ResponseError};
+use actix_web::{dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform}, Error, FromRequest, HttpMessage, HttpRequest};
 use actix_web::body::EitherBody;
 use actix_web::dev::Payload;
-use actix_web::http::StatusCode;
 use actix_web::web::Data;
 use futures_util::future::LocalBoxFuture;
 use futures_util::FutureExt;
 
-use crate::models::auth::roles::{AdminToken, AuthOutcome, ClientServiceToken, Role, RoleToken};
+use crate::models::auth::roles::{AdminToken, ClientServiceToken, Role, RoleToken};
 use crate::models::errors::AuthError;
 use crate::services::auth::jwt::JwtAuthService;
 

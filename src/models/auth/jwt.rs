@@ -1,5 +1,3 @@
-use std::fmt::Display;
-
 use jwt::AlgorithmType;
 use serde::{Deserialize, Serialize};
 use zeroize::Zeroize;

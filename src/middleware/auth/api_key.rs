@@ -1,11 +1,8 @@
 use std::future::{ready, Ready};
 use std::rc::Rc;
 
-use actix_web::{dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform}, Error, HttpMessage, HttpResponse, ResponseError};
+use actix_web::{dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform}, Error};
 use actix_web::body::EitherBody;
-use actix_web::http::header::HeaderValue;
-use actix_web::http::StatusCode;
-use actix_web::web::Data;
 use futures_util::future::LocalBoxFuture;
 use futures_util::FutureExt;
 

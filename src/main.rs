@@ -8,7 +8,7 @@ use actix_web::{App, HttpServer, middleware, web};
 use actix_web::web::Data;
 use config::Config;
 
-use pooly::{AppContext, resources, services};
+use pooly::{AppContext, resources};
 use pooly::middleware::auth::api_key::InitializationApiKeyAuthGuard;
 use pooly::middleware::auth::jwt::AuthGuard;
 use pooly::models::app::AppConfig;
