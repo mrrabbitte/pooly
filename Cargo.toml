@@ -12,7 +12,7 @@ description = "A protobuf to Postgres adapter + connection pooling middleware."
 
 [dependencies]
 actix-web = "4.0.1"
-actix-protobuf = "0.7.0-beta.3"
+actix-protobuf = "0.8.0"
 actix-utils = "3.0.0"
 base64 = "0.20.0-alpha.1"
 bincode = "1.3.3"
@@ -27,7 +27,7 @@ hmac = { version = "0.12", features = ["reset"] }
 jwt = {version = "0.16.0", features = ["openssl"]}
 openssl = "0.10.38"
 postgres-types = "0.2.2"
-prost = "0.8.0"
+prost = "0.10.4"
 tokio-postgres = "0.7.5"
 tokio-postgres-rustls = "0.9.0"
 ring = "0.16.20"
