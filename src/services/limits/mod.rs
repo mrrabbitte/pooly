@@ -143,7 +143,7 @@ mod tests {
     }
 
     #[test]
-    fn test_multiple_threads_holds_threshold() {
+    fn test_multiple_threads_hold_threshold() {
         let num_successes = Arc::new(AtomicU32::new(0));
         let now = Arc::new(AtomicU64::new(0));
 
