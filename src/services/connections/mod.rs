@@ -53,7 +53,7 @@ impl ConnectionService {
         match self.config_service.get(connection_id) {
             Ok(Some(config)) =>
                 self.add_connection_pool(config.get_value()).await,
-            Ok(None) => Option::None,
+            Ok(None) => None,
             Err(err) => Some(Err(ConnectionError::StorageError(err)))
         }
     }
