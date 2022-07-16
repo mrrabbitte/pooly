@@ -1,6 +1,6 @@
 [<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Presidential_Standard_of_Belarus_%28fictional%29.svg/240px-Presidential_Standard_of_Belarus_%28fictional%29.svg.png" width="20" height="20" alt="Voices From Belarus" />](https://voicesfrombelarus.org/) [![Stand With Ukraine](https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/badges/StandWithUkraine.svg)](https://vshymanskyy.github.io/StandWithUkraine)
 
-[![Dependency Review](https://github.com/mrrabbitte/pooly/actions/workflows/dependency-review.yml/badge.svg?branch=main)](https://github.com/mrrabbitte/pooly/actions/workflows/dependency-review.yml)
+[![Dependency Review](https://github.com/mrrabbitte/pooly/actions/workflows/dependency-review.yml/badge.svg)](https://github.com/mrrabbitte/pooly/actions/workflows/dependency-review.yml)
 
 # pooly
 
