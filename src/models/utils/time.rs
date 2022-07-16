@@ -24,3 +24,22 @@ fn now() -> Duration {
         .duration_since(SystemTime::UNIX_EPOCH)
         .expect("system time error")
 }
+
+pub trait NowProvider {
+    fn now_millis(&self) -> u128;
+}
+
+pub struct Clock;
+
+impl Clock {
+
+    pub fn new() -> Clock {
+        Clock {}
+    }
+}
+
+impl NowProvider for Clock {
+    fn now_millis(&self) -> u128 {
+        now_millis()
+    }
+}

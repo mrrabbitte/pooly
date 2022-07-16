@@ -17,7 +17,8 @@ pub struct ConnectionConfig {
     pub db_name: String,
     pub user: String,
     pub password: String,
-    pub max_connections: i32
+    pub max_connections: i32,
+    pub rate_limit: Option<RateLimitConfig>
 
 }
 
@@ -32,8 +33,8 @@ pub struct ConnectionConfigUpdateCommand {
     db_name: String,
     user: String,
     password: String,
-    max_connections: i32
-
+    max_connections: i32,
+    rate_limit: Option<RateLimitConfig>
 }
 
 impl UpdateCommand for ConnectionConfigUpdateCommand {
@@ -55,7 +56,18 @@ impl Updatable<ConnectionConfigUpdateCommand> for ConnectionConfig {
             db_name: update.db_name.clone(),
             user: update.user.clone(),
             password: update.password.clone(),
-            max_connections: update.max_connections.clone()
+            max_connections: update.max_connections.clone(),
+            rate_limit: update.rate_limit.clone(),
         }
     }
+}
+
+#[derive(Zeroize)]
+#[zeroize(drop)]
+#[derive(Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Debug)]
+pub struct RateLimitConfig {
+
+    pub max_requests_per_period: u32,
+    pub period_millis: u64
+
 }
