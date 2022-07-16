@@ -26,6 +26,7 @@ pub enum QueryError {
     UnknownDatabaseConnection(String),
     PoolError(String),
     PostgresError(String),
+    RateLimitError(RateLimitError),
     StorageError,
     UnknownPostgresValueType(String),
     WrongNumParams(usize, usize),
@@ -39,6 +40,7 @@ pub enum ConnectionError {
     CreatePoolError(CreatePoolError),
     ConnectionConfigError(ConnectionConfigError),
     PoolError(PoolError<Error>),
+    RateLimitError(RateLimitError),
     StorageError(StorageError)
 
 }
@@ -124,7 +126,33 @@ pub enum InitializationError {
 
 }
 
-impl std::fmt::Display for WildcardPatternError {
+#[derive(Debug, Serialize, Deserialize)]
+pub enum RateLimitError {
+
+    TooManyRequests{threshold: u32, period_millis: u128},
+    PoisonedLock
+
+}
+
+impl RateLimitError {
+
+    fn get_code(&self) -> u16 {
+        match self {
+            RateLimitError::TooManyRequests { .. } => 429,
+            RateLimitError::PoisonedLock => 500
+        }
+    }
+
+    fn get_message(&self) -> String {
+        match self {
+            RateLimitError::TooManyRequests { .. } => "Too many requests".to_string(),
+            RateLimitError::PoisonedLock => "Poisoned lock error.".to_string()
+        }
+    }
+
+}
+
+impl fmt::Display for WildcardPatternError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self)
     }
@@ -168,7 +196,8 @@ impl QueryError {
             QueryError::WrongNumParams(_, _) => 400,
             QueryError::UnknownPostgresValueType(_) => 500,
             QueryError::StorageError => 500,
-            QueryError::ReadUtfError(_) => 500
+            QueryError::ReadUtfError(_) => 500,
+            QueryError::RateLimitError(err) => err.get_code()
         }
     }
 
@@ -183,7 +212,8 @@ impl QueryError {
             QueryError::ConnectionConfigError(_, _) => ErrorType::ConnectionConfigError,
             QueryError::ForbiddenConnectionId => ErrorType::ForbiddenConnectionId,
             QueryError::StorageError => ErrorType::StorageError,
-            QueryError::ReadUtfError(_) => ErrorType::PostgresError
+            QueryError::ReadUtfError(_) => ErrorType::PostgresError,
+            QueryError::RateLimitError(_) => ErrorType::LimitExceeded,
         }
     }
 
@@ -203,7 +233,8 @@ impl QueryError {
                 "The connection of the requested id is forbidden.".into(),
             QueryError::StorageError =>
                 "Underlying storage error.".into(),
-            QueryError::ReadUtfError(message) => message
+            QueryError::ReadUtfError(message) => message,
+            QueryError::RateLimitError(err) => err.get_message()
         }
     }
 
@@ -263,7 +294,8 @@ impl From<ConnectionError> for QueryError {
                 QueryError::CreatePoolError(err.to_string()),
             ConnectionError::PoolError(err) => err.into(),
             ConnectionError::ConnectionConfigError(err) => err.into(),
-            ConnectionError::StorageError(err) => err.into()
+            ConnectionError::StorageError(err) => err.into(),
+            ConnectionError::RateLimitError(err) => err.into()
         }
     }
 }
@@ -385,5 +417,17 @@ impl From<StorageError> for InitializationError {
 impl From<jwt::Error> for AuthError {
     fn from(err: jwt::Error) -> Self {
         AuthError::VerificationError(format!("{:?}", err))
+    }
+}
+
+impl From<RateLimitError> for QueryError {
+    fn from(err: RateLimitError) -> Self {
+        QueryError::RateLimitError(err)
+    }
+}
+
+impl From<RateLimitError> for ConnectionError {
+    fn from(err: RateLimitError) -> Self {
+        ConnectionError::RateLimitError(err)
     }
 }

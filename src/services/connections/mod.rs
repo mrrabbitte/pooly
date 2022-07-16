@@ -5,16 +5,17 @@ use deadpool::managed::{Object, PoolConfig};
 use deadpool_postgres::{Config, Manager, ManagerConfig, Pool, RecyclingMethod, Runtime, SslMode};
 use tokio_postgres::NoTls;
 
-use crate::models::query::connections::ConnectionConfig;
 use crate::models::errors::ConnectionError;
+use crate::models::query::connections::ConnectionConfig;
 use crate::services::connections::config::ConnectionConfigService;
+use crate::services::limits::RateLimiter;
 use crate::services::updatable::UpdatableService;
 
 pub mod config;
 
 pub struct ConnectionService {
 
-    pools: DashMap<String, Pool>,
+    pools: DashMap<String, PoolEntry>,
     config_service: Arc<ConnectionConfigService>
 
 }
@@ -34,8 +35,15 @@ impl ConnectionService {
     pub async fn get(&self,
                      connection_id: &str) -> Option<Result<Connection, ConnectionError>> {
         match self.pools.get(connection_id) {
-            Some(pool) =>
-                Some(pool.get().await.map_err(ConnectionError::PoolError)),
+            Some(pool_entry) => {
+                let rate_result = pool_entry.rate_limiter.acquire();
+
+                if rate_result.is_err() {
+                    return Some(Err(rate_result.unwrap_err().into()));
+                }
+
+                Some(pool_entry.pool.get().await.map_err(ConnectionError::PoolError))
+            },
             None => self.create_or_empty(connection_id).await
         }
     }
@@ -73,7 +81,15 @@ impl ConnectionService {
                     pool.get().await.map_err(ConnectionError::PoolError);
 
                 if result.is_ok() {
-                    self.pools.insert(connection_config.id.clone(), pool);
+                    self.pools.insert(connection_config.id.clone(), PoolEntry {
+                        pool,
+                        rate_limiter: connection_config.rate_limit.as_ref().map_or(
+                            RateLimiter::NoOp,
+                            |rate_config|
+                                RateLimiter::leaky_bucket(
+                                    rate_config.max_requests_per_period,
+                                    rate_config.period_millis as u128))
+                    });
                 }
 
                 result
@@ -81,5 +97,11 @@ impl ConnectionService {
             Err(err) => Err(ConnectionError::CreatePoolError(err))
         })
     }
+}
+
+struct PoolEntry {
+
+    pool: Pool,
+    rate_limiter: RateLimiter
 
 }

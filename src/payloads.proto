@@ -45,6 +45,7 @@ message ErrorResponse {
     STORAGE_ERROR = 6;
     WRONG_NUM_OF_PARAMS = 7;
     UNKNOWN_PG_VALUE_TYPE = 8;
+    LIMIT_EXCEEDED = 9;
   }
 
   ErrorType error_type = 3;

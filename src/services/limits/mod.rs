@@ -4,17 +4,44 @@ use std::sync::{LockResult, Mutex, MutexGuard};
 use std::sync::atomic::{AtomicU16, AtomicU32, Ordering};
 use std::time::Duration;
 
-use crate::models::utils::time::{now_millis, NowProvider};
+use crate::models::errors::RateLimitError;
+use crate::models::utils::time::{Clock, now_millis, NowProvider};
+
+pub enum RateLimiter {
+
+    NoOp,
+    LeakyBucket(StandardLeakyBucket)
+
+}
+
+impl RateLimiter {
+
+    pub fn leaky_bucket(max_requests_per_period: u32,
+                        period_millis: u128) -> RateLimiter {
+        RateLimiter::LeakyBucket(
+            StandardLeakyBucket::new(Clock::new(), max_requests_per_period, period_millis))
+    }
+
+    pub fn acquire(&self) -> Result<(), RateLimitError> {
+        match self {
+            RateLimiter::NoOp => Ok(()),
+            RateLimiter::LeakyBucket(bucket) =>
+                bucket.acquire()
+        }
+    }
+}
+
+pub type StandardLeakyBucket = LeakyBucket<Clock>;
 
 /// A very simplistic leaky bucket implementation.
-struct LeakyBucket<T> where T: NowProvider {
+pub struct LeakyBucket<T> where T: NowProvider {
 
     clock: T,
 
-    tickets: AtomicU32,
     max_requests_per_period: u32,
-
     period_millis: u128,
+
+    tickets: AtomicU32,
     last_updated_at_millis: Mutex<u128>
 
 }
@@ -28,14 +55,14 @@ impl<T: NowProvider>  LeakyBucket<T> {
 
         LeakyBucket {
             clock,
-            tickets: AtomicU32::new(0),
             max_requests_per_period,
             period_millis,
+            tickets: AtomicU32::new(0),
             last_updated_at_millis: Mutex::new(now_millis)
         }
     }
 
-    pub fn acquire(&self) -> Result<(), LeakyBucketError> {
+    fn acquire(&self) -> Result<(), RateLimitError> {
         if self.has_free_tickets() {
             return Ok(());
         }
@@ -46,7 +73,7 @@ impl<T: NowProvider>  LeakyBucket<T> {
             return Ok(());
         }
 
-        return Err(LeakyBucketError::TooManyRequests {
+        return Err(RateLimitError::TooManyRequests {
             threshold: self.max_requests_per_period,
             period_millis: self.period_millis
         });
@@ -56,7 +83,7 @@ impl<T: NowProvider>  LeakyBucket<T> {
         self.tickets.fetch_add(1, Ordering::SeqCst) < self.max_requests_per_period
     }
 
-    fn update_tickets(&self) -> Result<(), LeakyBucketError> {
+    fn update_tickets(&self) -> Result<(), RateLimitError> {
         match self.last_updated_at_millis.lock() {
             Ok(mut current_last) => {
                 let now = self.clock.now_millis();
@@ -68,18 +95,10 @@ impl<T: NowProvider>  LeakyBucket<T> {
 
                 Ok(())
             }
-            Err(_) => Err(LeakyBucketError::PoisonedLock)
+            Err(_) => Err(RateLimitError::PoisonedLock)
         }
     }
 
-
-}
-
-#[derive(Debug)]
-pub enum LeakyBucketError {
-
-    TooManyRequests{threshold: u32, period_millis: u128},
-    PoisonedLock
 
 }
 
