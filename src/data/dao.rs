@@ -29,7 +29,6 @@ pub trait Dao<T> {
 
 }
 
-#[derive(Debug)]
 pub struct SimpleDao {
 
     keyspace: String,

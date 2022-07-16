@@ -1,11 +1,8 @@
-use std::borrow::Borrow;
-use std::ops::{Deref, DerefMut};
-use std::sync::{LockResult, Mutex, MutexGuard};
-use std::sync::atomic::{AtomicU16, AtomicU32, Ordering};
-use std::time::Duration;
+use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::Mutex;
 
 use crate::models::errors::RateLimitError;
-use crate::models::utils::time::{Clock, now_millis, NowProvider};
+use crate::models::utils::time::{Clock, NowProvider};
 
 pub enum RateLimiter {
 
@@ -105,11 +102,11 @@ impl<T: NowProvider>  LeakyBucket<T> {
 #[cfg(test)]
 mod tests {
     use std::sync::Arc;
-    use std::sync::atomic::{AtomicU32, AtomicU64, AtomicUsize, Ordering};
+    use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
     use std::thread;
     use std::time::Duration;
 
-    use crate::models::utils::time::{Clock, now_millis, NowProvider};
+    use crate::models::utils::time::{Clock, NowProvider};
     use crate::services::limits::LeakyBucket;
 
     const PERIOD_MILLIS: u128 = 10_000; // assuming the test will run in < 10 sec
