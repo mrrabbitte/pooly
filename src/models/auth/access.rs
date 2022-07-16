@@ -2,8 +2,8 @@ use std::collections::HashSet;
 
 use serde::{Deserialize, Serialize};
 
-use crate::models::versioning::updatable::{StringSetCommand, Updatable, WildcardPatternSetCommand};
 use crate::models::utils::wildcards::WildcardPattern;
+use crate::models::versioning::updatable::{StringSetCommand, Updatable, WildcardPatternSetCommand};
 
 pub trait ConnectionIdAccessEntry {
 
@@ -120,8 +120,8 @@ mod tests {
     use std::collections::HashSet;
 
     use crate::models::auth::access::{ConnectionIdAccessEntry, LiteralConnectionIdAccessEntry, WildcardPatternConnectionIdAccessEntry};
-    use crate::models::versioning::versioned::Versioned;
     use crate::models::utils::wildcards::WildcardPattern;
+    use crate::models::versioning::versioned::Versioned;
 
     const CLIENT_ID: &str = "client-id-1";
     const NOT_CLIENT_ID: &str = "not-client-id-1";
@@ -180,16 +180,17 @@ mod tests {
         patterns.insert(WildcardPattern::parse("*connection*").unwrap());
         patterns.insert(WildcardPattern::parse("first*").unwrap());
 
-        let wildcard_ace = WildcardPatternConnectionIdAccessEntry::new(
-            NOT_CLIENT_ID, patterns);
 
         let should_match = get_should_match();
 
+        let wildcard_ace = WildcardPatternConnectionIdAccessEntry::new(
+            NOT_CLIENT_ID, patterns);
         let literal_ace = LiteralConnectionIdAccessEntry::new(
             NOT_CLIENT_ID, should_match.clone());
 
         for connection_id in &should_match {
             assert!(!wildcard_ace.is_allowed(CLIENT_ID, &connection_id));
+            assert!(!literal_ace.is_allowed(CLIENT_ID, &connection_id));
         }
     }
 
