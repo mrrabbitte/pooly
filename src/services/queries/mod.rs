@@ -1,14 +1,15 @@
 use std::sync::Arc;
 
 use deadpool_postgres::Transaction;
+use futures_util::future;
 use postgres_types::ToSql;
 
 use crate::models::errors::QueryError;
-use crate::models::query::parameters::convert_params;
 use crate::models::payloads::{ErrorResponse, query_response, QueryRequest, QueryResponse, RowResponseGroup, tx_bulk_query_response, TxBulkQueryRequest, TxBulkQueryRequestBody, TxBulkQueryResponse, TxBulkQuerySuccessResponse, TxQuerySuccessResponse};
 use crate::models::payloads::QuerySuccessResponse;
-use crate::models::responses::ResponseWithCode;
+use crate::models::query::parameters::convert_params;
 use crate::models::query::rows::convert_rows;
+use crate::models::responses::ResponseWithCode;
 use crate::services::auth::access::AccessControlService;
 use crate::services::connections::ConnectionService;
 
@@ -68,19 +69,27 @@ impl QueryService {
 
                 let tx: Transaction = connection.transaction().await?;
 
-                let mut results = Vec::new();
+                let mut query_futures = Vec::new();
 
                 for (i, query_request_body) in request.queries.iter().enumerate() {
-                    let query_response =
-                        QueryService::do_execute_bulk(&tx, &query_request_body,i)
-                            .await?;
+                    let query_future =
+                        QueryService::do_execute_bulk(&tx, &query_request_body,i);
 
-                    results.push(query_response);
+                    query_futures.push(query_future);
+                }
+
+                let results: Vec<Result<TxQuerySuccessResponse, QueryError>> =
+                    future::join_all(query_futures).await;
+
+                let mut successes = Vec::new();
+
+                for result in results {
+                    successes.push(result?);
                 }
 
                 tx.commit().await?;
 
-                Ok(results)
+                Ok(successes)
             },
             None => Err(QueryError::UnknownDatabaseConnection(connection_id.to_owned())),
         }
@@ -92,7 +101,7 @@ impl QueryService {
         let stmt =
             tx.prepare_cached(&bulk_body.query).await?;
 
-        let mut results = Vec::new();
+        let mut param_values_arena = Vec::new();
 
         for params_row in &bulk_body.params {
             let param_values: Vec<&(dyn ToSql + Sync)> = convert_params(
@@ -100,10 +109,24 @@ impl QueryService {
                 &params_row.values
             )?;
 
-            let query_results =
-                tx.query(&stmt, param_values.as_slice()).await?;
+            param_values_arena.push(param_values);
+        }
 
-            results.push(convert_rows(query_results)?);
+        let mut query_futures = Vec::new();
+
+        for param_values in param_values_arena.as_slice() {
+            let query_future =
+                tx.query(&stmt, param_values);
+
+            query_futures.push(query_future);
+        }
+
+        let query_results = future::join_all(query_futures).await;
+
+         let mut results = Vec::new();
+
+        for query_result in query_results {
+            results.push(convert_rows(query_result?)?);
         }
 
         let column_names =
