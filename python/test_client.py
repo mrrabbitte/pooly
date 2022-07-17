@@ -19,11 +19,13 @@ CONTENT_TYPE = {"content-type": "application/json"}
 CLIENT_ID = "client-id-1"
 CONNECTION_ID = "connection-id-1"
 
-JWT_KEY = b"ZDR1S0E0WEUwY0lmWnBweXUwYmFiM2s5aGlWUUxTZ2VUcldrcTV1ZGZnZGY="
+JWT_KEY = "ZDR1S0E0WEUwY0lmWnBweXUwYmFiM2s5aGlWUUxTZ2VUcldrcTV1ZGZnZGY="
 
 INIT_AUTH = "uUBlr1SyHb3ETk5h2A6yNrjXRa99FhopQ6Ow53XtXxrXC4IoTVT0o2fbXKDyBHS19scDFtl5aZlTRk"
 
-key = {"kid":"kid-1", "alg":"Hs512", "value": base64.b64encode(JWT_KEY)}
+key = {"kid":"kid-1", "alg":"Hs512", "value": base64.b64encode(JWT_KEY.encode('ascii')).decode('ascii')}
+
+print(key)
 
 response = requests.post(INITIALIZE, headers = {"content-type": "application/json", "Authorization": INIT_AUTH}, json=key)
 
