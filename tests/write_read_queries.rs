@@ -43,7 +43,7 @@ mod tests {
             docker
                 .run(Postgres::default().with_env_vars(common::build_env_vars()));
 
-        let pg_host = container.get_host_port(common::INTERNAL_PG_PORT).unwrap();
+        let pg_host = container.get_host_port_ipv4(common::INTERNAL_PG_PORT).unwrap();
 
         app_context.connection_config_service
             .create(common::build_config(pg_host))

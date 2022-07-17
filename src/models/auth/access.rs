@@ -121,7 +121,6 @@ mod tests {
 
     use crate::models::auth::access::{ConnectionIdAccessEntry, LiteralConnectionIdAccessEntry, WildcardPatternConnectionIdAccessEntry};
     use crate::models::utils::wildcards::WildcardPattern;
-    use crate::models::versioning::versioned::Versioned;
 
     const CLIENT_ID: &str = "client-id-1";
     const NOT_CLIENT_ID: &str = "not-client-id-1";
