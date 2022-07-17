@@ -1,5 +1,8 @@
 use std::collections::HashMap;
 
+use testcontainers::core::WaitFor;
+use testcontainers::Image;
+
 use pooly::{AppContext, test_context};
 use pooly::models::auth::access::LiteralConnectionIdAccessEntry;
 use pooly::models::query::connections::ConnectionConfig;
@@ -59,11 +62,12 @@ pub fn build_config(port: u16) -> ConnectionConfig {
         db_name: PG_TEST_DB.to_string(),
         user: PG_TEST_USER.to_string(),
         password: PG_TEST_PD.to_string(),
-        max_connections: 5
+        max_connections: 5,
+        rate_limit: None
     }
 }
 
-pub fn build_env_vars() -> HashMap<String, String> {
+fn build_env_vars() -> HashMap<String, String> {
     let mut env_vars = HashMap::new();
 
     env_vars.insert("POSTGRES_DB".into(), PG_TEST_DB.into());
@@ -80,4 +84,36 @@ pub fn cleanup(app_context: AppContext,
     app_context.connection_config_service.clear().expect("Could not clear configs.");
 
     test_context::clear(namespace).expect("Could not delete storage.");
+}
+
+pub fn build_postgres_image() -> Postgres14 {
+    Postgres14 {
+        env_vars: build_env_vars()
+    }
+}
+
+pub struct Postgres14 {
+    env_vars: HashMap<String, String>
+}
+
+impl Image for Postgres14 {
+    type Args = ();
+
+    fn name(&self) -> String {
+        "postgres".to_owned()
+    }
+
+    fn tag(&self) -> String {
+        "14-alpine".to_owned()
+    }
+
+    fn ready_conditions(&self) -> Vec<WaitFor> {
+        vec![WaitFor::message_on_stderr(
+            "database system is ready to accept connections",
+        )]
+    }
+
+    fn env_vars(&self) -> Box<dyn Iterator<Item = (&String, &String)> + '_> {
+        Box::new(self.env_vars.iter())
+    }
 }
