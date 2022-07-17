@@ -6,7 +6,7 @@ mod tests {
     use std::collections::{HashMap, HashSet};
     use std::ops::Deref;
 
-    use testcontainers::{clients, Docker};
+    use testcontainers::clients;
     use testcontainers::images::postgres::Postgres;
     use uuid::Uuid;
 
@@ -30,11 +30,9 @@ mod tests {
 
         let docker = clients::Cli::default();
 
-        let container =
-            docker
-                .run(Postgres::default().with_env_vars(common::build_env_vars()));
+        let container = docker.run(common::build_postgres_image());
 
-        let pg_host = container.get_host_port(common::INTERNAL_PG_PORT).unwrap();
+        let pg_host = container.get_host_port_ipv4(common::INTERNAL_PG_PORT);
 
         app_context.connection_config_service
             .create(common::build_config(pg_host))
