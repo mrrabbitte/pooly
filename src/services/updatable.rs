@@ -63,7 +63,7 @@ CacheBackedService<U, T> {
         self.cache
             .entry(id.into())
             .and_modify(|old| {
-                if old.should_replace(new) {
+                if old.should_be_replaced(new) {
                     *old = new.clone();
                 }
             })
