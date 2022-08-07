@@ -23,3 +23,7 @@ storage/
 .profraw
 *.profraw
 coveralls.json
+config.toml
+/proptest-regressions/
+proptest-regressions/
+proptest-regressions

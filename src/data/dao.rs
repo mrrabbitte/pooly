@@ -105,6 +105,9 @@ impl Dao<Vec<u8>> for SimpleDao {
                     let old: VersionedVec = bincode::deserialize(&old_payload.to_vec())
                         .map_err(map_to_storage_err)?;
 
+                    old.get_header().check_next_version(new.get_header())
+                        .map_err(map_to_storage_err)?;
+
                     let updated = old
                         .update_with_next_version(new.clone())
                         .map_err(wrap_storage_err)?;

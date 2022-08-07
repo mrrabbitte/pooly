@@ -188,7 +188,7 @@ mod tests {
     use crate::models::versioning::versioned::VersionHeader;
 
     #[test]
-    fn test_udpate_command() {
+    fn test_update_command() {
         let old = JwtKey::new(Some("kid-1".into()), JwtAlg::Es256, vec![1, 2, 3]);
 
         let command_value = vec![3,4,5];
