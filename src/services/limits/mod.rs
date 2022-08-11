@@ -170,13 +170,13 @@ mod tests {
         spawn_worker(bucket.clone(), num_successes.clone());
         spawn_worker(bucket.clone(), num_successes.clone());
 
-        thread::sleep(Duration::from_millis(1));
+        thread::sleep(Duration::from_millis(10));
 
         assert_eq!(num_successes.load(Ordering::SeqCst), MAX_REQUESTS_PER_PERIOD);
 
         now.fetch_add(PERIOD_MILLIS as u64, Ordering::SeqCst);
 
-        thread::sleep(Duration::from_millis(1));
+        thread::sleep(Duration::from_millis(10));
 
         assert_eq!(num_successes.load(Ordering::SeqCst), MAX_REQUESTS_PER_PERIOD * 2);
 
