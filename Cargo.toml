@@ -2,7 +2,7 @@
 name = "pooly"
 version = "0.2.1"
 edition = "2021"
-authors = ["P. Gli <pgli@pm.me>"]
+authors = ["S. Gli <stgli@pm.me>"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/mrrabbitte/pooly"
 homepage = "https://github.com/mrrabbitte/pooly"
