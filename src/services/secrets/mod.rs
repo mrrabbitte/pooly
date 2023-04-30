@@ -1,9 +1,10 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use chacha20poly1305::aead::{Aead, NewAead, Payload};
+use chacha20poly1305::aead::{Aead, Payload};
 use chacha20poly1305::aead::generic_array::GenericArray;
 use chacha20poly1305::XChaCha20Poly1305;
+use chacha20poly1305::KeyInit;
 use sharks::{Share, Sharks};
 
 use crate::data::files::{FilesService, SimpleFilesService};
