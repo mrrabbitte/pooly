@@ -1,8 +1,9 @@
 use std::sync::{Arc, RwLock};
 
-use chacha20poly1305::aead::{Aead, NewAead, Payload};
+use chacha20poly1305::aead::{Aead, Payload};
 use chacha20poly1305::aead::generic_array::GenericArray;
 use chacha20poly1305::XChaCha20Poly1305;
+use chacha20poly1305::KeyInit;
 
 use crate::models::errors::SecretsError;
 use crate::models::sec::secrets::{EncryptedPayload, EncryptionKey, KEY_LENGTH};
@@ -88,8 +89,10 @@ mod tests {
     use std::sync::{Arc, RwLock};
 
     use chacha20poly1305::aead::generic_array::GenericArray;
-    use chacha20poly1305::aead::NewAead;
+
     use chacha20poly1305::XChaCha20Poly1305;
+    use chacha20poly1305::KeyInit;
+
     use ring::rand::SystemRandom;
 
     use crate::models::sec::secrets::{EncryptionKey, KEY_LENGTH};
