@@ -18,7 +18,6 @@ WIP. The roadmap includes:
 - [x] wider range of postgres types support as input and output;
 - [x] PBT + basic integration tests coverage;
 - [x] throttle requests based on the client_id;
-- [ ] gRPC Streaming results;
 - [ ] OpenTelemetry support;
 - [ ] Java client;
 - [ ] Docs on pooly;
