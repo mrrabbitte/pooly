@@ -20,6 +20,7 @@ WIP. The roadmap includes:
 - [x] throttle requests based on the client_id;
 - [ ] OpenTelemetry support;
 - [ ] Java client;
+- [ ] add option to use Vault instead of local secrets keeping;
 - [ ] Docs on pooly;
 - [ ] rich logging support;
 - [ ] docker image + unsealing script;
@@ -29,6 +30,5 @@ WIP. The roadmap includes:
 - [ ] Python client;
 - [ ] Rust client;
 - [ ] even wider range of postgres types;
-- [ ] add option to use Vault instead of local secrets keeping;
 - [ ] queries deduping.
 
